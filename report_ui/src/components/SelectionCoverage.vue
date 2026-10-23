@@ -1,8 +1,9 @@
 <script setup>
+import { withBasePath } from "../api";
 import {computed,onMounted,ref} from 'vue';
 const props=defineProps({ruleId:{type:String,default:''}});
 const coverage=ref(null);
-onMounted(async()=>{try{const r=await fetch('/delivery_coverage.json');if(r.ok)coverage.value=await r.json();}catch{}});
+onMounted(async()=>{try{const r=await fetch(withBasePath('/delivery_coverage.json'));if(r.ok)coverage.value=await r.json();}catch{}});
 const row=computed(()=>coverage.value?.rules.find(r=>r.rule_id===props.ruleId));
 const distribution=r=>r.no_object?'已核查无适用对象':[['是','通过'],['否','不通过'],['待确认','待确认'],['不适用','不适用']].map(([key,label])=>`${label} ${r.counts?.[key]||0}`).join(' / ');
 const remaining=r=>(r.objects||[]).filter(o=>o.status!=='validated'||['待确认','INSUFFICIENT'].includes(o.verdict)).map(o=>`${o.object}：${o.status==='validated'?'待确认':'执行未完成'}`).join('；')||'—';

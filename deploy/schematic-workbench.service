@@ -1,0 +1,20 @@
+[Unit]
+Description=Schematic review web workbench
+After=network.target hermes-dashboard.service
+
+[Service]
+Type=simple
+User=fishsteak
+WorkingDirectory=/home/fishsteak/schematic-intake
+Environment=SCHEMATIC_NODE=/home/fishsteak/.cache/schematic-intake-runtime/node_modules/.bin/node
+Environment=SCHEMATIC_WORKBENCH_HOME=/home/fishsteak/schematic-intake/.workbench
+ExecStart=/home/fishsteak/schematic-intake/.venv/bin/python -m web_workbench --host 127.0.0.1 --port 8767 --root-path /schematic --allowed-hosts fishsteak.xyz,127.0.0.1,localhost --auth-check-url http://127.0.0.1:9119/api/auth/me --login-url /login --ui-dir /home/fishsteak/schematic-intake/report_ui/dist-public
+Restart=on-failure
+RestartSec=3
+# Review workers are detached and reconciled by the next API process.
+KillMode=process
+TimeoutStopSec=20
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

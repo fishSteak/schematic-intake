@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 import hashlib
 import importlib.util
 import json
+import logging
 import os
 from pathlib import Path
 import shutil
@@ -15,11 +16,13 @@ from typing import Literal
 from urllib.parse import quote, urlparse
 import zipfile
 
+import httpx
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from . import materials, runner
+from .deployment import Deployment, auth_client, authority, origin_tuple
 from .store import ACTIVE, TERMINAL, Conflict, NotFound, ROOT, Store, atomic_json
 
 
@@ -74,8 +77,12 @@ class QuestionInput(Payload):
     profile_id: str | None = None
 
 
-def public_run(run):
-    return {k: v for k, v in run.items() if k not in {"profile_path", "workspace", "process_started", "board_path", "parent_workspace"}}
+def public_run(run, root_path=""):
+    value = {k: v for k, v in run.items() if k not in {"profile_path", "workspace", "process_started", "board_path", "parent_workspace"}}
+    report_url = value.get("report_url")
+    if root_path and isinstance(report_url, str) and report_url.startswith("/reports/"):
+        value["report_url"] = root_path + report_url
+    return value
 
 
 def public_profile(profile):
@@ -111,16 +118,17 @@ def report_path(store, run_id):
     return path
 
 
-def report_data(store, run_id):
+def report_data(store, run_id, root_path=""):
     root = report_path(store, run_id)
     verdicts = json.loads((root / "verdicts.json").read_text(encoding="utf-8-sig"))
     data = json.loads((root / "report_data.json").read_text(encoding="utf-8-sig"))
     evidence = {r["rule_id"]: json.loads(safe_asset(root, f"evidence/{r['rule_id']}.json").read_text(encoding="utf-8-sig")) for r in verdicts.get("results", [])}
     manifest_path = root / "snapshot.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig")) if manifest_path.is_file() else {}
-    source_assets = {original: {"path": relative, "sha256": manifest["files"][relative], "url": f"/reports/{run_id}/" + quote(relative, safe="/")}
+    base = root_path + f"/reports/{run_id}/"
+    source_assets = {original: {"path": relative, "sha256": manifest["files"][relative], "url": base + quote(relative, safe="/")}
                      for original, relative in manifest.get("sources", {}).items() if relative in manifest.get("files", {})}
-    return {"verdicts": verdicts, "evidence": evidence, "report_data": data, "asset_base": f"/reports/{run_id}/", "source_assets": source_assets, "run": public_run(store.run(run_id))}
+    return {"verdicts": verdicts, "evidence": evidence, "report_data": data, "asset_base": base, "source_assets": source_assets, "run": public_run(store.run(run_id), root_path)}
 
 
 def require_object(store, run_id, rule_id, object_id):
@@ -129,7 +137,10 @@ def require_object(store, run_id, rule_id, object_id):
         raise NotFound("此评审批次中没有该对象")
 
 
-def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True):
+def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True, root_path=None,
+               allowed_hosts=None, auth_check_url=None, login_url=None, ui_dir=None, auth_transport=None):
+    deployment = Deployment.configure(repository, root_path=root_path, allowed_hosts=allowed_hosts,
+        auth_check_url=auth_check_url, login_url=login_url, ui_dir=ui_dir)
     store = Store(home, repository=repository)
     if discover:
         store.discover_boards()
@@ -140,33 +151,93 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
             while True:
                 await asyncio.to_thread(runner.reconcile, store)
                 await asyncio.sleep(3)
+        app.state.auth_client = auth_client(auth_transport) if deployment.auth_check_url else None
         task = asyncio.create_task(monitor()) if launch_workers else None
-        yield
-        if task:
-            task.cancel()
-            try:
-                await task
-            except asyncio.CancelledError:
-                pass
+        try:
+            yield
+        finally:
+            if task:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+            if app.state.auth_client:
+                await app.state.auth_client.aclose()
+                app.state.auth_client = None
 
     app = FastAPI(title="原理图评审工作台", version="0.1.0", lifespan=lifespan)
     app.state.store = store
+    app.state.deployment = deployment
+
+    def expose_run(run):
+        return public_run(run, deployment.root_path)
 
     @app.middleware("http")
     async def same_origin(request, call_next):
+        if deployment.root_path:
+            # ASGI root_path lets the router accept either a stripped proxy path
+            # or the public path, without double-prepending it in the server.
+            request.scope["root_path"] = deployment.root_path
+        cookies = []
+
+        def finish(response):
+            response.raw_headers.extend((b"set-cookie", value) for value in cookies)
+            response.headers["Cache-Control"] = "no-store"
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            return response
+
         origin = request.headers.get("origin")
         fetch_site = request.headers.get("sec-fetch-site")
         host = request.headers.get("host", "")
-        host_name = host.split(":", 1)[0].strip("[]")
-        if host_name not in {"localhost", "127.0.0.1", "testserver"} and not host.startswith("[::1]"):
-            return JSONResponse({"detail": "本机服务不接受此 Host"}, status_code=403)
+        try:
+            host_name, _ = authority(host)
+            valid_host = host_name in deployment.allowed_hosts
+        except ValueError:
+            valid_host = False
+        if not valid_host:
+            return finish(JSONResponse({"detail": "服务不接受此 Host"}, status_code=403))
         if request.method not in {"GET", "HEAD", "OPTIONS"}:
-            if fetch_site == "cross-site" or (origin and urlparse(origin).netloc != host):
-                return JSONResponse({"detail": "不允许跨站操作本机服务"}, status_code=403)
-        response = await call_next(request)
-        response.headers["Cache-Control"] = "no-store"
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        return response
+            try:
+                valid_origin = not origin or origin_tuple(origin) == origin_tuple(f"{request.url.scheme}://{host}")
+            except ValueError:
+                valid_origin = False
+            if fetch_site == "cross-site" or not valid_origin:
+                return finish(JSONResponse({"detail": "不允许跨站操作工作台"}, status_code=403))
+
+        if deployment.auth_check_url:
+            headers = {"cookie": request.headers.get("cookie", ""), "x-forwarded-proto": request.url.scheme}
+            if "authorization" in request.headers:
+                headers["authorization"] = request.headers["authorization"]
+            try:
+                client = getattr(app.state, "auth_client", None)
+                if client:
+                    checked = await client.get(deployment.auth_check_url, headers=headers)
+                else:
+                    # ASGI clients that omit lifespan still get the same checks.
+                    async with auth_client(auth_transport) as client:
+                        checked = await client.get(deployment.auth_check_url, headers=headers)
+                cookies = [value for name, value in checked.headers.raw if name.lower() == b"set-cookie"]
+            except httpx.HTTPError:
+                return finish(JSONResponse({"detail": "登录认证服务暂不可用，请稍后重试"}, status_code=503))
+            if checked.status_code in {401, 403}:
+                local_path = deployment.local_path(request)
+                if local_path == "/api" or local_path.startswith("/api/"):
+                    login = deployment.login_redirect(deployment.public_path("/"))
+                    return finish(JSONResponse({"detail": "请先登录主站后使用评审工作台", "login_url": login}, status_code=401))
+                login = deployment.login_redirect(deployment.request_path(request))
+                return finish(RedirectResponse(login, status_code=302 if request.method in {"GET", "HEAD"} else 303))
+            if not 200 <= checked.status_code < 300:
+                return finish(JSONResponse({"detail": "登录认证服务返回异常，请稍后重试"}, status_code=503))
+        try:
+            response = await call_next(request)
+        except Exception:
+            if not deployment.auth_check_url:
+                raise
+            # A downstream error must not discard a successful session rotation.
+            logging.getLogger(__name__).exception("Authenticated workbench request failed")
+            response = JSONResponse({"detail": "工作台处理请求失败，请稍后重试"}, status_code=500)
+        return finish(response)
 
     @app.exception_handler(NotFound)
     async def not_found(_, exc):
@@ -192,13 +263,13 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
         except Exception as exc:
             checks.append({"name": "project_parser", "ok": False, "detail": str(exc)})
         profiles = store.profiles()
-        return {"ready": all(x["ok"] for x in checks), "checks": checks, "model_configured": bool(profiles), "active_runs": [public_run(r) for r in store.runs(active=True)]}
+        return {"ready": all(x["ok"] for x in checks), "checks": checks, "model_configured": bool(profiles), "active_runs": [expose_run(r) for r in store.runs(active=True)]}
 
     def enrich_board(board):
         runs = store.runs(board["id"])
         reports = [r for r in runs if r["status"] == "completed" and r.get("report_dir")]
         active = next((r for r in runs if r["status"] in ACTIVE), None)
-        return {**board, "latest_report": public_run(reports[0]) if reports else None, "active_run": public_run(active) if active else None, "material_version": materials.inventory(board)["version"]}
+        return {**board, "latest_report": expose_run(reports[0]) if reports else None, "active_run": expose_run(active) if active else None, "material_version": materials.inventory(board)["version"]}
 
     @app.get("/api/boards")
     def boards():
@@ -282,7 +353,7 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
             values["parent_workspace"] = parent["workspace"]
         run = store.create_run(board_id, values, request_key=request_key)
         if run["status"] != "queued" or run.get("pid"):
-            return public_run(run)
+            return expose_run(run)
         try:
             workspace = Path(run["workspace"])
             workspace.mkdir(parents=True, exist_ok=True)
@@ -295,7 +366,7 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
         except Exception as exc:
             store.finish(run["id"], "failed", errors=["无法启动执行进程：" + str(exc)])
             raise
-        return public_run(run)
+        return expose_run(run)
 
     @app.post("/api/boards/{board_id}/runs", status_code=202)
     def create_run(board_id: str, payload: RunInput, request: Request):
@@ -308,11 +379,11 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
     def get_runs(board_id: str | None = None):
         if board_id:
             store.board(board_id)
-        return {"runs": [public_run(r) for r in store.runs(board_id)]}
+        return {"runs": [expose_run(r) for r in store.runs(board_id)]}
 
     @app.get("/api/runs/{run_id}")
     def get_run(run_id: str):
-        return public_run(store.run(run_id, events=True))
+        return expose_run(store.run(run_id, events=True))
 
     @app.get("/api/runs/{run_id}/events")
     async def run_events(run_id: str, request: Request, after: int = 0):
@@ -339,7 +410,7 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
 
     @app.post("/api/runs/{run_id}/stop")
     def stop_run(run_id: str):
-        return public_run(runner.stop(store, run_id) if launch_workers else store.request_stop(run_id))
+        return expose_run(runner.stop(store, run_id) if launch_workers else store.request_stop(run_id))
 
     @app.post("/api/runs/{run_id}/resume", status_code=202)
     def resume_run(run_id: str):
@@ -351,11 +422,11 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
     @app.get("/api/boards/{board_id}/reports")
     def reports(board_id: str):
         store.board(board_id)
-        return {"reports": [public_run(r) for r in store.runs(board_id) if r["status"] == "completed" and r.get("report_dir")]}
+        return {"reports": [expose_run(r) for r in store.runs(board_id) if r["status"] == "completed" and r.get("report_dir")]}
 
     @app.get("/api/reports/{run_id}/data")
     def get_report_data(run_id: str):
-        return report_data(store, run_id)
+        return report_data(store, run_id, deployment.root_path)
 
     @app.get("/api/reports/{run_id}/download")
     def download_report(run_id: str):
@@ -450,7 +521,7 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
     def frontend(path: str):
         if path.startswith(("api/", "reports/")):
             raise HTTPException(404, "接口不存在")
-        root = Path(repository) / "report_ui/dist"
+        root = deployment.ui_dir
         if path and "." in Path(path).name:
             return FileResponse(safe_asset(root, path))
         index = root / "index.html"

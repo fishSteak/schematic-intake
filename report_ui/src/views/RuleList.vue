@@ -1,4 +1,5 @@
 <script setup>
+import { withBasePath } from "../api";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import SelectionCoverage from "../components/SelectionCoverage.vue";
@@ -18,7 +19,7 @@ const tagType = {
 
 onMounted(async () => {
   try {
-    const res = await fetch("/verdicts.json");
+    const res = await fetch(withBasePath("/verdicts.json"));
     if (!res.ok) throw new Error("读不到 verdicts.json");
     const data = await res.json();
     summary.value = data.summary || {};

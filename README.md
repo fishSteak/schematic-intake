@@ -30,6 +30,26 @@ npm --prefix report_ui run build
 
 `report_ui/dist` 不进入 Git，新 clone 后需要构建。开发前端可运行 `npm --prefix report_ui run dev`，Vite 的 `/api` 和 `/reports` 代理指向本机 8765 端口。
 
+## fishsteak.xyz 子目录部署
+
+工作台入口为 `https://fishsteak.xyz/schematic/`，使用主站已有登录。页面、API、报告、材料与下载均检查主站会话；会话刷新产生的 Cookie 会传回浏览器。主站登录服务不可用时返回 503，不开放匿名访问。本部署是单人共享工作台，登录用户可访问同一批项目与模型配置，不提供多租户隔离。
+
+前端构建与后端路径须一致；公开构建独立保存，本机默认构建仍可使用：
+
+```bash
+VITE_BASE_PATH=/schematic/ npm --prefix report_ui run build -- --outDir dist-public
+.venv/bin/python -m web_workbench --port 8767 \
+  --root-path /schematic --allowed-hosts fishsteak.xyz,127.0.0.1,localhost \
+  --auth-check-url http://127.0.0.1:9119/api/auth/me --login-url /login \
+  --ui-dir report_ui/dist-public
+```
+
+这些选项也可通过 `SCHEMATIC_ROOT_PATH`、`SCHEMATIC_ALLOWED_HOSTS`、`SCHEMATIC_AUTH_CHECK_URL`、`SCHEMATIC_LOGIN_URL`、`SCHEMATIC_UI_DIR` 配置。鉴权检查地址必须是固定回环 HTTP(S) 服务，2xx 放行，401/403 要求重新登录；默认本机模式不启用外部鉴权。仅允许明确的 Host，修改请求校验完整同源 Origin，反向代理头仅信任回环代理。
+
+服务器使用 [systemd 服务配置](deploy/schematic-workbench.service) 保持运行、开机启动，Caddy 的 [子目录路由](deploy/schematic.caddy) 放在主站兜底路由之前。迁移服务器时调整服务文件的用户名、仓库与 Node 路径；服务仍只监听 `127.0.0.1:8767`。安装前备份现有 Caddyfile，合并路由后运行 `caddy validate --config /etc/caddy/Caddyfile`，再 reload。服务更新使用 `sudo systemctl restart schematic-workbench`，日志使用 `journalctl -u schematic-workbench`。回退时移除子目录路由并 reload Caddy，再停止服务；`.workbench/` 保留。
+
+部署不复用主站 Codex OAuth 登录作为模型凭据。AI 深审仍须在“模型设置”填写可用的 LLM API。
+
 ## 使用工作台
 
 1. 选择仓库已有板卡，或新建项目并导入原理图 PDF、BOM、TEL 网表、EPRJ2、工况与设计任务书。替换原项目的材料会创建工作台副本。
@@ -81,6 +101,7 @@ python -m agent_review.serve --board boards/0918全量
 ```bash
 .venv/bin/python -m unittest discover -s tests -v
 node --test tests/*.test.mjs
+node --test report_ui/tests/*.test.mjs
 npm --prefix report_ui run build
 .venv/bin/python scripts/verify_standalone.py
 .venv/bin/python scripts/verify_workbench_lifecycle.py
@@ -88,7 +109,9 @@ npm --prefix report_ui run build
 
 `verify_standalone.py` 使用隔离目录与固定 P05-A01 程序规则，核对求解器和程序检查迁移基线，并验证报告 HTTP 读取。`verify_workbench_lifecycle.py` 用独立临时数据目录验证真实服务重启、worker 中断与续跑，保留正式工作台数据。LLM 协议测试使用模拟 HTTP，不能替代真实模型深审验收。
 
-本分支已验证本机程序检查链路：0918 板 P05-A01 的 51 个对象、报告门禁、网页 PDF 联动、复核保存、历史比较和导出。真实服务的对象深审与问答验收仍需要配置可用模型，不能用协议测试或程序结果替代。
+本分支已验证本机程序检查链路：0918 板 P05-A01 的 51 个对象、报告门禁、网页 PDF 联动、复核保存、历史比较和导出。完整对象深审与问答尚未验收，不能用协议测试或程序结果替代。
+
+子目录部署已通过真实 HTTPS 浏览器验证：主站登录、匿名访问拦截、报告深链刷新、材料预检、PDF、冻结来源、ZIP 下载与事件流。2026-10-23 使用工作台配置的 `gpt-6.1-sol` 完成了真实 API 连接、结构化 JSON、工具调用往返和图片识别测试；这些能力测试不代表完整对象深审与问答已验收。
 
 ## 仓库内容
 

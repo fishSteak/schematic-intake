@@ -1,4 +1,5 @@
 <script setup>
+import { withBasePath } from "../api";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import PathViewer from "../components/PathViewer.vue";
@@ -24,7 +25,7 @@ async function load() {
   loading.value = true;
   error.value = "";
   try {
-    const res = await fetch(`/evidence/${props.ruleId}.json`);
+    const res = await fetch(withBasePath(`/evidence/${props.ruleId}.json`));
     if (!res.ok) throw new Error(`没有 ${props.ruleId} 的评审材料`);
     pack.value = await res.json();
   } catch (err) {
@@ -40,8 +41,7 @@ watch(() => props.ruleId, load);
 
 function abs(src) {
   const s = String(src || "");
-  if (!s || s.startsWith("/") || s.startsWith("http")) return s;
-  return "/" + s;
+  return s ? withBasePath(s) : s;
 }
 
 const viewer = ref(null);

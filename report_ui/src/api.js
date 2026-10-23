@@ -1,3 +1,7 @@
+import { loginRedirectUrl, withBasePath } from './urls';
+export { assetUrl, withBasePath } from './urls';
+let redirectingToLogin = false;
+
 export class ApiError extends Error {
   constructor(message, status = 0, detail = null) { super(message); this.status = status; this.detail = detail; }
 }
@@ -9,10 +13,17 @@ export async function request(path, options = {}) {
   try {
     const headers = new Headers(init.headers || {});
     if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
-    const response = await fetch(path, { ...init, headers, signal: init.signal || controller.signal });
+    const response = await fetch(withBasePath(path), { ...init, headers, signal: init.signal || controller.signal });
     const contentType = response.headers.get('content-type') || '';
     const data = contentType.includes('application/json') ? await response.json() : await response.text();
     if (!response.ok) {
+      if (response.status === 401 && !redirectingToLogin && typeof window !== 'undefined') {
+        const login = loginRedirectUrl(data?.login_url, window.location.href);
+        if (login) {
+          redirectingToLogin = true;
+          window.location.assign(login);
+        }
+      }
       const detail = data?.detail ?? data?.error ?? data;
       const message = typeof detail === 'string' ? detail : Array.isArray(detail)
         ? detail.map(row => `${(row.loc || []).slice(1).join(' / ')} ${row.msg || ''}`).join('；')
@@ -55,13 +66,6 @@ export const api = {
   testProfile: id => request(`/api/model-profiles/${segment(id)}/test`, { ...json('POST', {}), timeout: 180000 }),
 };
 
-export function assetUrl(base, path) {
-  if (!path) return '';
-  const value = String(path);
-  if (/^https?:\/\//i.test(value)) return value;
-  const rel = value.replace(/^\/?review_out\//, '').replace(/^\/+/, '');
-  return `${String(base || '').replace(/\/$/, '')}/${rel}`;
-}
 export function dateLabel(value) {
   if (!value) return '—';
   const date = new Date(value);

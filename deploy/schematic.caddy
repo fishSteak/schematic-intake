@@ -1,0 +1,10 @@
+# Insert inside fishsteak.xyz's route, before the catch-all Hermes handler.
+# Preserve Host; Caddy supplies X-Forwarded-Proto and strips only this prefix.
+handle /schematic {
+    redir * /schematic/ 308
+}
+handle_path /schematic/* {
+    reverse_proxy 127.0.0.1:8767 {
+        flush_interval -1
+    }
+}

@@ -3028,11 +3028,8 @@ def render_detail(item: dict, pack: dict, out_dir: Path, board: dict, wb: dict |
   {flow_sec}
   <details class="tech"><summary>技术附录（机器字段）</summary><pre>{e(tech)}</pre></details>
   <div class="expert">
-    专家批注：
-    <label><input type="radio" name="ex-{e(rid)}" value="ok" onchange="saveEx('{e(rid)}')"/> 认可</label>
-    <label><input type="radio" name="ex-{e(rid)}" value="no" onchange="saveEx('{e(rid)}')"/> 不认可</label>
-    <label><input type="radio" name="ex-{e(rid)}" value="more" onchange="saveEx('{e(rid)}')"/> 需补充</label>
-    <textarea id="tx-{e(rid)}" placeholder="写明哪一步推错、哪份规格书页码不对、哪个公式代入错…" oninput="saveEx('{e(rid)}')"></textarea>
+    <strong>人工复核</strong>
+    <p>请回到评审工作台，选择本批次和对象后保存复核状态与批注。此静态报告不保存批注。</p>
   </div>
 </section>
 """
@@ -3240,7 +3237,7 @@ def build_html(out_dir: Path) -> str:
   <div id="view-list">
     <div class="toolbar">
       <input class="search" id="q" placeholder="搜索规则 ID / 检查项 / 位号 / 料号…" oninput="filterList()"/>
-      <button class="btn" type="button" onclick="exportFeedback()">导出专家批注</button>
+      <span class="hint">人工复核与批注请在评审工作台中记录。</span>
     </div>
     {__import__("agent_review.selection_coverage",fromlist=["render"]).render(out_dir)}
     <p class="hint">材料：{e(mat)}　文件：{e(files)}</p>
@@ -3281,17 +3278,9 @@ def build_html(out_dir: Path) -> str:
   </div>
 </div>
 <script>
-const KEY='expert-html-feedback-v2';
-const FB_API='/api/feedback';
 const SCH_PDF={json.dumps(sch_pdf, ensure_ascii=False)};
 const HAS_PDFJS={json.dumps(bool(has_pdfjs and sch_pdf))};
-let _fbCache={{}};
-let _fbShared=false;
-let _fbTimer=null;
-let _fbPoll=null;
-let _fbDirty={{}};
 function isFileProtocol(){{ return location.protocol==='file:'; }}
-function canShareFeedback(){{ return !isFileProtocol() && (location.protocol==='http:'||location.protocol==='https:'); }}
 function showServeBanner(){{
   const b=document.getElementById('serve-banner');
   if(!b) return;
@@ -3301,151 +3290,6 @@ function showServeBanner(){{
   }}
 }}
 showServeBanner();
-function loadLocal(){{ try {{ return JSON.parse(localStorage.getItem(KEY)||'{{}}'); }} catch(e){{ return {{}}; }} }}
-function saveLocal(all){{
-  try {{ localStorage.setItem(KEY, JSON.stringify(all||{{}})); }} catch(e){{}}
-}}
-function loadAll(){{ return _fbCache && typeof _fbCache==='object' ? _fbCache : loadLocal(); }}
-/** 详情是从 #detail-store 克隆的，页面上会有重复 id/name；读写只认可见的 #detail-root */
-function feedbackRoot(root){{
-  if(root && root.querySelector) return root;
-  return document.getElementById('detail-root') || null;
-}}
-function applyFeedbackToDom(root, all){{
-  const scope=feedbackRoot(root);
-  if(!scope) return;
-  scope.querySelectorAll(':scope > [data-detail-id], [data-detail-id]').forEach(sec=>{{
-    // 跳过隐藏模板库，避免同名 radio 把可见区勾选冲掉
-    if(sec.closest('#detail-store')) return;
-    const id=sec.getAttribute('data-detail-id');
-    const rec=all[id]; if(!rec) return;
-    if(_fbDirty[id]) return;
-    const mark=String(rec.mark||'');
-    sec.querySelectorAll('input[name="ex-'+id+'"]').forEach(function(inp){{
-      inp.checked = !!mark && inp.value===mark;
-    }});
-    const t=sec.querySelector('textarea#tx-'+id+', textarea[id="tx-'+id+'"]');
-    if(t && document.activeElement!==t) t.value=rec.note||'';
-  }});
-}}
-function restoreOne(root){{ applyFeedbackToDom(root, loadAll()); }}
-function setFbStatus(msg, ok){{
-  let el=document.getElementById('fb-sync-status');
-  if(!el){{
-    el=document.createElement('div');
-    el.id='fb-sync-status';
-    el.style.cssText='position:fixed;right:16px;bottom:16px;z-index:9999;padding:8px 12px;border-radius:8px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.12);background:#fff;color:#24312e;border:1px solid #dde8e3;max-width:280px';
-    document.body.appendChild(el);
-  }}
-  el.textContent=msg;
-  el.style.borderColor=ok===false?'#c4413a':(ok?'#2b7d6f':'#dde8e3');
-  el.hidden=!msg;
-}}
-async function pullFeedback(){{
-  if(!canShareFeedback()){{
-    _fbCache=loadLocal();
-    _fbShared=false;
-    return _fbCache;
-  }}
-  try{{
-    const res=await fetch(FB_API,{{cache:'no-store'}});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const data=await res.json();
-    let remote=(data && typeof data==='object' && !Array.isArray(data)) ? data : {{}};
-    const local=loadLocal();
-    // 服务端空、本机有旧批注 → 一次性上载，避免部署后丢本地内容
-    if(!Object.keys(remote).length && Object.keys(local).length){{
-      const up=await fetch(FB_API,{{
-        method:'PUT',
-        headers:{{'Content-Type':'application/json'}},
-        body:JSON.stringify(local)
-      }});
-      if(up.ok) remote=local;
-    }}
-    _fbCache=remote;
-    _fbShared=true;
-    saveLocal(_fbCache);
-    applyFeedbackToDom(document, _fbCache);
-    return _fbCache;
-  }}catch(err){{
-    _fbCache=loadLocal();
-    _fbShared=false;
-    setFbStatus('批注未共享（仅本机）。请用 python -m agent_review.serve 打开', false);
-    return _fbCache;
-  }}
-}}
-async function pushOne(id){{
-  const rec=_fbCache[id];
-  if(!rec) return;
-  if(!_fbShared && !canShareFeedback()){{
-    saveLocal(_fbCache);
-    return;
-  }}
-  try{{
-    const res=await fetch(FB_API+'/'+encodeURIComponent(id),{{
-      method:'PUT',
-      headers:{{'Content-Type':'application/json'}},
-      body:JSON.stringify(rec)
-    }});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    _fbShared=true;
-    delete _fbDirty[id];
-    setFbStatus('批注已同步', true);
-    setTimeout(function(){{ setFbStatus('', true); }}, 1200);
-  }}catch(err){{
-    saveLocal(_fbCache);
-    setFbStatus('同步失败，已暂存本机', false);
-  }}
-}}
-function saveEx(id){{
-  const root=feedbackRoot();
-  if(!root) return;
-  const mark=[...root.querySelectorAll('input[name="ex-'+id+'"]')].find(x=>x.checked);
-  const tx=root.querySelector('textarea#tx-'+id+', textarea[id="tx-'+id+'"]');
-  const note=(tx && tx.value) || '';
-  _fbCache=_fbCache||{{}};
-  _fbCache[id]={{
-    mark: mark? mark.value:'',
-    note: note,
-    updated_at: new Date().toISOString(),
-    by: ''
-  }};
-  _fbDirty[id]=true;
-  saveLocal(_fbCache);
-  // 同步回隐藏模板，避免下次打开克隆到空表单
-  const slot=document.getElementById('slot-'+id);
-  if(slot){{
-    slot.querySelectorAll('input[name="ex-'+id+'"]').forEach(function(inp){{
-      inp.checked = !!(mark && inp.value===mark.value);
-    }});
-    const stx=slot.querySelector('textarea#tx-'+id+', textarea[id="tx-'+id+'"]');
-    if(stx) stx.value=note;
-  }}
-  if(_fbTimer) clearTimeout(_fbTimer);
-  _fbTimer=setTimeout(function(){{ pushOne(id); }}, 400);
-}}
-function exportFeedback(){{
-  const blob=new Blob([JSON.stringify(loadAll(),null,2)],{{type:'application/json'}});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='expert_feedback.json'; a.click();
-}}
-function startFeedbackSync(){{
-  pullFeedback().then(function(){{
-    if(_fbShared) setFbStatus('批注已共享（全员同一份）', true);
-    setTimeout(function(){{ if(_fbShared) setFbStatus('', true); }}, 2000);
-  }});
-  if(_fbPoll) clearInterval(_fbPoll);
-  if(canShareFeedback()){{
-    _fbPoll=setInterval(function(){{
-      if(Object.keys(_fbDirty).length) return;
-      pullFeedback();
-    }}, 15000);
-  }}
-  window.addEventListener('focus', function(){{
-    if(Object.keys(_fbDirty).length) return;
-    pullFeedback();
-  }});
-}}
-startFeedbackSync();
 function filterList(){{
   const q=(document.getElementById('q').value||'').toLowerCase();
   let shown=0;
@@ -3491,7 +3335,6 @@ function openItem(id){{
   root.innerHTML = slot.innerHTML;
   document.body.classList.add('mode-detail');
   if(location.hash !== '#item/'+id) location.hash = 'item/'+id;
-  restoreOne(root);
   bindDev(root);
   highlightRow(id);
   const main=document.querySelector('.main');
