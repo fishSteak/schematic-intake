@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Build sealed context_store. Seed from BoardKG; optional SDK enrichment."""
+"""Build sealed context_store. Seed from BoardKG; optional direct LLM enrichment."""
 
 from __future__ import annotations
 
-from kernel.runtime import node_executable
+from agent_review.llm_auxiliary import run_jobs
 
 import hashlib
-import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -39,7 +37,10 @@ def run(
     planned = list(enumeration.get("planned_context") or [])
     kg_path = o / "board_kg.json"
     # Seeding code and extracted parameter changes must invalidate sealed reuse.
-    inputs = ["material-params-v2", _hash_file(o / "materials.json")]
+    inputs = ["material-params-v2", "context-llm-v1", str(use_sdk), _hash_file(o / "materials.json")]
+    if use_sdk:
+        from agent_review.llm import load_profile
+        inputs.append(load_profile(task="context").signature())
     for cache in (board / "cache" / "mpn", o / "cache" / "mpn"):
         for pt in sorted(cache.glob("*/pintable.json")):
             inputs.append(str(pt.relative_to(board)) + ":" + _hash_file(pt))
@@ -62,32 +63,9 @@ def run(
     if use_sdk:
         jobs = build_context_jobs(planned)
         write_json(o / "context_jobs.json", {"jobs": jobs})
-        orch = ROOT / "agent_review" / "orchestrator.mjs"
-        if orch.is_file():
-            import os
-
-            env = os.environ.copy()
-            subprocess.run(
-                [
-                    node_executable(),
-                    str(orch),
-                    "--board",
-                    str(board),
-                    "--mode",
-                    "context",
-                    "--concurrency",
-                    str(concurrency),
-                ],
-                check=False,
-                cwd=str(ROOT),
-                env=env,
-            )
-
-    # commit any remaining quarantine from SDK
-    qdir = store.root / "quarantine"
-    for qf in qdir.glob("*.json"):
-        jid = qf.stem
-        store.commit_quarantine(jid, patch_mode=True)
+        result = run_jobs(board, "context", jobs, concurrency=concurrency, store=store)
+        if not result["ok"]:
+            raise RuntimeError("LLM context enrichment failed; inspect sdk_context_result.json")
 
     seal = store.seal(allow_waive=False)
     cov = store.ready_coverage()

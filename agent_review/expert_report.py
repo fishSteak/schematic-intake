@@ -283,13 +283,13 @@ def _write_expert_deliverables(
     }
 
 
-def write_expert_deliverables(o, board, verdicts, *, materials=None, report_data=None):
+def write_expert_deliverables(o, board, verdicts, *, materials=None, report_data=None, generate_prose=True):
     """Resolve prose before publishing; restore every previously published file on failure."""
     import shutil
     import tempfile
     from agent_review.detail_view import enabled, digest
     source_digest=digest(verdicts)
-    if enabled(o):
+    if enabled(o) and generate_prose:
         from agent_review.detail_prose_recovery import recover
         from agent_review.detail_prose import ensure
         recover(board,verdicts)

@@ -1,89 +1,100 @@
-# Codex 自动化运行（2026-10-22 更新）
+# 原理图自动化评审
 
-本仓是原理图自动化评审的唯一开发入口。Agent 后端已切换为本机 **Codex CLI**，不再导入或调用 Cursor SDK，也不需要 Cursor API 密钥。
+本仓是原理图自动化评审的唯一开发入口。`feat/web-review-workbench` 提供 **本机网页 + Python 评审编排 + 直接 LLM API**。应用负责材料、上下文、工具调用、结构化校验和报告发布，不依赖 Codex CLI、登录态或配置文件。
 
-## 环境与鉴权
+## 初始化与启动
 
-- Python：先安装 `requirements.txt` 中的依赖，推荐使用下方的项目虚拟环境。
-- Node.js：要求 >=24.0.0（见根目录 `package.json`）。运行时先读 `SCHEMATIC_NODE`，其次查 PATH，再尝试 Codex 提供的 `CODEX_MCP_NODE_PATH`；前端构建还需要可用的 npm。
-- Codex：默认调用 PATH 中的 `codex`，可用 `SCHEMATIC_CODEX` 指定可执行文件。
-- 鉴权：新环境执行 `codex login status`，未登录时按 CLI 提示完成登录。不复制登录凭据、不读取凭据内容、不依赖 Cursor 登录态。
-- 模型默认继承用户的 Codex 配置；可用 `AGENT_JUDGE_MODEL` 显式指定。未指定时不再发送 Cursor 模型名。
-- `report_ui/dist` 是本地构建产物，不进入 Git；首次 clone 后必须构建前端。根目录与 `sdk/` 的 `dependencies` 均为空，真实 Agent 通过本机 Codex CLI 执行，不需要安装 Cursor/OpenAI npm SDK。
+需要 Python 3.12、Node.js >=24 和 npm。Node 用于 EPRJ2 解析与前端构建；可用 `SCHEMATIC_NODE` 指定 Node 可执行文件。
 
-## 首次 clone 后初始化
+Linux / macOS，在仓库根目录执行：
 
-在仓库根目录执行以下 Windows PowerShell 命令。直接使用虚拟环境中的 Python，无须运行 `Activate.ps1`：
+```bash
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+npm --prefix report_ui ci --ignore-scripts
+npm --prefix report_ui run build
+.venv/bin/python -m web_workbench --port 8765
+```
+
+Windows PowerShell：
 
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 npm --prefix report_ui ci --ignore-scripts
 npm --prefix report_ui run build
-codex login status
+.\.venv\Scripts\python.exe -m web_workbench --port 8765
 ```
 
-依赖版本按 Python 3.12 / Windows x64 验证（见 `requirements.txt`）；其他 Python 版本需另行验证。
+打开 `http://127.0.0.1:8765`。服务仅监听本机；前后端同源。工作台数据默认保存在 `.workbench/`，可通过 `--data-dir` 或 `SCHEMATIC_WORKBENCH_HOME` 设置。运行进程独立于浏览器，刷新或关闭页面不会停止评审。停止任务使用页面按钮。
 
-下文运行和验证命令中的 `py` 表示已安装项目依赖的 Python。若按上面的 `.venv` 初始化，请将命令开头的 `py` 替换为 `.\.venv\Scripts\python.exe`；不需要激活虚拟环境。
+`report_ui/dist` 不进入 Git，新 clone 后需要构建。开发前端可运行 `npm --prefix report_ui run dev`，Vite 的 `/api` 和 `/reports` 代理指向本机 8765 端口。
 
-## Git 内容范围
+## 使用工作台
 
-- 保留业务源码、规则、测试、依赖清单与锁文件，以及开发和运行所需文档。
-- `.venv/`、`node_modules/`、`report_ui/dist/`、Python 缓存和大部分 `boards/*/review_out/` 已忽略；不需为 push 删除这些本地文件。
-- 保留 `boards/<板>/*.json` 配置及 `boards/<板>/review_out/board_kg.json`：前者描述材料和评审配置，后者目前仍用于离线验证与既有入口，不能将整个 `review_out` 的例外直接去掉。
-- 保留 `materials/` 原始输入及 `migration_baseline/` 迁移/回归基准，使新 clone 能准备材料并执行基准验证。生成报告、资料查询缓存和板级历史不等同于这些受控输入。
+1. 选择仓库已有板卡，或新建项目并导入原理图 PDF、BOM、TEL 网表、EPRJ2、工况与设计任务书。替换原项目的材料会创建工作台副本。
+2. 执行材料预检，在“运行评审”选择规则、对象和执行模式。
+3. 查看任务事件和结果；报告通过校验后发布为独立快照。失败或停止不会覆盖上一版报告。
+4. 在三栏报告中筛选问题、定位原理图、填写复核意见、比较历史版本或下载报告。复核意见与机器结论分别保存。
+5. 配置模型后，可围绕当前对象追问，并设置单对象复核。问答引用会核对报告原文，不修改正式结论。
 
-## 运行
+| 模式 | 行为 |
+|---|---|
+| 材料检查 | 解析本地材料、准备事实与原理图索引，不调用 LLM |
+| 程序检查 | 执行选定程序规则，发布程序结果；模型分析明确标为未生成 |
+| AI 深审 | 按选定规则直接调用配置的 LLM，完成查证、分析、自检、结构化交付和校验 |
 
-在本 README 所在的仓库根目录执行：
+默认规则范围来自 `rules/product_center_15.json`：当前 30 项，其中 16 项需要模型评审、14 项为程序检查。工程结论“不通过”与任务执行“失败”是不同状态。
 
-```powershell
-# 材料准备，包含查参；不运行对象判定
-py -m kernel.run --board boards/0918全量
+## 模型设置
 
-# 用当前材料重建密封事实，不运行对象判定
-py -m agent_review.run --board boards/0918全量 --only-stage context_build --rebuild-context
+在网页“模型设置”中填写 API 地址、模型名和凭据，保存后执行连接测试。首版使用 OpenAI-compatible Chat Completions 协议，支持对应兼容服务和本机模型 API。不同服务的工具、图片、JSON Schema 与流式能力需要按实际情况配置；连接测试只报告已实测项目，图片能力不会冒充已验证。
 
-# 全量评审；续跑仅复用契约有效且上下文仍一致的对象卡
-py -m agent_review.run --board boards/0918全量 --resume
+也可为 Python 命令行入口配置：
 
-# 报告
-py -m agent_review.serve --board boards/0918全量
+```bash
+export SCHEMATIC_LLM_BASE_URL='http://127.0.0.1:11434/v1'
+export SCHEMATIC_LLM_MODEL='填写实际已部署模型名'
+# 服务需要密钥时，在本机设置 SCHEMATIC_LLM_API_KEY。
 ```
 
-默认范围来自 `rules/product_center_15.json`（当前 30 项），不受上次缓存的局部运行范围影响。只有显式传 `--rule-ids` 才执行子集。当前 16 项走 Agent，其他项走程序。
+或将 `SCHEMATIC_LLM_PROFILE` 指向私有 JSON 配置。字段包括 `provider`、`base_url`、`model`、`api_key_env`、`timeout`、`max_tokens`、`max_turns`、`max_requests`、`supports_tools`、`supports_images`、`structured_output`、`stream`。可以用 `profiles` 和 `tasks` 分别指定 `review`、`evidence`、`prose`、`remediation` 等任务。不要将密钥提交到仓库；网页配置保存于本机私有文件，API 返回脱敏信息，报告不包含配置文件。
 
-深审保留同一会话三轮：分析 → 自检 → 落卡。传输使用 `codex exec --json`，后续轮次按明确 session ID 调用 `codex exec resume`；每个对象拥有独立会话。CLI 使用 workspace-write 沙箱和非交互执行。
+模型通过应用提供的材料读取、PDF 页面、网表查询、算术、直流求解和公开来源查找工具取得证据。模型不执行 shell 或直接写正式产物。引用、结构、工程契约和报告门禁失败时保留错误记录，不发布未经校验的结果。未配置服务时 AI 功能明确报错，没有 CLI 回退。
 
-`--enrich-context` 可选启用 Codex 补充上下文；旧名 `--use-sdk-context` 仅保留为兼容别名。正常上下文重建使用确定性事实种子，不需要模型补全。
+## 命令行与续跑
 
-断点续跑拒绝复用：缺卡、坏 JSON、契约无效、失败标记、离线演练卡、中断占位卡、缺哈希或哈希不匹配。程序项照常重算。正式卡不得手改来通过门禁。
+将下面的 `python` 替换为项目虚拟环境中的 Python：
+
+```bash
+python -m agent_review.run --board boards/0918全量 --resume
+python -m agent_review.run --board boards/0918全量 --rule-ids P05-A01 --dry-run
+python -m agent_review.serve --board boards/0918全量
+```
+
+`--enrich-context`（旧别名 `--use-sdk-context`）使用 LLM 补充上下文；通常的确定性事实重建不需要它。`--dry-run` 不生成模型分析文案，但通用准备阶段仍可能联网查参；需要无模型的工作流时使用网页“材料检查 / 程序检查”。
+
+网页续跑仅用于失败、停止或中断的任务；材料、规则、对象范围和模型策略须一致。应用按源文件哈希、提示词、工具实现和模型配置校验检查点，拒绝复用无效或过期结果。程序项重算；已完成报告不可变。停止会阻止后续派发和迟到发布，远端已经发送的请求是否继续计费取决于供应商。
 
 ## 验证
 
-先完成上述依赖安装和前端构建，再执行；`verify_standalone.py` 需要本地 `report_ui/dist`，不会替你构建前端。
-
-注意：当前 `--dry-run` 不是全链路离线保证。`verify_standalone.py` 的报告汇总阶段在缺少分析文案缓存时仍可能调用真实 Codex，使用网络及模型额度；仅需本地代码检查时，运行单元测试和前端构建即可。
-
-```powershell
-py -m unittest discover -s tests -v
-# 完整流程验证：可能调用真实 Codex，先确认鉴权和额度
-py scripts/verify_standalone.py
-# 真实 Codex 三轮文件交付测试（临时目录，不触及正式板卡）
-# 使用已配置的 Node 运行 scripts/codex_smoke.mjs
+```bash
+.venv/bin/python -m unittest discover -s tests -v
+node --test tests/*.test.mjs
+npm --prefix report_ui run build
+.venv/bin/python scripts/verify_standalone.py
 ```
 
-### 2026-10-20 迁移验证记录（历史）
+`verify_standalone.py` 使用隔离目录与固定 P05-A01 程序规则，核对求解器和程序检查迁移基线，并验证报告 HTTP 读取。LLM 协议测试使用模拟 HTTP，不能替代真实模型深审验收。
 
-以下是迁移时本机的验证记录，不代表新 clone 已安装依赖、已登录或已完成评审；本地结果与历史目录不会随代码完整推送，需在目标环境重新验证。
+本分支已验证本机程序检查链路：0918 板 P05-A01 的 51 个对象、报告门禁、网页 PDF 联动、复核保存、历史比较和导出。真实服务的对象深审与问答验收仍需要配置可用模型，不能用协议测试或程序结果替代。
 
-当时已验证 Codex 登录、真实响应、同会话三轮和 JSON 文件交付，并通过新执行逻辑测试及独立运行验证。`migration_baseline/codex_smoke.json` 保存当时的真实三轮测试结果。
+## 仓库内容
 
-当时 0918 板材料重建记录：94 个器件、70 个网络、44 份规格书命中、原理图位号覆盖 94/94；来源路径可访问，密封上下文 184/184。旧知识图、索引、上下文和门禁快照保存在当时的本地 `boards/0918全量/history/`。
+- `kernel/`：材料解析与程序检查；`solve_prog/`：求解模块；`agent_review/llm/`：直接模型运行时。
+- `web_workbench/`：FastAPI、SQLite、后台任务和报告快照；`report_ui/`：Vue 工作台。
+- `.workbench/`、`.venv/`、`node_modules/`、前端构建、生成报告与大部分运行缓存均已忽略。
+- `materials/`、板卡配置、固定知识图与 `migration_baseline/` 保留，用于可复现验证。禁止手改正式判定卡、上下文或 verdicts 来通过门禁。
+- `sdk_*` 产物字段与部分旧命名保留读取兼容；Python 活跃入口已使用 LLM API。历史 `.mjs` Codex worker 和 `scripts/codex_smoke.mjs` 仅留作迁移记录，不属于工作台执行链路。
 
-该次验证没有启动全量对象深审。`automation_preflight.json` 仅表示准备状态，不代表整板评审完成；最终仍以目标环境中正常全量流程生成的 `agent_review_gate.json` 为准。部分料号参数可能仍需补证；查不到时保持缺口，不以猜值通过。
-
-`sdk_*.json`、`use_sdk` 等少量内部字段名为了兼容旧报告与脚本暂时保留，实际执行后端均为 Codex CLI。历史迁移资料见 `docs/迁移到单仓.md`，归档旧文档见 `archive/`。
-
-官方接口说明：https://developers.openai.com/codex/noninteractive
+竞品、方案与完整验收范围见[网页交互竞品调研与方案](docs/网页交互竞品调研与方案.md)。历史迁移见 `docs/迁移到单仓.md` 与 `archive/`。

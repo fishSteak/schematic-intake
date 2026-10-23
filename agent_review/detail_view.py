@@ -99,7 +99,7 @@ def evidence_rows(items):
 
 
 def verify_prose_provenance(out, prose):
-    """Require the sidecar to be byte-equivalent JSON to a real completed CLI output."""
+    """Require the sidecar to be byte-equivalent JSON to a real completed model output."""
     meta=prose.get('_meta',{})
     batch=(Path(out)/meta.get('batch_output','')).resolve()
     if not batch.is_relative_to(Path(out).resolve()) or not batch.is_file():

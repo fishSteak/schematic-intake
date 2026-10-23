@@ -77,8 +77,8 @@ def fingerprint():
     paths = ["agent_review/review_contract.py", "agent_review/schemas/review.v1.schema.json",
              "rules/review_contract_rules.json", "agent_review/prompts/judge/review_v1.common.md",
              "agent_review/prompts/judge/review_v1.power.md", "agent_review/prompts/judge/review_v1.self_check.md",
-             "agent_review/prompts/judge/P11-A01.analysis.md", "agent_review/orchestrator.mjs",
-             "agent_review/local_workspace.mjs", "agent_review/codex_agent.mjs"]
+             "agent_review/prompts/judge/P11-A01.analysis.md", "agent_review/llm_dispatch.py",
+             "agent_review/llm_tasks.py", "agent_review/llm_tools.py", "agent_review/llm/runtime.py"]
     h = hashlib.sha256()
     for name in paths:
         h.update(name.encode()); h.update((ROOT / name).read_bytes())

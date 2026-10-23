@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
-"""电容 Vr Agent 查参：按 MPN 批跑 orchestrator --mode mpn_vr，结果写入 cache。"""
+"""电容 Vr 查参：应用直接调用 LLM，验证后写入材料 cache。"""
 
 from __future__ import annotations
 
-from kernel.runtime import node_executable
-from kernel.util import sdk_cwd
+from agent_review.llm_auxiliary import run_jobs
 
 import json
-import os
-import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -66,7 +62,7 @@ def _validate_agent_rec(doc: dict[str, Any], mpn: str) -> dict[str, Any] | None:
 
 def prepare_mpn_vr_jobs(board: Path, mpns: list[str]) -> dict[str, Any]:
     """写出 mpn_vr_jobs.json；已有有效缓存的跳过。"""
-    board = Path(sdk_cwd(board.resolve(), preferred=str(board)))
+    board = Path(board).resolve()
     o = out_dir(board)
     jobs: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -78,7 +74,7 @@ def prepare_mpn_vr_jobs(board: Path, mpns: list[str]) -> dict[str, Any]:
         cached = read_agent_vr_cache(board, m)
         if cached is not None and (
             cached.get("value_v") is not None or cached.get("error")
-        ):
+        ) and cached.get("error") not in {"agent_did_not_write", "invalid_json"}:
             continue
         safe = safe_mpn_dir(m)
         out_path = o / "cache" / "mpn" / safe / "vr_agent.json"
@@ -101,39 +97,14 @@ def run_mpn_vr_jobs(
     concurrency: int = 4,
     model: str | None = None,
 ) -> dict[str, Any]:
-    """准备 jobs → 调 orchestrator → 校验并规范化缓存文件。"""
-    board = Path(sdk_cwd(board.resolve(), preferred=str(board)))
+    """准备 jobs → LLM 工具循环 → 校验并规范化缓存文件。"""
+    board = Path(board).resolve()
     prepared = prepare_mpn_vr_jobs(board, mpns)
     jobs = list(prepared.get("jobs") or [])
     if not jobs:
         return {"ok": True, "jobs": 0, "skipped": True, "reason": "all_cached_or_empty"}
 
-    orch = ROOT / "agent_review" / "orchestrator.mjs"
-    model = model or os.environ.get("AGENT_JUDGE_MODEL") or os.environ.get(
-        "RATED_HUNT_AGENT_MODEL", "auto"
-    )
-    cmd = [
-        node_executable(),
-        str(orch),
-        "--board",
-        str(board),
-        "--mode",
-        "mpn_vr",
-        "--concurrency",
-        str(max(1, min(concurrency, 4))),
-        "--model",
-        str(model),
-    ]
-    env = os.environ.copy()
-    proc = subprocess.run(
-        cmd,
-        cwd=str(ROOT),
-        env=env,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
+    result = run_jobs(board, "mpn_vr", jobs, concurrency=concurrency, model=model)
     ok_n = 0
     bad_n = 0
     for j in jobs:
@@ -180,13 +151,13 @@ def run_mpn_vr_jobs(
             bad_n += 1
 
     return {
-        "ok": proc.returncode in (0, 2),
-        "returncode": proc.returncode,
+        "ok": result["ok"],
+        "returncode": result["returncode"],
         "jobs": len(jobs),
         "ok_n": ok_n,
         "bad_n": bad_n,
-        "stdout": (proc.stdout or "")[-1500:],
-        "stderr": (proc.stderr or "")[-1500:],
+        "stdout": result["stdout"],
+        "stderr": result["stderr"],
     }
 
 

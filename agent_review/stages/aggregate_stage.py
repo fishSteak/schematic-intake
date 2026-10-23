@@ -16,13 +16,15 @@ def run(
     *,
     materials: dict[str, Any] | None = None,
     context_meta: dict[str, Any] | None = None,
+    generate_prose: bool = True,
     figure_rule_ids: list[str] | None = None,
     figure_objects: list[str] | None = None,
 ) -> dict[str, Any]:
     o = out_dir(board)
     # Regenerate only explicitly opted-in summaries when their review or prompt changed.
     from agent_review.remediation import run_enabled
-    run_enabled(board,rule_ids=figure_rule_ids,objects=figure_objects)
+    if generate_prose:
+        run_enabled(board,rule_ids=figure_rule_ids,objects=figure_objects)
     # 出图读 agent_jobs，必须在汇总写报告之前；已有图则按指纹跳过。
     from agent_review.stress_figures import run as run_stress_figures
 
@@ -80,6 +82,7 @@ def run(
         agg["verdicts"],
         materials=materials,
         report_data=data,
+        generate_prose=generate_prose,
     )
     print(f"OK\treport_data {paths.get('report_data.json')}")
     return agg

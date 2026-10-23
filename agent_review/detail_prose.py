@@ -4,24 +4,23 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import datetime
 import json
-import os
 from pathlib import Path
 import re
-import subprocess
-import sys
+import uuid
 from agent_review.batching import safe_object_name
 from agent_review.detail_view import digest, source_hash, scenario_rows, explicit_primary, native, QUANTITY
-from kernel.runtime import node_executable
 from kernel.util import ROOT, read_json, write_json, resolve_board_path
+from agent_review.llm import LLMClient, OutputValidationError, generate_json, load_profile, profile_fingerprint
 
 from agent_review.analysis_contract import VERSION as ANALYSIS_VERSION, assumptions_for, required_assumptions, step_schema, validate_links, has_direct_analysis
 PROMPT=ROOT/'agent_review/prompts/judge/detail_prose_v2.md'
 LEGACY_PROMPT=ROOT/'agent_review/prompts/judge/detail_prose_legacy_v1.md'
 LEGACY_SCHEMA=ROOT/'agent_review/schemas/detail-prose.v1.schema.json'
-WORKER=ROOT/'agent_review/detail_prose_agent.mjs'
 
-def policy_hash():
-    return digest([p.read_text(encoding='utf-8') for p in (PROMPT,WORKER,Path(__file__),ROOT/'agent_review/analysis_contract.py')])
+def policy_hash(profile=None):
+    sources=[PROMPT,Path(__file__),ROOT/'agent_review/analysis_contract.py',*sorted((ROOT/'agent_review/llm').glob('*.py'))]
+    return digest({'sources':[p.read_text(encoding='utf-8') for p in sources],
+                   'profile':profile_fingerprint(profile,task='prose')})
 
 def path_for(out,card):
     return Path(out)/'detail_prose'/safe_object_name(card['rule_id'])/(safe_object_name(card['object'])+'.json')
@@ -110,41 +109,63 @@ def schema():
                  analysis_steps=step_schema(),citations={'type':'array','items':{'type':'object','required':['source','quote'],'additionalProperties':False,'properties':{'source':{'enum':['card','analysis']},'quote':string}}})
     return {'type':'object','additionalProperties':False,'required':['records'],'properties':{'records':{'type':'array','items':{'type':'object','additionalProperties':False,'required':list(props),'properties':props}}}}
 
-def generate_batch(board,cards):
+def generate_batch(board,cards,*,profile=None,on_event=None,cancelled=None):
+    from agent_review.llm_tasks import runtime_options
+    options=runtime_options()
+    if on_event is None:on_event=options['on_event']
+    if cancelled is None:cancelled=options['cancelled']
+    profile=profile or load_profile(task='prose')
+    policy=policy_hash(profile)
     out=board/'review_out';contexts=[context(out,c) for c in cards]
     key=digest([c['source_hash'] for c in contexts])[:20]
     path=out/'detail_prose'/'runs'/(key+'-'+datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')+'.json')
     write_json(path.with_suffix('.context.json'),{'records':contexts})
     write_json(path.with_suffix('.schema.json'),schema())
-    env=os.environ.copy();env.setdefault('SCHEMATIC_PYTHON',sys.executable)
-    if not env.get('SCHEMATIC_CODEX'):
-        candidates=list((Path(os.environ['LOCALAPPDATA'])/'OpenAI/Codex/bin').glob('*/codex.exe'))
-        if not candidates:raise RuntimeError('Codex CLI executable missing')
-        env['SCHEMATIC_CODEX']=str(max(candidates,key=lambda p:p.stat().st_mtime))
-    for attempt in range(3):
-        result=subprocess.run([node_executable(),str(WORKER),str(board),str(path),str(PROMPT),str(path.with_suffix('.run.json'))],cwd=ROOT,env=env)
-        if result.returncode:continue
-        data=read_json(path)
-        write_json(path.with_suffix(f'.attempt{attempt+1}.json'),data)
-        write_json(path.with_suffix(f'.attempt{attempt+1}.run.json'),read_json(path.with_suffix('.run.json')))
-        write_json(path.with_suffix(f'.attempt{attempt+1}.context.json'),read_json(path.with_suffix('.context.json')))
-        write_json(path.with_suffix(f'.attempt{attempt+1}.schema.json'),schema())
-        records=data.get('records',[])
-        bykey={r.get('key'):r for r in records};errors=[]
-        if len(records)!=len(contexts) or len(bykey)!=len(contexts):errors.append('batch count mismatch')
-        for ctx in contexts:errors.extend(ctx['key']+': '+e for e in validate(bykey.get(ctx['key'],{}),ctx))
-        write_json(path.with_suffix('.validation.json'),{'errors':errors,'attempt':attempt+1})
-        if errors:
-            write_json(path.with_suffix('.context.json'),{'records':contexts,'validation_feedback':errors,'instruction':'修正上一轮校验错误；分析思路不得列已知材料参数值或计算结果；合并条件与推导，按 key_assumptions 引用并保留条件性。保留当前对象原有标识（器件编号、网名等），标识中的数字不属于计算数值；不要用本条对象等通用称呼替代当前对象标识。仅写核查和推导过程。'})
-            print('DETAIL_RETRY',key,errors,flush=True);continue
-        run=read_json(path.with_suffix('.run.json'))
-        for card,ctx in zip(cards,contexts):
-            if context(out,card)['source_hash']!=ctx['source_hash']:raise RuntimeError('source changed during prose generation')
-            row=bykey[ctx['key']]
-            row['_meta']={'policy_hash':policy_hash(),'output_hash':digest(row),'run_id':run['id'],'model':'gpt-6.1-sol',
-                          'prompt_hash':digest(PROMPT.read_text(encoding='utf-8')),'schema_hash':digest(schema()),'batch_output':str(path.relative_to(out)),'generated_at':datetime.datetime.now(datetime.timezone.utc).isoformat()}
-            write_json(path_for(out,card),row)
-        print('DETAIL_BATCH_READY',key,len(cards),flush=True);return
+    prompt=PROMPT.read_text(encoding='utf-8')+'\n当前通过直接模型API执行。上下文和契约已随请求完整提供；直接返回符合契约的JSON，不访问文件、不写文件。来源路径仅用于引用定位。'
+    with LLMClient(profile) as client:
+        for attempt in range(3):
+            run={'id':'llm-prose-'+uuid.uuid4().hex,'status':'running','policy_hash':policy,
+                 'profile_hash':profile.signature(),'provider':profile.provider,'model':profile.model,
+                 'started_at':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+            write_json(path.with_suffix('.run.json'),run)
+            supplied=read_json(path.with_suffix('.context.json'))
+            try:
+                data,metadata=generate_json(prompt,supplied,schema(),client=client,on_event=on_event,cancelled=cancelled)
+            except OutputValidationError as error:
+                errors=[str(error)]
+                run.update(status='error',error=str(error),metadata=client.metadata())
+                write_json(path.with_suffix('.run.json'),run)
+                write_json(path.with_suffix(f'.attempt{attempt+1}.run.json'),run)
+                write_json(path.with_suffix('.validation.json'),{'errors':errors,'attempt':attempt+1})
+                write_json(path.with_suffix('.context.json'),{'records':contexts,'validation_feedback':errors})
+                continue
+            except Exception as error:
+                run.update(status='error',error=type(error).__name__,metadata=client.metadata())
+                write_json(path.with_suffix('.run.json'),run)
+                raise
+            run.update(status='completed',model=metadata['model'],provider=metadata['provider'],metadata=metadata,
+                       completed_at=datetime.datetime.now(datetime.timezone.utc).isoformat())
+            write_json(path,data);write_json(path.with_suffix('.run.json'),run)
+            write_json(path.with_suffix(f'.attempt{attempt+1}.json'),data)
+            write_json(path.with_suffix(f'.attempt{attempt+1}.run.json'),run)
+            write_json(path.with_suffix(f'.attempt{attempt+1}.context.json'),supplied)
+            write_json(path.with_suffix(f'.attempt{attempt+1}.schema.json'),schema())
+            records=data.get('records',[])
+            bykey={r.get('key'):r for r in records};errors=[]
+            if len(records)!=len(contexts) or len(bykey)!=len(contexts):errors.append('batch count mismatch')
+            for ctx in contexts:errors.extend(ctx['key']+': '+e for e in validate(bykey.get(ctx['key'],{}),ctx))
+            write_json(path.with_suffix('.validation.json'),{'errors':errors,'attempt':attempt+1})
+            if errors:
+                write_json(path.with_suffix('.context.json'),{'records':contexts,'validation_feedback':errors,'instruction':'修正上一轮校验错误；分析思路不得列已知材料参数值或计算结果；合并条件与推导，按 key_assumptions 引用并保留条件性。保留当前对象原有标识（器件编号、网名等），标识中的数字不属于计算数值；不要用本条对象等通用称呼替代当前对象标识。仅写核查和推导过程。'})
+                print('DETAIL_RETRY',key,errors,flush=True);continue
+            for card,ctx in zip(cards,contexts):
+                if context(out,card)['source_hash']!=ctx['source_hash']:raise RuntimeError('source changed during prose generation')
+                row=dict(bykey[ctx['key']])
+                row['_meta']={'policy_hash':policy,'profile_hash':profile.signature(),'output_hash':digest(row),'run_id':run['id'],
+                              'provider':metadata['provider'],'model':metadata['model'],
+                              'prompt_hash':digest(PROMPT.read_text(encoding='utf-8')),'schema_hash':digest(schema()),'batch_output':str(path.relative_to(out)),'generated_at':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+                write_json(path_for(out,card),row)
+            print('DETAIL_BATCH_READY',key,len(cards),flush=True);return
     raise RuntimeError(f'detail prose failed: {key}; publication not started')
 
 def ensure(board,verdicts,objects=None):

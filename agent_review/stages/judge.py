@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Judge stage: fine batches via Codex orchestrator, or dry-run pending cards."""
+"""Judge stage: direct LLM API batches, or explicit dry-run pending cards."""
 
 from __future__ import annotations
 
-from kernel.runtime import node_executable
-
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -485,7 +482,7 @@ def finalize_card(board: Path, kg: dict[str, Any], rid: str, obj: str) -> list[s
     completed = next((r for r in runs if current and current==result_attempt and job and r.get('job_id')==job['job_id'] and r.get('ok')),None)
     if not completed:
         return ['no successful current model run for this object']
-    execution={'fingerprint':job['execution_hash'],'run_id':completed.get('run'),
+    execution={'fingerprint':job['execution_hash'],'run_id':completed.get('run'),'model':completed.get('model'),'provider':completed.get('provider'),
                'self_check':job.get('self_check',True)}
     if job.get('autonomous_evidence'):
         from agent_review.evidence_loop import validate_object_research,sha as evidence_sha
@@ -523,7 +520,7 @@ def finalize_card(board: Path, kg: dict[str, Any], rid: str, obj: str) -> list[s
         runs = read_json(run_path).get('results',[]) if run_path.is_file() else []
         card['_meta']['run_id'] = next((r.get('run') for r in runs if obj in str(r.get('job_id','')).split('::')),None)
         import os
-        card['_meta']['model_requested'] = os.environ.get('AGENT_JUDGE_MODEL','auto')
+        card['_meta']['model_requested'] = completed.get('model')
         write_json(p, card)
         for suffix in (".invalid.json", ".failed.json"):
             p.with_suffix(suffix).unlink(missing_ok=True)
@@ -671,12 +668,15 @@ def run(
                             if recovered:
                                 job['checkpoint_root'] = recovered['root']
                                 job['resume_stage'] = recovered['stage']
-                elif hashes:
-                    write_json(slice_path, {"deps": deps, "hashes": hashes})
+                else:
+                    wb=build_judge_workbench(board,kg,obj,rid,deps=deps,hashes=hashes)
+                    write_json(slice_path,wb)
+                    if not dry_run:
+                        job['execution_hash']=execution_hash(rid,wb,store.execution_material_hash)
+                        job['self_check']=True
             except Exception as exc:
-                if job.get('contract_version') == 'review.v1':
-                    preflight_fail.add((rid,obj))
-                    write_json(out_p.with_suffix('.failed.json'), {'error':str(exc), 'phase':'contract_preflight'})
+                preflight_fail.add((rid,obj))
+                write_json(out_p.with_suffix('.failed.json'), {'error':str(exc), 'phase':'contract_preflight'})
 
     dispatch = []
     for job in jobs:
@@ -692,32 +692,8 @@ def run(
     write_json(o / "judge_jobs.json", {"jobs": dispatch, "concurrency": concurrency, "reused_n": len(reused),"attempt_id":attempt_id})
 
     if not dry_run and dispatch:
-        import os
-
-        orch = ROOT / "agent_review" / "orchestrator.mjs"
-        # AGENT_JUDGE_MODEL overrides the user-configured Codex model.
-        model = os.environ.get("AGENT_JUDGE_MODEL", "auto")
-        cmd = [
-            node_executable(),
-            str(orch),
-            "--board",
-            str(board),
-            "--mode",
-            "critique" if critique else "judge",
-            "--concurrency",
-            str(concurrency),
-            "--model",
-            model,
-        ]
-        if resume and not critique:
-            cmd.append("--resume")
-
-        env = os.environ.copy()
-        import sys
-        env.setdefault("SCHEMATIC_PYTHON", sys.executable)
-        proc = subprocess.run(cmd, cwd=str(ROOT), env=env)
-        if proc.returncode not in (0, 2):
-            raise RuntimeError(f"orchestrator failed code={proc.returncode}")
+        from agent_review.llm_dispatch import dispatch as dispatch_llm
+        dispatch_llm(board, concurrency=concurrency)
 
     done = 0
     failed = 0

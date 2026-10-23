@@ -3,12 +3,10 @@
 
 from __future__ import annotations
 
-from kernel.runtime import node_executable
-from kernel.util import sdk_cwd
+from agent_review.llm_auxiliary import run_jobs
 
 import json
 import os
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -63,37 +61,12 @@ def run_agent_path_draft(
     concurrency: int = 2,
     model: str = "auto",
 ) -> dict[str, Any]:
-    """Invoke orchestrator.mjs --mode path_draft."""
-    board = Path(sdk_cwd(board.resolve(), preferred=str(board)))
-    orch = ROOT / "agent_review" / "orchestrator.mjs"
-    cmd = [
-        node_executable(),
-        str(orch),
-        "--board",
-        str(board),
-        "--mode",
-        "path_draft",
-        "--concurrency",
-        str(concurrency),
-        "--model",
-        model,
-    ]
-    env = os.environ.copy()
-    proc = subprocess.run(
-        cmd,
-        cwd=str(ROOT),
-        env=env,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    return {
-        "ok": proc.returncode == 0,
-        "returncode": proc.returncode,
-        "stdout": (proc.stdout or "")[-2000:],
-        "stderr": (proc.stderr or "")[-2000:],
-    }
+    """Run bounded domain reasoning through the configured LLM provider."""
+    board = Path(board).resolve()
+    jobs_path = out_dir(board) / "board_paths" / "path_draft_jobs.json"
+    jobs = json.loads(jobs_path.read_text(encoding="utf-8-sig")).get("jobs") or []
+    return run_jobs(board, "path_draft", jobs, concurrency=concurrency, model=model)
+
 
 
 def maybe_run_path_draft(

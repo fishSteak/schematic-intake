@@ -6,14 +6,12 @@ import json
 import os
 from pathlib import Path
 import re
-import subprocess
 import sys
 import uuid
 import zipfile
 import xml.etree.ElementTree as ET
 from jsonschema import Draft202012Validator
 from kernel.util import ROOT,read_json,write_json,out_dir
-from kernel.runtime import node_executable
 
 SCHEMA=ROOT/'agent_review/schemas/evidence.v1.schema.json'
 PROMPT=ROOT/'agent_review/prompts/evidence_research.md'
@@ -22,7 +20,8 @@ FOLLOWUP=ROOT/'agent_review/prompts/evidence_followup.md'
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def digest(data):return hashlib.sha256(json.dumps(data,ensure_ascii=False,sort_keys=True).encode()).hexdigest()
 def policy_hash():
-    return digest({str(p.relative_to(ROOT)):sha(p) for p in (Path(__file__),SCHEMA,PROMPT,FOLLOWUP,ROOT/'agent_review/evidence_worker.mjs',ROOT/'agent_review/prompts/autonomous_judge.md')})
+    from agent_review.llm import profile_fingerprint
+    return digest({'model':profile_fingerprint(task='evidence'),'files':{str(p.relative_to(ROOT)):sha(p) for p in (Path(__file__),SCHEMA,PROMPT,FOLLOWUP,ROOT/'agent_review/llm_tasks.py',ROOT/'agent_review/llm_tools.py',ROOT/'agent_review/prompts/autonomous_judge.md')}})
 
 def source_revision(board):
     board=Path(board);files={}
@@ -113,7 +112,7 @@ def seal(board,data,run,revision,pairs):
     errors=validate_research(data,board)
     if errors:raise RuntimeError('Evidence failed validation: '+str(errors[:12]))
     hashes={ev['path']:sha(Path(board)/ev['path']) for f in data['facts'] for ev in f['evidence']}
-    sealed={**data,'_provenance':{'run_id':run['id'],'model':os.environ.get('AGENT_JUDGE_MODEL','auto'),
+    sealed={**data,'_provenance':{'run_id':run['id'],'model':run.get('model'),'provider':run.get('provider'),
         'source_revision':revision,'policy_hash':policy_hash(),'pairs':pairs,'evidence_hashes':hashes,
         'validated_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),
         'validation':'schema, file identity, literal source quote; factual interpretation remains model-reviewed'}}
@@ -155,11 +154,21 @@ def run_research(board,enumeration,*,followup=False,force=False):
         task['current_pending_pairs']=[{'rule_id':rid,'object':obj} for rid,obj in sorted(pending_pairs(board,pairs))]
     write_json(output.with_suffix('.context.json'),task);write_json(output.with_suffix('.schema.json'),read_json(SCHEMA))
     job=folder/'job.json';write_json(job,{'board':str(board),'output':str(output),'inputs':inputs,'followup':followup})
-    env=os.environ.copy();env.setdefault('SCHEMATIC_PYTHON',sys.executable)
+    from agent_review.llm_tasks import task as llm_task, atomic_json
+    from agent_review.llm import LLMCancelled, load_profile
+    profile=load_profile(task="evidence")
+    errors=[];messages=None
     for attempt in range(3):
-        subprocess.run([node_executable(),str(ROOT/'agent_review/evidence_worker.mjs'),str(job)],cwd=ROOT,env=env,check=False)
         result_path=folder/'run.json'
-        run=read_json(result_path) if result_path.exists() else {'status':'error','error':'No research run delivered'}
+        try:
+            data,run=llm_task(board,(FOLLOWUP if followup else PROMPT).read_text(encoding='utf-8'),
+                {**task,'previous_research':previous,'validation_errors':errors},read_json(SCHEMA),
+                inputs=inputs,assets_root=task['assets_root'],messages=messages,log_path=folder/'events.jsonl',profile=profile)
+            messages=run['messages']
+            atomic_json(output,data);atomic_json(result_path,run)
+        except LLMCancelled: raise
+        except Exception as exc:
+            run={'status':'error','error':str(exc)};atomic_json(result_path,run)
         if run.get('status')!='completed':
             print('RESEARCH_RETRY',attempt+1,run.get('error'),flush=True);continue
         try:

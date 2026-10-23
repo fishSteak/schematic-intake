@@ -183,6 +183,7 @@ def run(
             ctx["enumeration"],
             materials=ctx.get("materials"),
             context_meta=ctx.get("context"),
+            generate_prose=not dry_run,
         )
         sm = ctx["aggregate"]["verdicts"]["summary"]
         print(
@@ -196,6 +197,7 @@ def run(
             ctx["enumeration"],
             materials=ctx.get("materials"),
             context_meta=ctx.get("context"),
+            generate_prose=not dry_run,
             allow_failed=af,
         )
         print(f"OK\tgate passed={ctx['gate'].get('passed')}")

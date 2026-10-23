@@ -20,7 +20,8 @@ def recover(board,verdicts=None):
         if not data:continue
         verify_prose_provenance(out,data)
         batch=out/data['_meta']['batch_output'];ctxpath=batch.with_suffix('.context.json')
-        if max(dp.PROMPT.stat().st_mtime,dp.WORKER.stat().st_mtime)>ctxpath.stat().st_mtime:continue
+        run=read_json(batch.with_suffix('.run.json'))
+        if run.get('policy_hash')!=dp.policy_hash():continue
         if read_json(batch.with_suffix('.schema.json'))!=dp.schema():continue
         meta=data['_meta']
         # Early pilot outputs already have real run/source evidence; add explicit
@@ -33,11 +34,13 @@ def recover(board,verdicts=None):
     for batch in sorted((out/'detail_prose/runs').glob('*.json')):
         ctxpath=batch.with_suffix('.context.json');runpath=batch.with_suffix('.run.json')
         if not ctxpath.exists() or not runpath.exists():continue
-        # Do not treat outputs from an older prompt/worker/schema as current prose.
-        if max(dp.PROMPT.stat().st_mtime,dp.WORKER.stat().st_mtime)>ctxpath.stat().st_mtime:continue
-        if read_json(batch.with_suffix('.schema.json'))!=dp.schema():continue
+        # A completed old provider/prompt/transport batch cannot acquire a new
+        # execution policy simply because its source card still matches.
+        schema_path=batch.with_suffix('.schema.json')
+        if not schema_path.is_file() or read_json(schema_path)!=dp.schema():continue
         run=read_json(runpath)
         if run.get('status')!='completed' or not run.get('id'):continue
+        if run.get('policy_hash')!=dp.policy_hash():continue
         supplied={r['key']:r for r in read_json(ctxpath)['records']}
         for row in read_json(batch).get('records',[]):
             card=cards.get(row.get('key'))
@@ -46,7 +49,8 @@ def recover(board,verdicts=None):
             if row.get('key') not in supplied or supplied[row['key']]['source_hash']!=current['source_hash']:continue
             if dp.validate(row,current):continue
             data=dict(row)
-            data['_meta']={'policy_hash':dp.policy_hash(),'output_hash':digest(row),'run_id':run['id'],'model':'gpt-6.1-sol',
+            data['_meta']={'policy_hash':dp.policy_hash(),'profile_hash':run.get('profile_hash'),'output_hash':digest(row),'run_id':run['id'],
+                           'model':run.get('model'),'provider':run.get('provider'),
                            'prompt_hash':digest(dp.PROMPT.read_text(encoding='utf-8')),'schema_hash':digest(dp.schema()),
                            'batch_output':str(batch.relative_to(out)),'recovered_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),
                            'recovery':'Individual source-bound record validated against completed original batch; model prose unchanged'}

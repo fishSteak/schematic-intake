@@ -16,6 +16,7 @@ def run(
     *,
     materials: dict[str, Any] | None = None,
     context_meta: dict[str, Any] | None = None,
+    generate_prose: bool = True,
     allow_failed: bool = False,
 ) -> dict[str, Any]:
     o = out_dir(board)
@@ -39,6 +40,7 @@ def run(
         verdicts,
         materials=materials,
         report_data=data,
+        generate_prose=generate_prose,
     )
     gate = run_gate(o, enumeration, allow_failed=allow_failed)
     return gate

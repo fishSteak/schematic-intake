@@ -5,28 +5,26 @@ import datetime
 import hashlib
 import json
 import math
-import os
 from pathlib import Path
 import re
 import shutil
-import subprocess
-import sys
+import uuid
 from jsonschema import Draft202012Validator
 from agent_review.batching import safe_object_name
 from agent_review.review_contract import core, source_hash, validate_review
-from kernel.runtime import node_executable
 from kernel.util import ROOT, read_json, resolve_board_path, write_json
+from agent_review.llm import generate_json, load_profile, profile_fingerprint
 
 PROMPT=ROOT/'agent_review/prompts/judge/remediation_v1.md'
 SCHEMA=ROOT/'agent_review/schemas/remediation.v1.schema.json'
-WORKER=ROOT/'agent_review/remediation_agent.mjs'
 VERSION='remediation.v1'
 
 
-def fingerprint():
+def fingerprint(profile=None):
     h=hashlib.sha256()
-    for p in (Path(__file__),PROMPT,SCHEMA,WORKER):
+    for p in (Path(__file__),PROMPT,SCHEMA,*sorted((ROOT/'agent_review/llm').glob('*.py'))):
         h.update(p.name.encode());h.update(p.read_bytes())
+    h.update(profile_fingerprint(profile,task='remediation').encode())
     return h.hexdigest()
 
 
@@ -78,7 +76,11 @@ def load(out,card):
     return data
 
 
-def generate(board,rid,obj,force=False):
+def generate(board,rid,obj,force=False,*,profile=None,on_event=None,cancelled=None):
+    from agent_review.llm_tasks import runtime_options
+    options=runtime_options()
+    if on_event is None:on_event=options['on_event']
+    if cancelled is None:cancelled=options['cancelled']
     out=board/'review_out';card=read_json(out/'agent_jobs'/rid/(safe_object_name(obj)+'.json'))
     errors=validate_review(card,board=board,rule_id=rid,obj=obj)
     if errors:raise RuntimeError('review must be valid before remediation: '+'; '.join(errors))
@@ -88,25 +90,35 @@ def generate(board,rid,obj,force=False):
             if cached:return cached
         except RuntimeError:pass
     path=artifact_path(out,rid,obj)
+    profile=profile or load_profile(task='remediation')
     if path.is_file():
         history=board/'history'/('remediation-'+datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))/rid
         history.mkdir(parents=True,exist_ok=True);shutil.copy2(path,history/path.name)
     context={'schema_version':VERSION,'target':card['target'],'review_source_hash':source_hash(card),'review_card':core(card)}
     write_json(path.with_suffix('.context.json'),context);write_json(path.with_suffix('.schema.json'),read_json(SCHEMA))
     run_path=path.with_suffix('.run.json')
-    env=os.environ.copy();env.setdefault('SCHEMATIC_PYTHON',sys.executable)
     print(f'REMEDIATION_GENERATE\t{rid}\t{obj}',flush=True)
-    result=subprocess.run([node_executable(),str(WORKER),str(board),str(path),str(PROMPT),str(run_path)],cwd=str(ROOT),env=env)
-    if result.returncode:raise RuntimeError('model remediation generation failed; previous report retained')
+    run={'id':'llm-remediation-'+uuid.uuid4().hex,'status':'running','provider':profile.provider,
+         'model':profile.model,'profile_hash':profile.signature()}
+    write_json(run_path,run)
+    try:
+        data,metadata=generate_json(PROMPT.read_text(encoding='utf-8')+'\n当前通过直接模型API执行。直接返回符合契约的JSON；上下文已经完整提供，不读取或写入本地文件。',
+                                    context,read_json(SCHEMA),profile=profile,on_event=on_event,cancelled=cancelled)
+    except Exception as error:
+        run.update(status='error',error=type(error).__name__);write_json(run_path,run)
+        raise
+    run.update(status='completed',provider=metadata['provider'],model=metadata['model'],metadata=metadata)
+    write_json(run_path,run)
+    write_json(path.with_suffix('.candidate.json'),data)
     if source_hash(read_json(out/'agent_jobs'/rid/(safe_object_name(obj)+'.json')))!=context['review_source_hash']:
         raise RuntimeError('review changed during remediation generation')
-    data=read_json(path);errors=validate(data,card)
+    errors=validate(data,card)
     if errors:
         write_json(path.with_suffix('.invalid.json'),{'errors':errors})
         raise RuntimeError('model remediation rejected: '+'; '.join(errors))
-    data['_meta']={'contract_hash':fingerprint(),'review_source_hash':source_hash(card),
+    data['_meta']={'contract_hash':fingerprint(profile),'profile_hash':profile.signature(),'review_source_hash':source_hash(card),
                    'output_hash':hashlib.sha256(json.dumps(data,ensure_ascii=False,sort_keys=True).encode()).hexdigest(),
-                   'validation_status':'valid','run_id':read_json(run_path)['id'],
+                   'validation_status':'valid','run_id':run['id'],'provider':metadata['provider'],'model':metadata['model'],
                    'validated_at':datetime.datetime.now(datetime.timezone.utc).isoformat()}
     write_json(path,data);path.with_suffix('.invalid.json').unlink(missing_ok=True)
     return data

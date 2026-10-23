@@ -3,12 +3,10 @@ from pathlib import Path
 import datetime
 import os
 import shutil
-import subprocess
 import sys
 import uuid
 import json
 from kernel.util import ROOT,read_json,write_json,out_dir
-from kernel.runtime import node_executable
 from agent_review.execution_policy import material_hash,checkpoint
 from agent_review.stages.judge import validate_judge_card,finalize_card
 from agent_review.decision_contract import validate_decision_audit
@@ -90,7 +88,7 @@ def repair(board,kg,enumeration,*,concurrency=2,max_attempts=3,geometry_feedback
         if source.get('autonomous_evidence'):e+=validate_object_research(board,rid,obj,d)
         execution=d.get('_meta',{}).get('execution',{}) if is_v1(d) else d.get('_execution',{})
         if source and execution.get('fingerprint')!=source['execution_hash']:e.append('Fresh validated execution provenance required')
-        if p.with_suffix('.failed.json').exists():e.append('Preceding CLI delivery failed; generate a fresh card')
+        if p.with_suffix('.failed.json').exists():e.append('Preceding LLM delivery failed; generate a fresh card')
         if (rid,obj) in route_repairs:
             e.append('Diagram source-location feedback: '+json.dumps(route_repairs[(rid,obj)],ensure_ascii=False)+'. Correct the declared route/page from original material; disconnected same-net symbols are logical references, never invented copper. Keep any genuinely unresolved location explicit.')
         return e,d
@@ -129,9 +127,8 @@ def repair(board,kg,enumeration,*,concurrency=2,max_attempts=3,geometry_feedback
         attempt=uuid.uuid4().hex
         write_json(o/'judge_jobs.json',{'jobs':jobs,'concurrency':concurrency,'attempt_id':attempt,'mode':'autonomous_repair'})
         print('AUTONOMOUS_REPAIR',len(jobs),flush=True)
-        runtime_env=os.environ.copy()
-        runtime_env.setdefault('SCHEMATIC_PYTHON',sys.executable)
-        subprocess.run([node_executable(),str(ROOT/'scripts/repair_selection_cards.mjs'),str(board)],cwd=ROOT,env=runtime_env,check=False)
+        from agent_review.llm_dispatch import dispatch
+        dispatch(board,concurrency=concurrency)
         if material_hash(board)!=frozen:raise RuntimeError('Evidence changed during delivery repair')
         result=read_json(o/'sdk_judge_result.json')
         if result.get('attempt_id')!=attempt:raise RuntimeError('No matching current repair execution')

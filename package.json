@@ -6,5 +6,5 @@
     "node": ">=24.0.0"
   },
   "dependencies": {},
-  "description": "Schematic review with local Codex CLI transport"
+  "description": "Schematic review with application-owned direct LLM API transport"
 }

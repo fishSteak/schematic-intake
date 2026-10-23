@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 node_modules/
 .venv/
+.workbench/
 solve_prog/out/
 
 # IDE / 本地计划

@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from kernel.util import ROOT, read_json
 from agent_review.batching import safe_object_name
+from agent_review.llm import profile_fingerprint
 
 POLICY=ROOT/'rules/review_execution.json'
 
@@ -16,14 +17,14 @@ def digest(value):
     return hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True).encode()).hexdigest()
 
 def execution_hash(rule_id,workbench,materials_hash):
-    names=['agent_review/delivery.py','agent_review/delivery_worker.mjs','agent_review/prompts/delivery_review.md','agent_review/execution_policy.py','agent_review/orchestrator.mjs',
-           'agent_review/local_workspace.mjs','agent_review/codex_agent.mjs',
+    names=['agent_review/delivery.py','agent_review/llm_dispatch.py','agent_review/llm_tasks.py','agent_review/llm_tools.py','agent_review/prompts/delivery_review.md','agent_review/execution_policy.py',
            'agent_review/validate_job.py','agent_review/analysis_contract.py','agent_review/main_analysis.py','agent_review/schemas/main_analysis.v1.schema.json','agent_review/workbench.py','agent_review/stages/judge.py','rules/object_card_schema.json',
            'rules/review_execution.json','rules/product_center_15.json','rules/xlsx_detail_15.json']
-    names += ['agent_review/evidence_loop.py','agent_review/evidence_worker.mjs','agent_review/schemas/evidence.v1.schema.json',
+    names += ['agent_review/evidence_loop.py','agent_review/schemas/evidence.v1.schema.json',
               'agent_review/prompts/evidence_research.md','agent_review/prompts/evidence_followup.md','agent_review/prompts/autonomous_judge.md']
-    names += ['agent_review/criteria.py','agent_review/design_pin_labels.py','agent_review/page_evidence.py','agent_review/validation_transport.mjs','agent_review/reuse_inputs.mjs']
-    names += ['agent_review/figure_contract.py','agent_review/repair_cards.py','scripts/repair_selection_cards.mjs']
+    names += ['agent_review/criteria.py','agent_review/design_pin_labels.py','agent_review/page_evidence.py']
+    names += ['agent_review/figure_contract.py','agent_review/repair_cards.py','agent_review/llm_auxiliary.py']
+    names += [str(p.relative_to(ROOT)) for p in sorted((ROOT/'agent_review/llm').glob('*.py'))]
     prompt_dir=ROOT/'agent_review/prompts/judge'
     native=workbench.get('contract_task',{}).get('schema_version')=='review.v1'
     if native:
@@ -39,11 +40,8 @@ def execution_hash(rule_id,workbench,materials_hash):
             names += ['agent_review/prompts/judge/_p11_self_check.md']
         if rule_id=='P11-A01':names += ['agent_review/prompts/judge/_power_decision.md','agent_review/prompts/judge/_p11_critique.md']
     h={n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in names if (ROOT/n).is_file()}
-    config=Path(os.environ.get('CODEX_HOME',str(Path.home()/'.codex')))/'config.toml'
-    model={'requested':os.environ.get('AGENT_JUDGE_MODEL','auto'),
-           'reuse_current_analysis':os.environ.get('AGENT_DELIVERY_REUSE_ANALYSIS')=='1',
-           'effort':os.environ.get('SCHEMATIC_CODEX_REASONING_EFFORT'),
-           'config_hash':hashlib.sha256(config.read_bytes()).hexdigest() if config.is_file() else None}
+    model={'profiles':{task:profile_fingerprint(task=task) for task in ('review','evidence')},
+           'reuse_current_analysis':os.environ.get('AGENT_DELIVERY_REUSE_ANALYSIS')=='1'}
     if workbench.get('delivery_policy',{}):
         materials_hash=workbench['delivery_policy']['raw_material_hash']
     return digest({'files':h,'workbench':workbench,'materials':materials_hash,'model':model})
@@ -74,7 +72,7 @@ def material_hash(board):
 
 def checkpoint(board,rid,obj,key):
     root=Path(board)/'history/execution-checkpoints'/safe_object_name(rid)/safe_object_name(obj)/key
-    # Node handles long UNC paths, but Python needs the extended Windows form.
+    # Python needs the extended Windows form for long UNC paths.
     if os.name=='nt':
         raw=os.path.abspath(root)
         if not raw.startswith('\\\\?\\'):

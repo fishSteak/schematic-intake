@@ -11,6 +11,7 @@ export default defineConfig({
       "/stress_paths": "http://127.0.0.1:8765",
       "/sch": "http://127.0.0.1:8765",
       "/api": "http://127.0.0.1:8765",
+      "/reports/": "http://127.0.0.1:8765",
     },
   },
 });

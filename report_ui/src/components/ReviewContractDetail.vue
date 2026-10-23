@@ -1,7 +1,10 @@
 <script setup>
 import modules from "../review-modules.json";
+import { assetUrl } from "../api";
 const titles=Object.fromEntries(modules.map(m=>[m.id,m.title]));
-const props=defineProps({ view: { type: Object, required: true } });
+const props=defineProps({ view: { type: Object, required: true }, assetBase: { type: String, default: '' } });
+const asset=path=>assetUrl(props.assetBase,path);
+const pdfLink=p=>asset('pdfjs/web/viewer.html')+'?file='+encodeURIComponent(asset(p.pdf))+'#page='+p.page;
 const moduleOrder=id=>(props.view.module_order||modules.map(m=>m.id)).indexOf(id);
 const diagramLabel=()=>['cross_case_bound','incomplete_proof'].includes(props.view.primary?.kind)?'分析关系图':'工况分析图';
 const pendingAssumption=step=>(step.assumption_refs||[]).some(id=>(props.view.key_assumptions||[]).some(p=>p.id===id&&p.status==='unresolved'));
@@ -32,7 +35,7 @@ const emit = defineEmits(["open-path"]);
       <p class="rv-route">{{ view.primary.route_summary }}</p>
       <div v-if="view.main_analysis" class="rv-basis-scope"><b>分析范围</b><p>{{ view.main_analysis.scope.included }}</p><small>范围外：{{ view.main_analysis.scope.excluded }}</small></div>
       <div v-if="view.primary.conditions.length" class="rv-condition"><b>成立条件</b><span>{{ view.primary.conditions.join('；') }}</span></div>
-      <button v-if="view.primary.figure" class="figure" @click="emit('open-path', view.primary)"><img :src="'/' + view.primary.figure" :alt="diagramLabel()" /><span>打开{{ diagramLabel() }}</span></button>
+      <button v-if="view.primary.figure" class="figure" @click="emit('open-path', view.primary)"><img :src="asset(view.primary.figure)" :alt="diagramLabel()" /><span>打开{{ diagramLabel() }}</span></button>
       <p v-else-if="view.primary.route_expected">通路图尚未通过连线校验</p>
       <h4 v-if="view.primary.calculations.length" class="rv-subtitle rv-calc-title">计算过程</h4>
       <ol v-if="view.primary.calculations.length" class="rv-calcs"><li v-for="c in view.primary.calculations" :key="c.id">{{ c.expression }}</li></ol>
@@ -55,8 +58,8 @@ const emit = defineEmits(["open-path"]);
       </div>
     </details>
   </div>
-  <section class="rv-extract" data-review-module="datasheets" :style="{order:moduleOrder('datasheets')}"><h3 class="rv-section-title">{{ titles.datasheets }}</h3><p>资料摘录仅作来源参考，评审采用值见材料与分析思路。</p><p v-for="r in view.resources?.extract_rows || []" :key="r.key">{{ r.label || r.key }}：{{ r.value }} {{ r.unit }}</p><a v-if="view.resources?.datasheet_pdf" :href="'/' + view.resources.datasheet_pdf" target="_blank">打开规格书 PDF</a><p v-else>未关联规格书 PDF</p></section>
-  <section class="rv-sheets" data-review-module="schematics" :style="{order:moduleOrder('schematics')}"><h3 class="rv-section-title">{{ titles.schematics }}</h3><p v-if="!view.resources?.pages?.length">未关联具体图幅</p><div v-for="p in view.resources?.pages || []" :key="p.page"><a :href="'/pdfjs/web/viewer.html?file=' + encodeURIComponent('/' + p.pdf) + '#page=' + p.page" target="_blank">第 {{ p.page }} 页 · PDF 缩放 / 搜索 / 划选</a><img v-if="p.img" :src="'/' + p.img" style="width:100%" /></div></section>
+  <section class="rv-extract" data-review-module="datasheets" :style="{order:moduleOrder('datasheets')}"><h3 class="rv-section-title">{{ titles.datasheets }}</h3><p>资料摘录仅作来源参考，评审采用值见材料与分析思路。</p><p v-for="r in view.resources?.extract_rows || []" :key="r.key">{{ r.label || r.key }}：{{ r.value }} {{ r.unit }}</p><a v-if="view.resources?.datasheet_pdf" :href="asset(view.resources.datasheet_pdf)" target="_blank" rel="noopener">打开规格书 PDF</a><p v-else>未关联规格书 PDF</p></section>
+  <section class="rv-sheets" data-review-module="schematics" :style="{order:moduleOrder('schematics')}"><h3 class="rv-section-title">{{ titles.schematics }}</h3><p v-if="!view.resources?.pages?.length">未关联具体图幅</p><div v-for="p in view.resources?.pages || []" :key="p.page"><a :href="pdfLink(p)" target="_blank" rel="noopener">第 {{ p.page }} 页 · PDF 缩放 / 搜索 / 划选</a><img v-if="p.img" :src="asset(p.img)" :alt="`原理图第 ${p.page} 页`" style="width:100%" /></div></section>
   </div>
 </template>
 <style src="../review-detail.css"></style>

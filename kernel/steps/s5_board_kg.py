@@ -510,6 +510,7 @@ def run(
     ds: dict[str, Any],
     extract: dict[str, Any],
     sch: dict[str, Any],
+    *, allow_agent: bool | None = None,
 ) -> dict[str, Any]:
     conflicts: list[dict[str, Any]] = []
     components: dict[str, Any] = {}
@@ -731,7 +732,7 @@ def run(
 
     from kernel.rated_hunt import apply_rated_fields
 
-    hunt_stats = apply_rated_fields(components, board)
+    hunt_stats = apply_rated_fields(components, board, allow_agent=allow_agent)
 
     kg = {
         "board": materials.get("board_name"),
