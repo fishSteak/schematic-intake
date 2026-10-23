@@ -20,6 +20,7 @@ _BOUND_RELATION = re.compile(r"(<=|>=|≤|≥|≦|≧|<|>|=|≈)")
 _POWER_RESULT = re.compile(r"\s*(\d+(?:\.\d*)?|\.\d+)([eE][+-]?\d+)?\s*(mW|uW|µW|μW|W)\s*$")
 _BOUND_DIRECTIONS = {"upper_bound": {"≤", "<=", "≦", "<"}, "lower_bound": {"≥", ">=", "≧", ">"}}
 _NAMED_POWER_BOUND = re.compile(r"\bP_(upper|lower)\s*[=≈]\s*")
+_AUXILIARY_POWER = re.compile(r"(\bP_(?:limit|rated)\b|功率限额|功耗限额|额定功率|限额|余量)\s*(<=|>=|≤|≥|≦|≧|<|>|=|≈)")
 _POWER_SCALE = {"W": 1, "mW": 1e-3, "uW": 1e-6, "µW": 1e-6, "μW": 1e-6}
 # Dimensions use (voltage, current): resistance=V/A, power=V*A.
 _CALC_UNITS = {"V": (1, (1, 0)), "mV": (1e-3, (1, 0)),
@@ -30,7 +31,13 @@ _NUMBER = r"(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
 _CALC_QUANTITY = re.compile(r"(?<![\w.])(" + _NUMBER + r")\s*(" + "|".join(sorted(_CALC_UNITS, key=len, reverse=True)) + r")(?!\w)")
 
 
-def _calculated_power(expression: str, *, require_operation=True) -> tuple[float, bool]:
+def _normalize_power_formula_text(text: str) -> str:
+    """Normalize explicit punctuation only; preserve exponents and inner prose."""
+    return text.translate(str.maketrans({"＝": "=", "＋": "+", "－": "-", "＊": "*",
+                                        "／": "/", "＜": "<", "＞": ">", "＾": "^"})).rstrip().removesuffix("。").rstrip()
+
+
+def _calculated_power(expression: str, *, require_operation=True, allow_negative=False) -> tuple[float, bool]:
     """Check dimensions; delegate numeric arithmetic to the existing safe tool."""
     from agent_review.llm_tools import MaterialTools
     if len(expression) > 300 or "_" in expression:
@@ -38,6 +45,9 @@ def _calculated_power(expression: str, *, require_operation=True) -> tuple[float
     superscripts = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺", "0123456789-+")
     expression = re.sub(r"[⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺]+", lambda m: "**(" + m[0].translate(superscripts) + ")", expression)
     expression = expression.translate(str.maketrans({"×": "*", "÷": "/", "−": "-", "^": "**", "（": "(", "）": ")"})).strip()
+    # Only a numeric literal percentage is arithmetic, never a variable,
+    # suffix to discard, or permission to admit Python's modulo operator.
+    expression = re.sub(r"(?<![\w.])(" + _NUMBER + r")\s*%(?![\w%])", r"(\1/100)", expression)
     quantities = {}
     def quantity(match):
         name = f"q{len(quantities)}"
@@ -78,7 +88,7 @@ def _calculated_power(expression: str, *, require_operation=True) -> tuple[float
         raise ValueError("Power expression must have W dimensions")
     numeric = re.sub(r"\bq\d+\b", lambda m: quantities[m[0]][0], normalized)
     value = MaterialTools.calculate(numeric)["value"]
-    if not math.isfinite(value) or value < 0:
+    if not math.isfinite(value) or (value < 0 and not allow_negative):
         raise ValueError("Power must be finite and nonnegative")
     return value, bool(quantities)
 
@@ -96,12 +106,17 @@ def _numeric_power_prefix(expression):
     return _calculated_power(expression, require_operation=False)
 
 
-def _power_quantity(text: str):
+def _power_quantity(text: str, *, allow_negative=False):
+    sign = 1
+    if allow_negative and text.lstrip().startswith(("-", "+")):
+        text = text.lstrip()
+        sign = -1 if text[0] == "-" else 1
+        text = text[1:]
     match = _POWER_RESULT.fullmatch(text)
     if match is None:
         return None
-    value = float(match[1] + (match[2] or "")) * _POWER_SCALE[match[3]]
-    if not math.isfinite(value) or value < 0:
+    value = sign * float(match[1] + (match[2] or "")) * _POWER_SCALE[match[3]]
+    if not math.isfinite(value) or (value < 0 and not allow_negative):
         raise ValueError("Power quantity must be finite and nonnegative")
     return value, _POWER_SCALE[match[3]]
 
@@ -118,15 +133,57 @@ def _power_comparison(left, relation, right, *, arithmetic_result=False):
     return left < right if relation == "<" else left > right if relation == ">" else False
 
 
+def _checked_auxiliary_power(line):
+    """Check rated/limit/margin calculations without making a bound proof."""
+    markers = list(_AUXILIARY_POWER.finditer(line))
+    if not markers:
+        return None
+    marker = markers[0]
+    tail = line[marker.end():]
+    # A plain voltage/current margin remains outside this power-only checker.
+    if marker[1] in {"限额", "余量"} and not re.search(_NUMBER + r"\s*(?:mW|uW|µW|μW|W)(?!\w)", tail):
+        return None
+    if len(markers) != 1:
+        raise ValueError("Use one auxiliary power calculation per clause")
+    if _POWER_FORMULA.search(line) or _BOUND_RELATION.search(line[:marker.start()]):
+        raise ValueError("Separate independent power calculations with semicolons")
+    parts = _BOUND_RELATION.split(tail)
+    margin = marker[1] == "余量"
+    quantities = [_power_quantity(part, allow_negative=margin) for part in parts[::2]]
+    reference = next((q for q in quantities if q is not None), None)
+    if reference is None:
+        raise ValueError("Auxiliary power needs an explicit W result")
+    values = []
+    for part, quantity in zip(parts[::2], quantities):
+        if quantity is not None:
+            values.append((quantity[0], False))
+        else:
+            value, unitful = _calculated_power(part, require_operation=False, allow_negative=margin)
+            values.append((value if unitful else value * reference[1], True))
+    for index, relation in enumerate(parts[1::2]):
+        left, left_calculated = values[index]
+        right, right_calculated = values[index + 1]
+        if not _power_comparison(left, relation, right, arithmetic_result=left_calculated or right_calculated):
+            raise ValueError("Incorrect rated/limit/margin arithmetic or conversion")
+    return 0
+
+
 def _checked_power_formula(line, power, stress_kind):
     """Return 1 for a numeric proof, 0 for a checked annotation, None otherwise."""
+    line = _normalize_power_formula_text(line)
     if len(line) > 2000:
         raise ValueError("Power formula too long")
     if re.search(r"(?<!\w)(?:nan|inf|infinity)(?!\w)|∞", line, re.IGNORECASE):
         raise ValueError("Power formula contains a non-finite quantity")
+    auxiliary = _checked_auxiliary_power(line)
+    if auxiliary is not None:
+        return auxiliary
     markers = list(_POWER_FORMULA.finditer(line))
     if not markers:
         parts = _BOUND_RELATION.split(line)
+        signed = _power_quantity(parts[0], allow_negative=True)
+        if signed is not None and signed[0] < 0:
+            raise ValueError("Negative power is only valid in an explicit margin")
         if len(parts) > 1 and _power_quantity(parts[0]) is not None:
             values = [_power_quantity(part) for part in parts[::2]]
             if any(value is None for value in values) or any(not _power_comparison(values[i][0], relation, values[i + 1][0]) for i, relation in enumerate(parts[1::2])):
@@ -186,6 +243,12 @@ def _checked_power_formula(line, power, stress_kind):
         # unit conversions are comparisons, not the formal state.P bound.
         if proof and not relaxed and relation in {"≤", "<=", "≦", "≥", ">=", "≧"}:
             bound, relaxed = right, True
+    if not proof and not named and marker[1] == "=" and all(op == "=" for op in operators):
+        # An actual constant operating point is not the envelope value. It may
+        # annotate an independently proved bound only when it lies inside it.
+        if not _power_comparison(bound, "≤" if stress_kind == "upper_bound" else "≥", power):
+            raise ValueError("Constant operating point lies outside the proved bound")
+        return 0
     if not math.isclose(bound, power, rel_tol=1e-5, abs_tol=1e-12):
         raise ValueError("Power bound differs from state.P")
     if proof and not _power_comparison(calculated, "≤" if stress_kind == "upper_bound" else "≥", power):
@@ -193,16 +256,43 @@ def _checked_power_formula(line, power, stress_kind):
     return int(proof)
 
 
-def _power_bound_formulas(lines: list[str], power: float | None, stress_kind: Any) -> bool:
+def _power_bound_formulas(lines: list[str], power: float | None, stress_kind: Any, *, reasons=None) -> bool:
     """Verify all numeric claims and require an independent arithmetic proof."""
     direction = _BOUND_DIRECTIONS.get(stress_kind) if isinstance(stress_kind, str) else None
-    if not direction or power is None or not math.isfinite(power) or power < 0:
+    if not direction or power is None or not math.isfinite(power) or power < 0 or any(len(line) > 2000 for line in lines):
+        if reasons is not None:
+            reasons.append("功耗值、边界类型或公式长度无效")
         return False
-    try:
-        checked = [_checked_power_formula(line, power, stress_kind) for line in lines]
-        return any(value == 1 for value in checked)
-    except (ArithmeticError, ValueError, TypeError, SyntaxError, RecursionError):
-        return False
+    messages = {
+        "Incorrect rated/limit/margin arithmetic or conversion": "额定、限额或余量的算术或单位换算不一致",
+        "Incorrect numeric substitution": "数字代入与标注结果不一致",
+        "Incorrect power comparison or unit conversion": "功率比较或单位换算不成立",
+        "Incorrect auxiliary power comparison or conversion": "辅助功率比较或单位换算不成立",
+        "Power expression must have W dimensions": "功率算式的量纲不是W",
+        "Unsupported arithmetic or inconsistent dimensions": "算术不受支持或量纲不一致",
+        "Power bound differs from state.P": "功耗上、下界与state.P不一致",
+        "Constant operating point lies outside the proved bound": "实际功耗点超出所列界限",
+        "Power rounding must be conservative": "功耗舍入方向不保守",
+        "Separate independent power calculations with semicolons": "独立功率声明须用分号分开",
+        "Incorrect numeric prefix relation": "前部数字算式的比较不成立",
+    }
+    checked = []
+    # Check every clause; expose only static diagnostics, never source text.
+    for line_index, line in enumerate(lines, 1):
+        for clause_index, clause in enumerate(re.split(r"[；;]", line), 1):
+            if not clause.strip():
+                continue
+            try:
+                checked.append(_checked_power_formula(clause, power, stress_kind))
+            except (ArithmeticError, ValueError, TypeError, SyntaxError, RecursionError) as error:
+                if reasons is not None:
+                    reason = messages.get(str(error), "公式语法或数值不受支持")
+                    reasons.append(f"第{line_index}行第{clause_index}段：{reason}")
+                return False
+    passed = any(value == 1 for value in checked)
+    if not passed and reasons is not None:
+        reasons.append("缺少独立、完整的功耗数值推导")
+    return passed
 
 
 def _numeric_power_bound(expr: str, power: float | None, stress_kind: Any) -> bool:
@@ -485,15 +575,17 @@ def validate_judge_card(
                         # P≈0 态允许「可忽略/≈0」，不强制再写 P= 行
                         near_zero = p_val is not None and abs(p_val) < 1e-9
                         expressions = [str(x.get("expr") or "") for x in fl]
-                        has_bound = s.get("stress_kind") in ("upper_bound", "lower_bound") or any(_POWER_BOUND.search(line) or _NAMED_POWER_BOUND.search(line) for line in expressions)
-                        has_p = _power_bound_formulas(expressions, p_val, s.get("stress_kind")) if has_bound else re.search(
+                        has_bound = s.get("stress_kind") in ("upper_bound", "lower_bound") or any(_POWER_BOUND.search(_normalize_power_formula_text(line)) or _NAMED_POWER_BOUND.search(_normalize_power_formula_text(line)) for line in expressions)
+                        formula_reasons = []
+                        has_p = _power_bound_formulas(expressions, p_val, s.get("stress_kind"), reasons=formula_reasons) if has_bound else re.search(
                             r"(P\s*[=≈]|P_[A-Za-z0-9]+\s*[=≈]|P\s*[\(（]|(?:功耗|耗散功率|耗散)\s*[=≈]"
                             r"|耗散\s*可忽略|功耗\s*可忽略|≈\s*0\s*W"
                             r"|\d+(?:\.\d+)?\s*mW\b)",
-                            "\n".join(expressions),
+                            "\n".join(_normalize_power_formula_text(line) for line in expressions),
                         )
                         if not has_p and (not near_zero or has_bound):
-                            errs.append(f"P11 states[{i}] formula_lines 须含功耗 P= 代入或与 P 及单位一致的上下界数值推导")
+                            detail = "；".join(formula_reasons)
+                            errs.append(f"P11 states[{i}] formula_lines 须含功耗 P= 代入或与 P 及单位一致的上下界数值推导" + ("：" + detail if detail else ""))
                         missing_src = sum(1 for x in fl if not str(x.get("src") or "").strip())
                         if missing_src:
                             errs.append(f"P11 states[{i}] formula_lines 有 {missing_src} 行缺 src")

@@ -192,6 +192,8 @@ analysis_steps 是唯一业务“分析思路”，整合条件和因果推导�
 不重复生成“成立前提/判断思路”两段文案。模型假设和未确认前提在分析中保留限定。
 图的 paths 必须是二维名字数组，每条至少两个名字；不使用 {path:[...]} 分支对象。
 若输出 main_analysis，图只归 main_analysis.figure，states[].figure 省略或 null。
+若交付 research，事实的 evidence 必须直接引用原始材料或独立资料；本轮生成的分析、卡片及研究记录
+可以描述推导过程，但不能充当它们自身结论的原始证据。
 '''
     if rid=='P11-A01':prompt+='''
 功耗的 upper_bound/lower_bound 与 modeled/exact 工作点保持区分，条件上界可以作为 comparison，
@@ -201,6 +203,8 @@ envelope_upper_bound 的 state_index 必须指向非 conditional/unmapped、role
 value_w 与该状态的 P 一致；未确认条件下的辅助边界不能冒充已证明通过依据。
 上界公式允许使用 ≤，下界允许 ≥，必须保留实际代入、单位和来源，不能改成未经证明可达的等号。
 功耗上下界的数值代入请以 W 给出最终结果，并与 states[].P 一致；若另展示 mW，明确列出单位换算。
+formula_lines.expr 写可核对的数学关系，解释与适用条件写在 src 或 analysis_steps；
+多个独立功率算式分行或用分号分开，普通功耗点说明不能代替完整的上下界数值推导。
 '''
     return prompt
 
