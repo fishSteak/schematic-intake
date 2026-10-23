@@ -45,6 +45,7 @@ def run_gate(
 
     missing = []
     invalid = []
+    valid_cards: dict[tuple[str, str], dict[str, Any]] = {}
     for rid in enumeration.get("rule_ids") or []:
         objs = list((enumeration.get("by_rule") or {}).get(rid) or [])
         if not objs:
@@ -58,6 +59,8 @@ def run_gate(
             errs = validate_judge_card(card, rule_id=rid, obj=obj, board=out_dir.parent)
             if errs:
                 invalid.append({"id": f"{rid}::{obj}", "errors": errs})
+            else:
+                valid_cards[(rid, str(obj))] = card
 
     cards_ok = not missing and not invalid
     if allow_failed and missing:
@@ -101,6 +104,7 @@ def run_gate(
         ok_bp = preserved and sealed_unmapped == unmapped_n
         # 若卡上有升绿但对应对象含 unmapped → 失败
         green_with_unmapped = []
+        validated_envelope_cards = []
         if unmapped_n > 0:
             for rid in ("P11-A01",):
                 for obj_p in (out_dir / "operating_cases" / rid).glob("*.json"):
@@ -114,8 +118,24 @@ def run_gate(
                         continue
                     ref = str(cdoc.get("ref") or obj_p.stem)
                     card_p = out_dir / "agent_jobs" / rid / f"{safe_object_name(ref)}.json"
-                    if card_p.is_file() and read_json(card_p).get("verdict_zh") == "是":
-                        green_with_unmapped.append(f"{rid}::{ref}")
+                    if card_p.is_file():
+                        card = read_json(card_p)
+                        if card.get("verdict_zh") != "是":
+                            continue
+                        from agent_review.analysis_contract import has_direct_analysis
+                        main = card.get("main_analysis") or {}
+                        # A validated independent envelope can cover operating
+                        # paths whose exact working point remains unresolved.
+                        # Keep those source gaps and their counts unchanged.
+                        if (valid_cards.get((rid, ref)) == card
+                                and card.get("rule_id") == rid and card.get("object") == ref
+                                and has_direct_analysis(card)
+                                and (card.get("decision_basis") or {}).get("kind") == "envelope_upper_bound"
+                                and main.get("kind") == "cross_case_bound"
+                                and main.get("proof_status") == "verified"):
+                            validated_envelope_cards.append(f"{rid}::{ref}")
+                        else:
+                            green_with_unmapped.append(f"{rid}::{ref}")
         if green_with_unmapped:
             ok_bp = False
         checks.append(
@@ -126,6 +146,7 @@ def run_gate(
                 "sealed_unmapped": sealed_unmapped,
                 "preserved": preserved,
                 "green_with_unmapped": green_with_unmapped[:10],
+                "validated_envelope_cards": validated_envelope_cards[:10],
             }
         )
         if not ok_bp:

@@ -18,7 +18,7 @@ def digest(value):
 
 def execution_hash(rule_id,workbench,materials_hash):
     names=['agent_review/delivery.py','agent_review/llm_dispatch.py','agent_review/llm_tasks.py','agent_review/llm_tools.py','agent_review/prompts/delivery_review.md','agent_review/execution_policy.py',
-           'agent_review/validate_job.py','agent_review/analysis_contract.py','agent_review/main_analysis.py','agent_review/schemas/main_analysis.v1.schema.json','agent_review/workbench.py','agent_review/stages/judge.py','rules/object_card_schema.json',
+           'agent_review/validate_job.py','agent_review/delivery_gate.py','agent_review/analysis_contract.py','agent_review/main_analysis.py','agent_review/schemas/main_analysis.v1.schema.json','agent_review/workbench.py','agent_review/stages/judge.py','rules/object_card_schema.json',
            'rules/review_execution.json','rules/product_center_15.json','rules/xlsx_detail_15.json']
     names += ['agent_review/evidence_loop.py','agent_review/schemas/evidence.v1.schema.json',
               'agent_review/prompts/evidence_research.md','agent_review/prompts/evidence_followup.md','agent_review/prompts/autonomous_judge.md']

@@ -851,13 +851,20 @@ def enrich_p11_card(o: Path, card: dict[str, Any], kg: dict[str, Any] | None = N
         # 丢掉误入的功率字段
         extracted.pop("p_rated_w", None)
         extracted.pop("p_rated_temp_c", None)
-    out["datasheet"] = {
+    datasheet = {
         "url": "",
         "local_path": local,
         "extracted": extracted,
         "extract_note": note,
         "mpn": c.get("mpn") or "",
     }
+    from agent_review.analysis_contract import has_direct_analysis
+    if has_direct_analysis(card):
+        # Direct reviews own their engineering claims. Legacy projections may
+        # supply resource metadata, but cannot rejudge a sealed model analysis.
+        out.setdefault("datasheet", datasheet)
+        return out
+    out["datasheet"] = datasheet
 
     elec = dict(out.get("electrical") or {})
     agent_ok = _agent_states_usable(out.get("states"))
