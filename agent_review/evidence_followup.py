@@ -1,7 +1,7 @@
 """Close evidence requests before the ordinary pipeline publishes a report."""
 from pathlib import Path
 from kernel.util import out_dir,read_json
-from agent_review.evidence_loop import run_research,business_requests,digest
+from agent_review.evidence_loop import run_research,business_requests,digest,pending_pairs
 from agent_review.rule_modes import filter_enumeration_for_agent
 
 
@@ -23,7 +23,7 @@ def run(board,kg,enumeration,*,concurrency=2,max_audits=3):
     board=Path(board);o=out_dir(board);rounds=[]
     pairs={(rid,obj) for rid,objects in enumeration['by_rule'].items() for obj in objects}
     def pending():
-        return {pair for pair in pairs if read_json(o/'agent_jobs'/pair[0]/(pair[1]+'.json')).get('verdict_zh')=='待确认'}
+        return pending_pairs(board,[{'rule_id':rid,'object':obj} for rid,obj in pairs])
     for wave in range(max_audits):
         previous=read_json(o/'evidence_store/current.json')
         run_research(board,enumeration,followup=True,force=True)

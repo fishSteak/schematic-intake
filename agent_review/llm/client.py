@@ -8,8 +8,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+import base64
 import copy
+from io import BytesIO
 import json
+import math
 import time
 from typing import Any, Callable
 
@@ -91,6 +94,7 @@ class LLMClient:
         self._sleep = sleep
         self.request_count = 0
         self.completions: list[Completion] = []
+        self.context_estimates: list[dict[str, Any]] = []
 
     def close(self) -> None:
         if self._owned:
@@ -111,6 +115,46 @@ class LLMClient:
 
     def __exit__(self, *_: Any) -> None:
         self.close()
+
+    def context_estimate(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Conservative local guard, not a provider tokenizer or capacity probe.
+
+        Text/schema/tool JSON uses one token per UTF-8 byte (intentionally above
+        common text tokenizers). Images use 4 tokens per 32px tile, at least 4096;
+        unknown dimensions reserve 16384. Providers vary, so these image budgets
+        are estimates rather than a guaranteed bound or a reported billed usage.
+        """
+        image_tokens = 0
+        image_count = 0
+        def summarize(value):
+            nonlocal image_tokens, image_count
+            if isinstance(value, list):
+                return [summarize(item) for item in value]
+            if isinstance(value, dict):
+                if value.get("type") == "image_url":
+                    image_count += 1
+                    budget = 16384
+                    image_value = value.get("image_url")
+                    url = image_value.get("url", "") if isinstance(image_value, dict) else ""
+                    if isinstance(url, str) and url.startswith("data:image/") and ";base64," in url:
+                        try:
+                            from PIL import Image
+                            with Image.open(BytesIO(base64.b64decode(url.split(",", 1)[1], validate=True))) as img:
+                                budget = max(4096, 4 * math.ceil(img.width / 32) * math.ceil(img.height / 32))
+                        except Exception:
+                            pass  # Unknown images retain the larger default reserve.
+                    image_tokens += budget
+                    return {"type": "image_url", "image_url": {"url": "[image content reserved separately]"}}
+                return {key: summarize(item) for key, item in value.items()}
+            return value
+        inputs = {key: payload[key] for key in ("messages", "tools", "response_format") if key in payload}
+        text_tokens = len(json.dumps(summarize(inputs), ensure_ascii=False, allow_nan=False).encode("utf-8"))
+        return {"status": "configured" if self.profile.max_context_tokens is not None else "not_configured",
+                "max_context_tokens": self.profile.max_context_tokens,
+                "estimated_input_tokens": text_tokens + image_tokens,
+                "reserved_output_tokens": self.profile.max_tokens,
+                "image_count": image_count, "estimated_image_tokens": image_tokens,
+                "method": "utf8_bytes_plus_image_tiles_v1", "provider_window_verified": False}
 
     def _payload(self, messages: list[dict[str, Any]], schema: dict[str, Any] | None, tools: list[dict[str, Any]] | None) -> dict[str, Any]:
         if not messages or any(not isinstance(item, dict) for item in messages):
@@ -166,6 +210,14 @@ class LLMClient:
     ) -> Completion:
         check_cancelled(cancelled)
         payload = self._payload(messages, schema, tools)
+        estimate = self.context_estimate(payload)
+        self.context_estimates.append(estimate)
+        limit = self.profile.max_context_tokens
+        if limit is not None and estimate["estimated_input_tokens"] + self.profile.max_tokens > limit:
+            raise BudgetExceeded(
+                f"Configured context capacity exceeded: estimated input {estimate['estimated_input_tokens']} "
+                f"+ reserved output {self.profile.max_tokens} > {limit} tokens (conservative local estimate)"
+            )
         original_handler = on_event
         on_event = (lambda event: original_handler(self.redact(event))) if original_handler else None
         headers = {"Content-Type": "application/json", "Accept": "text/event-stream" if self.profile.stream else "application/json"}
@@ -177,7 +229,7 @@ class LLMClient:
                 raise BudgetExceeded("LLM request budget exhausted")
             self.request_count += 1
             emit(on_event, {"type": "llm.request", "request": self.request_count, "attempt": attempt + 1,
-                            "provider": self.profile.provider, "model": self.profile.model})
+                            "provider": self.profile.provider, "model": self.profile.model, "context": estimate})
             delay: float | None = None
             try:
                 if self.profile.stream:
@@ -418,4 +470,5 @@ class LLMClient:
             "usage": known if all_reported else None,
             "reported_usage": known or None,
             "usage_complete": all_reported,
+            "context": self.context_estimates[-1] if self.context_estimates else None,
         })

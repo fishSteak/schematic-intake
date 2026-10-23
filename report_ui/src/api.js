@@ -17,7 +17,9 @@ export async function request(path, options = {}) {
       const message = typeof detail === 'string' ? detail : Array.isArray(detail)
         ? detail.map(row => `${(row.loc || []).slice(1).join(' / ')} ${row.msg || ''}`).join('；')
         : detail?.message || JSON.stringify(detail);
-      throw new ApiError(message || `请求失败（${response.status}）`, response.status, detail);
+      const error = new ApiError(message || `请求失败（${response.status}）`, response.status, detail);
+      error.response = data;
+      throw error;
     }
     if (!contentType.includes('application/json')) throw new ApiError('服务未返回预期数据，请确认工作台服务已启动。', response.status);
     return data;

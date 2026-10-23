@@ -2,8 +2,9 @@
 import modules from "../review-modules.json";
 import { assetUrl } from "../api";
 const titles=Object.fromEntries(modules.map(m=>[m.id,m.title]));
-const props=defineProps({ view: { type: Object, required: true }, assetBase: { type: String, default: '' } });
+const props=defineProps({ view: { type: Object, required: true }, assetBase: { type: String, default: '' }, sourceAssets: { type: Object, default: () => ({}) } });
 const asset=path=>assetUrl(props.assetBase,path);
+const sourceLink=entry=>{const mapped=props.sourceAssets?.[entry.path];return mapped?.path?asset(mapped.path):'';};
 const pdfLink=p=>asset('pdfjs/web/viewer.html')+'?file='+encodeURIComponent(asset(p.pdf))+'#page='+p.page;
 const moduleOrder=id=>(props.view.module_order||modules.map(m=>m.id)).indexOf(id);
 const diagramLabel=()=>['cross_case_bound','incomplete_proof'].includes(props.view.primary?.kind)?'分析关系图':'工况分析图';
@@ -54,7 +55,7 @@ const emit = defineEmits(["open-path"]);
         <section v-if="view.audit_scenarios.length"><h4>补充工况说明</h4><div class="rv-audit-list"><article v-for="s in view.audit_scenarios" :key="s.id"><div class="rv-heading"><b>{{ s.title }}</b><span class="rv-tag rv-tag-neutral">{{ s.role === 'excluded' ? '不纳入稳态排名' : '排名未闭合' }}</span></div><p>{{ s.reason }}</p></article></div></section>
         <section v-if="view.key_assumptions?.length"><h4>关键假设与来源（追溯）</h4><div class="rv-audit-list"><article v-for="a in view.key_assumptions" :key="a.id"><b>{{ assumptionStatus[a.status] || a.status }}</b><p>{{ a.text }}</p><small>{{ a.id }} · {{ a.source.field }}<template v-if="a.evidence_refs?.length"> · 证据：{{ a.evidence_refs.join('、') }}</template></small></article></div></section>
         <section v-if="view.notes?.length"><h4>展示资料状态</h4><p v-for="n in view.notes" :key="n">{{ n }}</p></section>
-        <section v-if="view.evidence?.length"><h4>证据索引</h4><article v-for="(e,i) in view.evidence" :key="i"><b>{{ e.display_label }}</b><p>{{ e.display_locator }}</p><p>{{ e.display_text }}</p></article></section>
+        <section v-if="view.evidence?.length"><h4>证据索引</h4><article v-for="(e,i) in view.evidence" :key="i"><b>{{ e.display_label }}</b><p>{{ e.display_locator }}</p><p>{{ e.display_text }}</p><a v-if="sourceLink(e)" :href="sourceLink(e)" target="_blank" rel="noopener">打开来源 ↗</a></article></section>
       </div>
     </details>
   </div>

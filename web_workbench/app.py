@@ -12,12 +12,12 @@ import shutil
 import sys
 import uuid
 from typing import Literal
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 import zipfile
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from . import materials, runner
 from .store import ACTIVE, TERMINAL, Conflict, NotFound, ROOT, Store, atomic_json
@@ -51,6 +51,7 @@ class ProfileInput(Payload):
     api_key: str | None = None
     timeout: float = Field(default=120, ge=1, le=1200)
     max_tokens: int = Field(default=8192, ge=128, le=131072)
+    max_context_tokens: StrictInt | None = Field(default=None, ge=1)
     max_turns: int = Field(default=16, ge=1, le=100)
     max_requests: int = Field(default=40, ge=1, le=500)
     max_retries: int = Field(default=2, ge=0, le=5)
@@ -115,7 +116,11 @@ def report_data(store, run_id):
     verdicts = json.loads((root / "verdicts.json").read_text(encoding="utf-8-sig"))
     data = json.loads((root / "report_data.json").read_text(encoding="utf-8-sig"))
     evidence = {r["rule_id"]: json.loads(safe_asset(root, f"evidence/{r['rule_id']}.json").read_text(encoding="utf-8-sig")) for r in verdicts.get("results", [])}
-    return {"verdicts": verdicts, "evidence": evidence, "report_data": data, "asset_base": f"/reports/{run_id}/", "run": public_run(store.run(run_id))}
+    manifest_path = root / "snapshot.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig")) if manifest_path.is_file() else {}
+    source_assets = {original: {"path": relative, "sha256": manifest["files"][relative], "url": f"/reports/{run_id}/" + quote(relative, safe="/")}
+                     for original, relative in manifest.get("sources", {}).items() if relative in manifest.get("files", {})}
+    return {"verdicts": verdicts, "evidence": evidence, "report_data": data, "asset_base": f"/reports/{run_id}/", "source_assets": source_assets, "run": public_run(store.run(run_id))}
 
 
 def require_object(store, run_id, rule_id, object_id):
@@ -246,6 +251,10 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
         profile = None
         if payload.profile_id or payload.mode == "review":
             profile = store.profile(payload.profile_id)
+        if payload.mode == "review" and any(available[rid]["mode"] == "review" for rid in ids) and profile.get("supports_tools", True) is False:
+            raise ValueError("所选模型关闭了工具调用，不能执行需要读取材料的深审规则；请启用并测试工具能力")
+        if payload.mode == "review" and profile.get("max_context_tokens") is not None and profile["max_context_tokens"] <= profile.get("max_tokens", 8192):
+            raise ValueError("上下文窗口预算必须大于输出预留，才能容纳输入材料；请调整模型配置")
         parent = None
         if payload.resume:
             if not payload.parent_id:
@@ -412,17 +421,24 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
     def test_profile(profile_id: str):
         profile = store.profile(profile_id)
         from agent_review.llm import load_profile, probe_profile
+        identity = store.probe_identity(profile["profile_path"])
+        configured = None
         try:
-            result = probe_profile(load_profile(Path(profile["profile_path"])))
+            configured = load_profile(Path(profile["profile_path"]))
+            identity = configured.signature(), hashlib.sha256(configured.api_key.encode()).hexdigest()
+            result = probe_profile(configured)
             result["capabilities"] = result.get("tested", {})
-            return result
+            return store.save_probe(profile_id, result, identity)
         except Exception as exc:
             private = store.profile(profile_id, private=True)
-            secret = private.get("api_key") or os.environ.get(private.get("api_key_env") or "")
             detail = str(exc)
-            if secret:
-                detail = detail.replace(secret, "[redacted]")
-            return JSONResponse({"ok": False, "error": detail[:2000]}, status_code=422)
+            secrets = (configured.api_key if configured else None, private.get("api_key"), os.environ.get(private.get("api_key_env") or ""), os.environ.get("SCHEMATIC_LLM_API_KEY"))
+            for secret in secrets:
+                if secret:
+                    detail = detail.replace(secret, "[redacted]")
+            result = {"ok": False, "error": detail[:2000], "tested": {}, "capabilities": {}, "vision": "not_tested",
+                      "context": {"max_context_tokens": profile.get("max_context_tokens"), "status": "not_tested", "provider_window_verified": False}}
+            return JSONResponse(store.save_probe(profile_id, result, identity), status_code=422)
 
     @app.get("/reports/{run_id}/{asset:path}")
     def report_asset(run_id: str, asset: str):

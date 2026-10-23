@@ -24,6 +24,7 @@ class Profile:
     api_key_env: str = ""
     timeout: float = 120.0
     max_tokens: int = 8192
+    max_context_tokens: int | None = None
     max_turns: int = 16
     max_requests: int = 24
     max_retries: int = 2
@@ -56,6 +57,8 @@ class Profile:
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int) or value < 1:
                 raise ConfigurationError(f"{name} must be a positive integer")
+        if self.max_context_tokens is not None and (type(self.max_context_tokens) is not int or self.max_context_tokens < 1):
+            raise ConfigurationError("max_context_tokens must be a positive integer or null")
         if isinstance(self.max_retries, bool) or not isinstance(self.max_retries, int) or not 0 <= self.max_retries <= 5:
             raise ConfigurationError("max_retries must be an integer between zero and five")
         for name in ("timeout", "retry_backoff"):
@@ -122,6 +125,11 @@ def load_profile(path: str | Path | None = None, task: str = "review") -> Profil
     known = {f.name for f in fields(Profile)}
     # Frontend/store identifiers are metadata, not model protocol parameters.
     data = {key: value for key, value in data.items() if key in known}
+    # Optional web form fields are serialized as JSON null when omitted. Keep
+    # direct Profile validation strict while accepting that persisted form shape.
+    for name in ("api_key", "api_key_env"):
+        if name in data and data[name] is None:
+            data[name] = ""
     for name in ("base_url", "model", "provider"):
         value = os.environ.get("SCHEMATIC_LLM_" + name.upper())
         if value and not data.get(name):

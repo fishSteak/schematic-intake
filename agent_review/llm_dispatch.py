@@ -81,10 +81,16 @@ def _object_impl(board,job,obj,run_id,client):
         checkpoint=Path(board)/'history/execution-checkpoints'/safe_object_name(rid)/name/key
         saved=checkpoint/'conversation.json'
         if job.get('resume_stage') and saved.is_file():
-            prior=read_json(saved)
             from agent_review.execution_policy import checkpoint as valid_checkpoint
-            valid=valid_checkpoint(board,rid,obj,key)
-            if prior.get('execution_hash')==key and valid:
+            try:
+                saved_bytes=saved.read_bytes();prior=json.loads(saved_bytes)
+                valid=valid_checkpoint(board,rid,obj,key)
+                stage=read_json(checkpoint/'stage.json') if valid else {}
+                conversation_hash=hashlib.sha256(saved_bytes).hexdigest()
+                if not isinstance(prior,dict):prior={}
+            except (OSError,ValueError,TypeError):
+                prior={};valid=None;stage={};conversation_hash=None
+            if prior.get('execution_hash')==key and valid and stage.get('conversation_hash')==conversation_hash:
                 messages=prior.get('messages')
                 recovered_stage=valid['stage'] if messages else None
                 if recovered_stage:
@@ -118,7 +124,8 @@ def _object_impl(board,job,obj,run_id,client):
             (checkpoint/rel).write_text(result['analysis'],encoding='utf-8')
             atomic_json(checkpoint/'conversation.json',{'execution_hash':key,'messages':messages})
             atomic_json(checkpoint/'stage.json',{'execution_hash':key,'stage':'analysis' if phase=='analysis_draft' else 'self_check',
-                'analysis_hash':hashlib.sha256(result['analysis'].encode()).hexdigest()})
+                'analysis_hash':hashlib.sha256((checkpoint/rel).read_bytes()).hexdigest(),
+                'conversation_hash':hashlib.sha256((checkpoint/'conversation.json').read_bytes()).hexdigest()})
     if native:
         from agent_review.review_contract import SCHEMA_PATH
         card_schema=read_json(SCHEMA_PATH)

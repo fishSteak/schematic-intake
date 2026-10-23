@@ -32,13 +32,23 @@ def tool(name, description, properties, required=()):
                        'required': list(required), 'additionalProperties': False}}}
 
 
-def _safe_public_url(url):
+def _public_target(url):
     parsed = urlparse(url)
     if parsed.scheme not in ('http', 'https') or not parsed.hostname or parsed.username or parsed.password:
         raise ValueError('Only public HTTP(S) source URLs are supported')
     addresses = socket.getaddrinfo(parsed.hostname, parsed.port or (443 if parsed.scheme == 'https' else 80))
     if not addresses or any(not ipaddress.ip_address(row[4][0]).is_global for row in addresses):
         raise ValueError('Research URLs must resolve to public addresses')
+    # Pin the checked address so a second DNS resolution cannot redirect this
+    # public-source request to a local service. Preserve the source Host and TLS
+    # server name while connecting to that exact public address.
+    addresses.sort(key=lambda row:':' in row[4][0])
+    target=httpx.URL(url)
+    return target.copy_with(host=addresses[0][4][0]), target.netloc.decode('ascii'), target.host
+
+
+def _safe_public_url(url):
+    _public_target(url)
     return url
 
 
@@ -46,8 +56,9 @@ def fetch_public(url, *, max_bytes=25_000_000):
     """Follow bounded public redirects; return source bytes without executing them."""
     with httpx.Client(timeout=30, follow_redirects=False, trust_env=False) as client:
         for _ in range(6):
-            _safe_public_url(url)
-            with client.stream('GET', url, headers={'User-Agent': 'SchematicIntake/1.0 source-research'}) as response:
+            target,host,server_name=_public_target(url)
+            with client.stream('GET', target, headers={'User-Agent': 'SchematicIntake/1.0 source-research','Host':host},
+                               extensions={'sni_hostname':server_name}) as response:
                 if response.is_redirect:
                     url = urljoin(url, response.headers['location'])
                     continue
@@ -58,7 +69,7 @@ def fetch_public(url, *, max_bytes=25_000_000):
                     if size > max_bytes:
                         raise ValueError('Source exceeds download size limit')
                     parts.append(chunk)
-                return b''.join(parts), str(response.url), response.headers.get('content-type', '')
+                return b''.join(parts), url, response.headers.get('content-type', '')
     raise ValueError('Too many source redirects')
 
 

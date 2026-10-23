@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+import base64
 import copy
+from datetime import datetime, timezone
 import hashlib
+from io import BytesIO
 import json
+import secrets
 from typing import Any, Callable
 
 from jsonschema import Draft202012Validator
@@ -194,6 +198,20 @@ def run_tools(
             client.close()
 
 
+def _vision_challenge() -> tuple[str, str]:
+    """The answer appears only in pixels, never in the text prompt or JSON schema."""
+    from PIL import Image, ImageDraw, ImageFont
+    code = "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(6))
+    picture = Image.new("RGB", (480, 144), "white")
+    draw = ImageDraw.Draw(picture)
+    font = ImageFont.load_default(size=64)
+    box = draw.textbbox((0, 0), code, font=font)
+    draw.text(((480 - box[2] + box[0]) / 2, (144 - box[3] + box[1]) / 2 - box[1]), code, font=font, fill="black")
+    buffer = BytesIO()
+    picture.save(buffer, format="PNG")
+    return code, "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
+
+
 def probe_profile(
     profile: Profile,
     *,
@@ -201,10 +219,8 @@ def probe_profile(
     cancelled: CancelCheck | None = None,
     client: LLMClient | None = None,
 ) -> dict[str, Any]:
-    """A real, small capability check; does not claim electrical review quality.
-
-    Vision is reported as configured, not empirically verified by this probe.
-    Actual image tasks must additionally deliver and validate real page evidence.
+    """Test configured protocols and actual pixels; never claim review quality or
+    detection of a provider's maximum context window from a small request.
     """
     nonce = "schema-and-tool-probe"
     schema = {"type": "object", "properties": {"echo": {"type": "string", "const": nonce}},
@@ -213,19 +229,42 @@ def probe_profile(
             "parameters": {"type": "object", "properties": {"value": {"type": "string"}},
                            "required": ["value"], "additionalProperties": False}}}
     small = replace(profile, max_tokens=min(profile.max_tokens, 512), max_turns=min(profile.max_turns, 3))
-    if profile.supports_tools:
-        _, metadata = run_tools([
-            {"role": "system", "content": "Test the API protocol. Call echo_probe exactly once, then return JSON with the returned value in echo."},
-            {"role": "user", "content": nonce},
-        ], [tool], {"echo_probe": lambda value: {"value": value}}, schema=schema,
-            profile=small, on_event=on_event, cancelled=cancelled, client=client)
-        if not any(receipt["tool"] == "echo_probe" and receipt["status"] == "completed" for receipt in metadata["tool_receipts"]):
-            raise ProtocolError("Model returned a final response without completing the requested tool probe")
-    else:
-        _, metadata = generate_json("Return the supplied echo value as JSON.", {"echo": nonce}, schema,
-                                    profile=small, on_event=on_event, cancelled=cancelled, client=client)
-    return {"ok": True, "provider": profile.provider, "model": metadata["model"],
-            "tested": {"connection": True, "structured_output": True, "tools": profile.supports_tools,
-                       "streaming": profile.stream},
-            "vision": "configured_not_tested" if profile.supports_images else "disabled",
-            "usage": metadata["usage"], "request_count": metadata["request_count"]}
+    owned = client is None
+    client = client or LLMClient(small)
+    try:
+        if profile.supports_tools:
+            _, metadata = run_tools([
+                {"role": "system", "content": "Test the API protocol. Call echo_probe exactly once, then return JSON with the returned value in echo."},
+                {"role": "user", "content": nonce},
+            ], [tool], {"echo_probe": lambda value: {"value": value}}, schema=schema,
+                profile=small, on_event=on_event, cancelled=cancelled, client=client)
+            if not any(receipt["tool"] == "echo_probe" and receipt["status"] == "completed" for receipt in metadata["tool_receipts"]):
+                raise ProtocolError("Model returned a final response without completing the requested tool probe")
+        else:
+            generate_json("Return the supplied echo value as JSON.", {"echo": nonce}, schema,
+                          profile=small, on_event=on_event, cancelled=cancelled, client=client)
+        if profile.supports_images:
+            code, image = _vision_challenge()
+            vision_schema = {"type": "object", "properties": {"code": {"type": "string", "pattern": "^[A-Z2-9]{6}$"}},
+                             "required": ["code"], "additionalProperties": False}
+            result = client.complete([
+                {"role": "system", "content": "Read the six-character uppercase alphanumeric code visible in the image. Return JSON with code; do not guess if the image cannot be read."},
+                {"role": "user", "content": [{"type": "text", "text": "Transcribe the visible code."},
+                                             {"type": "image_url", "image_url": {"url": image}}]},
+            ], schema=vision_schema, on_event=on_event, cancelled=cancelled)
+            if result.tool_calls or parse_json(result.content, vision_schema)["code"] != code:
+                raise ProtocolError("Image capability test did not read the visible code correctly")
+        metadata = client.metadata()
+        context = metadata["context"]
+        return {"ok": True, "provider": profile.provider, "model": metadata["model"],
+                "tested": {"connection": True, "structured_output": True,
+                           "tools": True if profile.supports_tools else "disabled",
+                           "vision": True if profile.supports_images else "disabled",
+                           "streaming": True if profile.stream else "disabled",
+                           "context_capacity": context["status"]},
+                "vision": "tested" if profile.supports_images else "disabled", "context": context,
+                "profile_signature": profile.signature(), "tested_at": datetime.now(timezone.utc).isoformat(),
+                "usage": metadata["usage"], "request_count": metadata["request_count"]}
+    finally:
+        if owned:
+            client.close()

@@ -1,6 +1,8 @@
 """Protocol integration tests: HTTP bodies pass through the real LLM adapter."""
 
 from dataclasses import replace
+import base64
+from io import BytesIO
 import json
 import os
 from pathlib import Path
@@ -78,9 +80,18 @@ class LLMRuntimeTests(unittest.TestCase):
             with self.subTest(url=url), self.assertRaises(ConfigurationError):
                 Profile(base_url=url, model="test")
         for kwargs in ({"max_tokens": 0}, {"max_retries": 10}, {"timeout": float("inf")}, {"stream": "false"},
-                       {"provider": []}, {"api_key_env": 12}):
+                       {"provider": []}, {"api_key_env": 12}, {"max_context_tokens": 0}, {"max_context_tokens": True}):
             with self.subTest(kwargs=kwargs), self.assertRaises(ConfigurationError):
                 Profile(base_url="http://localhost/v1", model="test", **kwargs)
+
+    def test_saved_web_profile_accepts_omitted_nullable_credentials(self):
+        with tempfile.TemporaryDirectory() as td, patch.dict(os.environ, {}, clear=True):
+            path = Path(td) / "profile.json"
+            path.write_text(json.dumps({"base_url": "http://localhost:11434/v1", "model": "local",
+                                        "api_key": None, "api_key_env": None}))
+            profile = load_profile(path)
+            self.assertEqual(profile.api_key, "")
+            self.assertEqual(profile.api_key_env, "")
 
     def test_structured_request_and_provider_metadata_use_real_http_body(self):
         requests = []
@@ -285,6 +296,73 @@ class LLMRuntimeTests(unittest.TestCase):
         client = self.make_client(lambda request: httpx.Response(200, json=response('{"echo":"schema-and-tool-probe"}')))
         with self.assertRaises(ProtocolError):
             probe_profile(client.profile, client=client)
+
+    def test_probe_sends_actual_random_image_and_answer_is_not_in_text_or_schema(self):
+        from PIL import Image
+        requests=[]
+        usage={'prompt_tokens':10,'completion_tokens':3,'total_tokens':13}
+        def handler(request):
+            body=json.loads(request.content);requests.append(body)
+            if len(requests)==1:
+                answer=response('',[call(name='echo_probe',arguments='{"value":"schema-and-tool-probe"}')],usage=usage)
+            elif len(requests)==2:
+                answer=response('{"echo":"schema-and-tool-probe"}',usage=usage)
+            else:
+                parts=body['messages'][1]['content']
+                url=parts[1]['image_url']['url']
+                with Image.open(BytesIO(base64.b64decode(url.split(',')[1]))) as picture:
+                    self.assertEqual(picture.size,(480,144))
+                text=copy_body=json.loads(json.dumps(body))
+                text['messages'][1]['content'][1]['image_url']['url']='[pixels omitted]'
+                self.assertNotIn('ABC234',json.dumps(copy_body))
+                answer=response('{"code":"ABC234"}',usage=usage)
+            return httpx.Response(200,json=answer)
+        client=self.make_client(handler,max_tokens=512,max_context_tokens=32000)
+        with patch('agent_review.llm.runtime.secrets.choice',side_effect=list('ABC234')):
+            result=probe_profile(client.profile,client=client)
+        self.assertEqual(result['request_count'],3)
+        self.assertEqual(result['usage']['total_tokens'],39)
+        self.assertEqual(result['vision'],'tested')
+        self.assertTrue(result['tested']['vision'])
+        self.assertEqual(result['tested']['streaming'],'disabled')
+        self.assertFalse(result['context']['provider_window_verified'])
+        self.assertEqual(result['context']['max_context_tokens'],32000)
+
+    def test_probe_rejects_wrong_visible_code_and_disabled_vision_is_explicit(self):
+        count=0
+        def handler(request):
+            nonlocal count
+            count+=1
+            return httpx.Response(200,json=response('{"echo":"schema-and-tool-probe"}' if count==1 else '{"code":"AAAAAA"}'))
+        client=self.make_client(handler,supports_tools=False,max_tokens=512)
+        with patch('agent_review.llm.runtime.secrets.choice',side_effect=list('ABC234')),self.assertRaisesRegex(ProtocolError,'Image capability'):
+            probe_profile(client.profile,client=client)
+        client=self.make_client(lambda request:httpx.Response(200,json=response('{"echo":"schema-and-tool-probe"}')),
+                                supports_tools=False,supports_images=False,max_tokens=512)
+        result=probe_profile(client.profile,client=client)
+        self.assertEqual(result['vision'],'disabled')
+        self.assertEqual(result['tested']['vision'],'disabled')
+        self.assertEqual(result['tested']['context_capacity'],'not_configured')
+
+    def test_context_guard_reserves_output_and_rejects_before_any_http_dispatch(self):
+        client=self.make_client(lambda request:self.fail('Oversized context must not dispatch'),max_tokens=128,max_context_tokens=300)
+        with self.assertRaisesRegex(BudgetExceeded,'context capacity'):
+            client.complete([{'role':'user','content':'材料'*250}])
+        self.assertEqual(client.request_count,0)
+        self.assertEqual(client.metadata()['context']['reserved_output_tokens'],128)
+        self.assertGreater(client.metadata()['context']['estimated_input_tokens'],300)
+        self.assertIsNone(client.metadata()['usage'])
+
+    def test_context_guard_includes_tools_schema_and_actual_image_reserve(self):
+        from agent_review.llm.runtime import _vision_challenge
+        _,url=_vision_challenge()
+        client=self.make_client(lambda request:self.fail('Image budget must be checked'),max_tokens=128,max_context_tokens=4096)
+        with self.assertRaisesRegex(BudgetExceeded,'context capacity'):
+            client.complete([{'role':'user','content':[{'type':'image_url','image_url':{'url':url}}]}],schema=SCHEMA,tools=[TOOL])
+        estimate=client.metadata()['context']
+        self.assertEqual(estimate['image_count'],1)
+        self.assertEqual(estimate['estimated_image_tokens'],4096)
+        self.assertGreater(estimate['estimated_input_tokens'],4096)
 
     def test_stream_logs_redact_credentials_split_between_events(self):
         fragments = ['{"value":"prefix SECRET_', 'TOKEN suffix"}']

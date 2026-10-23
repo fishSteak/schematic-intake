@@ -12,6 +12,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 from jsonschema import Draft202012Validator
 from kernel.util import ROOT,read_json,write_json,out_dir
+from agent_review.batching import safe_object_name
 
 SCHEMA=ROOT/'agent_review/schemas/evidence.v1.schema.json'
 PROMPT=ROOT/'agent_review/prompts/evidence_research.md'
@@ -39,11 +40,16 @@ def source_revision(board):
 def scoped_pairs(enumeration):
     return [{'rule_id':rid,'object':obj} for rid,objects in enumeration['by_rule'].items() for obj in objects]
 
+def is_pending(card):
+    if card.get('schema_version')=='review.v1':
+        return (card.get('decision') or {}).get('verdict')=='pending'
+    return card.get('verdict_zh')=='待确认'
+
 def pending_pairs(board,pairs):
     result=set()
     for p in pairs:
-        f=out_dir(board)/'agent_jobs'/p['rule_id']/(p['object']+'.json')
-        if f.exists() and read_json(f).get('verdict_zh')=='待确认':result.add((p['rule_id'],p['object']))
+        f=out_dir(board)/'agent_jobs'/p['rule_id']/(safe_object_name(p['object'])+'.json')
+        if f.exists() and is_pending(read_json(f)):result.add((p['rule_id'],p['object']))
     return result
 
 def validate_followup_coverage(data,board,pairs,previous=None):
@@ -148,50 +154,52 @@ def run_research(board,enumeration,*,followup=False,force=False):
     if followup:
         for p in pairs:
             for suffix in ('.json','.analysis.md','.research.json'):
-                f=o/'agent_jobs'/p['rule_id']/(p['object']+suffix)
+                f=o/'agent_jobs'/p['rule_id']/(safe_object_name(p['object'])+suffix)
                 if f.exists():inputs.append(str(f))
         task['current_review_artifacts']=[str(Path(p).relative_to(board)).replace('\\','/') for p in inputs]
         task['current_pending_pairs']=[{'rule_id':rid,'object':obj} for rid,obj in sorted(pending_pairs(board,pairs))]
     write_json(output.with_suffix('.context.json'),task);write_json(output.with_suffix('.schema.json'),read_json(SCHEMA))
     job=folder/'job.json';write_json(job,{'board':str(board),'output':str(output),'inputs':inputs,'followup':followup})
     from agent_review.llm_tasks import task as llm_task, atomic_json
-    from agent_review.llm import LLMCancelled, load_profile
+    from agent_review.llm import LLMCancelled, LLMClient, BudgetExceeded, load_profile
     profile=load_profile(task="evidence")
     errors=[];messages=None
-    for attempt in range(3):
-        result_path=folder/'run.json'
-        try:
-            data,run=llm_task(board,(FOLLOWUP if followup else PROMPT).read_text(encoding='utf-8'),
-                {**task,'previous_research':previous,'validation_errors':errors},read_json(SCHEMA),
-                inputs=inputs,assets_root=task['assets_root'],messages=messages,log_path=folder/'events.jsonl',profile=profile)
-            messages=run['messages']
-            atomic_json(output,data);atomic_json(result_path,run)
-        except LLMCancelled: raise
-        except Exception as exc:
-            run={'status':'error','error':str(exc)};atomic_json(result_path,run)
-        if run.get('status')!='completed':
-            print('RESEARCH_RETRY',attempt+1,run.get('error'),flush=True);continue
-        try:
-            data=read_json(output);errors=validate_research(data,board)
-            if followup and not errors:errors+=validate_followup_coverage(data,board,pairs,previous)
-        except Exception as e:errors=[str(e)]
-        if not errors:
-            if source_revision(board)!=revision:raise RuntimeError('Raw materials changed during research')
-            accepted=seal(board,data,run,revision,pairs)
-            print('RESEARCH_ACCEPTED',len(data['facts']),'facts',len(data['requests']),'requests',flush=True)
-            return {'reused':False,'facts':len(accepted['facts']),'path':str(current),'run_id':run['id']}
-        write_json(folder/'validation.json',{'errors':errors});print('RESEARCH_REPAIR',errors[:5],flush=True)
+    with LLMClient(profile) as client:
+        for attempt in range(3):
+            result_path=folder/'run.json'
+            try:
+                data,run=llm_task(board,(FOLLOWUP if followup else PROMPT).read_text(encoding='utf-8'),
+                    {**task,'previous_research':previous,'validation_errors':errors},read_json(SCHEMA),
+                    inputs=inputs,assets_root=task['assets_root'],messages=messages,log_path=folder/'events.jsonl',profile=profile,client=client)
+                messages=run['messages']
+                atomic_json(output,data);atomic_json(result_path,run)
+            except LLMCancelled: raise
+            except Exception as exc:
+                run={'status':'error','error':client.redact(str(exc)),'metadata':client.metadata()};atomic_json(result_path,run)
+                if isinstance(exc,BudgetExceeded):break
+            if run.get('status')!='completed':
+                print('RESEARCH_RETRY',attempt+1,run.get('error'),flush=True);continue
+            try:
+                data=read_json(output);errors=validate_research(data,board)
+                if followup and not errors:errors+=validate_followup_coverage(data,board,pairs,previous)
+            except Exception as e:errors=[str(e)]
+            if not errors:
+                if source_revision(board)!=revision:raise RuntimeError('Raw materials changed during research')
+                accepted=seal(board,data,run,revision,pairs)
+                print('RESEARCH_ACCEPTED',len(data['facts']),'facts',len(data['requests']),'requests',flush=True)
+                return {'reused':False,'facts':len(accepted['facts']),'path':str(current),'run_id':run['id']}
+            write_json(folder/'validation.json',{'errors':errors});print('RESEARCH_REPAIR',errors[:5],flush=True)
     raise RuntimeError('Autonomous research did not deliver source-valid evidence; prior report retained')
 
 def validate_object_research(board,rid,obj,card):
-    p=out_dir(board)/'agent_jobs'/rid/(obj+'.research.json')
+    p=out_dir(board)/'agent_jobs'/rid/(safe_object_name(obj)+'.research.json')
     if not p.exists():return ['autonomous research receipt missing']
     try:
         data=read_json(p);errors=validate_research(data,board)
     except Exception as e:return [str(e)]
-    if card.get('verdict_zh')=='待确认' and not data.get('requests'):
+    if is_pending(card) and not data.get('requests'):
         errors.append('pending verdict requires categorized unresolved requests and actual investigation attempts')
-    if card.get('verdict_zh')=='待确认' and not any(any(p['rule_id']==rid and p['object']==obj for p in r['affected_pairs']) for r in data.get('requests',[])):
+    if is_pending(card) and not any(any(p['rule_id']==rid and p['object']==obj for p in r['affected_pairs']) for r in data.get('requests',[])):
         errors.append('unresolved requests must identify this rule/object pair')
     return errors
 

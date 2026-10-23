@@ -58,7 +58,7 @@ export SCHEMATIC_LLM_MODEL='填写实际已部署模型名'
 # 服务需要密钥时，在本机设置 SCHEMATIC_LLM_API_KEY。
 ```
 
-或将 `SCHEMATIC_LLM_PROFILE` 指向私有 JSON 配置。字段包括 `provider`、`base_url`、`model`、`api_key_env`、`timeout`、`max_tokens`、`max_turns`、`max_requests`、`supports_tools`、`supports_images`、`structured_output`、`stream`。可以用 `profiles` 和 `tasks` 分别指定 `review`、`evidence`、`prose`、`remediation` 等任务。不要将密钥提交到仓库；网页配置保存于本机私有文件，API 返回脱敏信息，报告不包含配置文件。
+或将 `SCHEMATIC_LLM_PROFILE` 指向私有 JSON 配置。字段包括 `provider`、`base_url`、`model`、`api_key_env`、`timeout`、`max_tokens`、`max_context_tokens`、`max_turns`、`max_requests`、`supports_tools`、`supports_images`、`structured_output`、`stream`。可以用 `profiles` 和 `tasks` 分别指定 `review`、`evidence`、`prose`、`remediation` 等任务。`max_context_tokens` 可留空；配置后应用按保守文本/图片估算检查每个请求预算，不代表探测了服务商的最大窗口。`max_requests` 限制单个模型子任务（如一个对象的多阶段评审），整次板级运行可能包含多个子任务。不要将密钥提交到仓库；网页配置保存于本机私有文件，API 返回脱敏信息，报告不包含配置文件。
 
 模型通过应用提供的材料读取、PDF 页面、网表查询、算术、直流求解和公开来源查找工具取得证据。模型不执行 shell 或直接写正式产物。引用、结构、工程契约和报告门禁失败时保留错误记录，不发布未经校验的结果。未配置服务时 AI 功能明确报错，没有 CLI 回退。
 
@@ -83,9 +83,10 @@ python -m agent_review.serve --board boards/0918全量
 node --test tests/*.test.mjs
 npm --prefix report_ui run build
 .venv/bin/python scripts/verify_standalone.py
+.venv/bin/python scripts/verify_workbench_lifecycle.py
 ```
 
-`verify_standalone.py` 使用隔离目录与固定 P05-A01 程序规则，核对求解器和程序检查迁移基线，并验证报告 HTTP 读取。LLM 协议测试使用模拟 HTTP，不能替代真实模型深审验收。
+`verify_standalone.py` 使用隔离目录与固定 P05-A01 程序规则，核对求解器和程序检查迁移基线，并验证报告 HTTP 读取。`verify_workbench_lifecycle.py` 用独立临时数据目录验证真实服务重启、worker 中断与续跑，保留正式工作台数据。LLM 协议测试使用模拟 HTTP，不能替代真实模型深审验收。
 
 本分支已验证本机程序检查链路：0918 板 P05-A01 的 51 个对象、报告门禁、网页 PDF 联动、复核保存、历史比较和导出。真实服务的对象深审与问答验收仍需要配置可用模型，不能用协议测试或程序结果替代。
 

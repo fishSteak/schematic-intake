@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from agent_review.llm_tools import MaterialTools, _safe_public_url
+from agent_review.llm_tools import MaterialTools, _safe_public_url, fetch_public
 from kernel.util import write_json
 
 class MaterialToolTests(unittest.TestCase):
@@ -50,6 +50,23 @@ class MaterialToolTests(unittest.TestCase):
             with patch('socket.getaddrinfo',return_value=[(None,None,None,None,(ip,80))]),self.assertRaises(ValueError):
                 _safe_public_url('https://source.example/file.pdf')
         with self.assertRaises(ValueError):_safe_public_url('file:///etc/passwd')
+
+    def test_source_fetch_pins_checked_ip_and_preserves_tls_name_and_citation_url(self):
+        import httpx
+        seen=[]
+        def respond(request):
+            seen.append(request)
+            return httpx.Response(200,headers={'content-type':'text/plain'},text='original source')
+        client=httpx.Client(transport=httpx.MockTransport(respond))
+        with patch('socket.getaddrinfo',return_value=[(None,None,None,None,('93.184.215.14',443))]) as dns,\
+             patch('agent_review.llm_tools.httpx.Client',return_value=client):
+            raw,url,_=fetch_public('https://source.example/document')
+        self.assertEqual(dns.call_count,1)
+        self.assertEqual(seen[0].url.host,'93.184.215.14')
+        self.assertEqual(seen[0].headers['host'],'source.example')
+        self.assertEqual(seen[0].extensions['sni_hostname'],'source.example')
+        self.assertEqual(url,'https://source.example/document')
+        self.assertEqual(raw,b'original source')
 
 class QuestionCitationTests(unittest.TestCase):
     def test_bad_quotes_are_rejected_without_changing_report(self):

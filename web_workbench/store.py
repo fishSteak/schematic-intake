@@ -73,6 +73,10 @@ class Store:
                 CREATE INDEX IF NOT EXISTS events_run ON events(run_id,seq);
                 CREATE TABLE IF NOT EXISTS profiles (
                   id TEXT PRIMARY KEY, data TEXT NOT NULL, is_default INTEGER NOT NULL DEFAULT 0);
+                CREATE TABLE IF NOT EXISTS profile_probes (
+                  profile_id TEXT PRIMARY KEY REFERENCES profiles(id),
+                  signature TEXT NOT NULL, credential_hash TEXT NOT NULL,
+                  result TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS feedback (
                   run_id TEXT NOT NULL REFERENCES runs(id), rule_id TEXT NOT NULL,
                   object_id TEXT NOT NULL, data TEXT NOT NULL,
@@ -263,13 +267,45 @@ class Store:
     def profile(self, ident=None, *, private=False):
         with self.connection() as c:
             row = c.execute("SELECT * FROM profiles WHERE id=?", (ident,)).fetchone() if ident else c.execute("SELECT * FROM profiles ORDER BY is_default DESC,id LIMIT 1").fetchone()
+            probe = c.execute("SELECT * FROM profile_probes WHERE profile_id=?", (row["id"],)).fetchone() if row else None
         if not row:
             raise NotFound("尚未配置模型服务")
         data = json.loads(row["data"])
         data.update(id=row["id"], default=bool(row["is_default"]))
+        data["probe"] = None
+        if probe:
+            try:
+                signature, credential = self.probe_identity(data["profile_path"])
+                if signature == probe["signature"] and credential == probe["credential_hash"]:
+                    data["probe"] = json.loads(probe["result"])
+            except (OSError, ValueError, TypeError, RuntimeError):
+                # Old success cannot stand in for unreadable or changed settings.
+                pass
         if private:
             data = {**data, **json.loads(Path(data["profile_path"]).read_text())}
         return data
+
+    @staticmethod
+    def probe_identity(path):
+        """A test applies to current settings and credentials; neither leaks keys."""
+        from dataclasses import fields
+        from agent_review.llm import Profile
+        data = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+        known = {field.name for field in fields(Profile)}
+        values = {key: value for key, value in data.items() if key in known}
+        secret = os.environ.get(values.get("api_key_env") or "") or values.get("api_key") or os.environ.get("SCHEMATIC_LLM_API_KEY") or ""
+        values.update(api_key="", api_key_env="")
+        return Profile(**values).signature(), hashlib.sha256(secret.encode()).hexdigest()
+
+    def save_probe(self, ident, result, identity):
+        # Keep receipts apart from model configuration so they never enter a prompt.
+        signature, credential = identity
+        value = {**result, "profile_signature": signature, "tested_at": now()}
+        with self.connection(write=True) as c:
+            if not c.execute("SELECT 1 FROM profiles WHERE id=?", (ident,)).fetchone():
+                raise NotFound("尚未配置模型服务")
+            c.execute("INSERT INTO profile_probes VALUES(?,?,?,?) ON CONFLICT(profile_id) DO UPDATE SET signature=excluded.signature,credential_hash=excluded.credential_hash,result=excluded.result", (ident, signature, credential, dumps(value)))
+        return value
 
     def profiles(self):
         with self.connection() as c:
@@ -284,10 +320,10 @@ class Store:
             prior = self.profile(ident, private=True)
         except NotFound:
             prior = {}
-        clean = {k: v for k, v in values.items() if k in {"name", "provider", "base_url", "model", "api_key_env", "api_key", "timeout", "max_tokens", "max_turns", "max_requests", "temperature", "max_retries", "stream", "structured_output", "strict_schema", "supports_tools", "supports_images", "token_parameter"}}
+        clean = {k: v for k, v in values.items() if k in {"name", "provider", "base_url", "model", "api_key_env", "api_key", "timeout", "max_tokens", "max_context_tokens", "max_turns", "max_requests", "temperature", "max_retries", "stream", "structured_output", "strict_schema", "supports_tools", "supports_images", "token_parameter"}}
         if clean.get("api_key") is None:
             clean.pop("api_key", None)
-        full = {**{k: v for k, v in prior.items() if k not in {"id", "profile_path", "default", "has_api_key"}}, **clean}
+        full = {**{k: v for k, v in prior.items() if k not in {"id", "profile_path", "default", "has_api_key", "probe"}}, **clean}
         path = self.home / "profiles" / (ident + ".json")
         atomic_json(path, full, private=True)
         public = {k: v for k, v in full.items() if k != "api_key"}
