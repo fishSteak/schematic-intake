@@ -4,12 +4,96 @@
 from __future__ import annotations
 
 import re
+import math
+import ast
 from pathlib import Path
 from typing import Any
 from agent_review.decision_contract import validate_decision_audit
 from agent_review.analysis_contract import VERSION as ANALYSIS_VERSION, validate_links, step_schema
 
 VERDICTS = frozenset({"是", "否", "待确认", "不适用"})
+
+_POWER_BOUND = re.compile(
+    r"(?:\bP(?:_[A-Za-z0-9]+|\s*[（(][^）)\n]{1,60}[）)])?|功耗|耗散(?:功率)?)"
+    r"\s*(?:上界|下界)?\s*(≤|<=|≦|≥|>=|≧|<|>)"
+)
+_BOUND_RELATION = re.compile(r"(<=|>=|≤|≥|≦|≧|<|>|=|≈)")
+_POWER_RESULT = re.compile(r"\s*(\d+(?:\.\d*)?|\.\d+)([eE][+-]?\d+)?\s*(mW|uW|µW|μW|W)\s*$")
+_BOUND_DIRECTIONS = {"upper_bound": {"≤", "<=", "≦", "<"}, "lower_bound": {"≥", ">=", "≧", ">"}}
+_NAMED_POWER_BOUND = re.compile(r"\bP_(upper|lower)\s*[=≈]\s*")
+
+
+def _numeric_power_bound(expr: str, power: float | None, stress_kind: Any) -> bool:
+    """Check a numeric substitution, not the proof of its symbolic inequality.
+
+    Only the explicit arithmetic segment and its result/unit are checked here;
+    source, scope and reachability remain the responsibility of other contracts.
+    """
+    marker = _POWER_BOUND.search(expr)
+    if not marker or power is None or not math.isfinite(power) or power < 0 or len(expr) > 2000 or not isinstance(stress_kind, str):
+        return False
+    direction = _BOUND_DIRECTIONS.get(stress_kind)
+    if not direction or marker[1] not in direction:
+        return False
+    segments = _BOUND_RELATION.split(expr[marker.end():])
+    if any(op not in direction | {"=", "≈"} for op in segments[1::2]):
+        return False
+    from agent_review.llm_tools import MaterialTools
+    superscripts = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺", "0123456789-+")
+    for index in range(1, len(segments) - 1, 2):
+        if segments[index] not in {"=", "≈"}:
+            continue
+        # Units must be explicit. Do not silently infer a W/mW conversion.
+        result = _POWER_RESULT.fullmatch(segments[index + 1])
+        if result is None:
+            continue
+        expression = re.sub(r"[⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺]+", lambda m: "**(" + m[0].translate(superscripts) + ")", segments[index - 1])
+        expression = expression.translate(str.maketrans({"×": "*", "÷": "/", "−": "-", "^": "**", "（": "(", "）": ")"})).strip()
+        if len(expression) > 300 or not re.fullmatch(r"[0-9.eE+*/()\s-]+", expression):
+            continue
+        try:
+            # A repeated number is not evidence of numeric substitution.
+            if not any(isinstance(node, ast.BinOp) for node in ast.walk(ast.parse(expression, mode="eval"))):
+                continue
+            calculated = MaterialTools.calculate(expression)["value"]
+            shown = float(result[1] + (result[2] or ""))
+            watts = shown * {"W": 1, "mW": 1e-3, "uW": 1e-6, "µW": 1e-6, "μW": 1e-6}[result[3]]
+            if all(math.isfinite(v) and v >= 0 for v in (calculated, shown, watts)) and math.isclose(calculated, shown, rel_tol=1e-5, abs_tol=1e-12) and math.isclose(watts, power, rel_tol=1e-5, abs_tol=1e-12):
+                return True
+        except (ArithmeticError, ValueError, TypeError, SyntaxError, RecursionError):
+            continue
+    return False
+
+
+def _power_bound_formulas(lines: list[str], power: float | None, stress_kind: Any) -> bool:
+    """Never let unrelated limit equations conceal an invalid numeric bound."""
+    direction = _BOUND_DIRECTIONS.get(stress_kind) if isinstance(stress_kind, str) else None
+    if not direction:
+        return False
+    numeric_proofs = []
+    for line in lines:
+        markers = list(_POWER_BOUND.finditer(line))
+        names = list(_NAMED_POWER_BOUND.finditer(line))
+        # Keep each proof in its own formula row, so a second expression cannot
+        # hide a failed numeric substitution earlier on the same line.
+        if len(markers) + len(names) > 1:
+            return False
+        marker = markers[0] if markers else None
+        named = names[0] if names else None
+        if marker:
+            tail = line[marker.end():]
+            if marker[1] not in direction or any(op not in direction | {"=", "≈"} for op in _BOUND_RELATION.split(tail)[1::2]):
+                return False
+            if re.search(r"[0-9]", tail):
+                numeric_proofs.append(_numeric_power_bound(line, power, stress_kind))
+            # A symbolic relation is not numeric evidence. A separate explicitly
+            # named upper/lower bound may provide the numeric substitution below.
+        elif named:
+            if named[1] + "_bound" != stress_kind:
+                return False
+            relation = "≤" if stress_kind == "upper_bound" else "≥"
+            numeric_proofs.append(_numeric_power_bound("P" + relation + line[named.end():], power, stress_kind))
+    return bool(numeric_proofs) and all(numeric_proofs)
 
 
 def validate_power_decision(card: dict[str, Any]) -> list[str]:
@@ -39,7 +123,7 @@ def validate_power_decision(card: dict[str, Any]) -> list[str]:
         errs.append("decision_basis requires finite nonnegative value_w/limit_w and P_limit")
     if not basis.get("evidence") or not basis.get("conditions"):
         errs.append("decision_basis requires evidence and conditions")
-    if kind in {"reachable_state", "proven_lower_bound", "normal_design_model"}:
+    if kind in {"reachable_state", "proven_lower_bound", "normal_design_model", "envelope_upper_bound"}:
         idx = basis.get("state_index")
         states = card.get("states") or []
         if type(idx) is not int or not 0 <= idx < len(states):
@@ -48,7 +132,9 @@ def validate_power_decision(card: dict[str, Any]) -> list[str]:
             errs.append("decision witness cannot be unmapped or conditional")
         elif kind == "proven_lower_bound" and states[idx].get("stress_kind") != "lower_bound":
             errs.append("lower-bound witness requires stress_kind=lower_bound")
-        elif states[idx].get("stress_kind") == "upper_bound":
+        elif kind == "envelope_upper_bound" and states[idx].get("stress_kind") != "upper_bound":
+            errs.append("envelope decision requires stress_kind=upper_bound")
+        elif kind != "envelope_upper_bound" and states[idx].get("stress_kind") == "upper_bound":
             errs.append("an upper bound cannot establish a reachable failure witness")
         else:
             try:
@@ -70,6 +156,8 @@ def validate_worst_case(card: dict[str, Any]) -> list[str]:
     states = card.get("states") or []
     if not isinstance(states, list) or any(not isinstance(state, dict) for state in states):
         return ["worst_case requires a list of state objects"]
+    if any(state.get("stress_kind") is not None and not isinstance(state["stress_kind"], str) for state in states):
+        return ["worst_case state stress_kind must be string"]
     errors = []
     def power(state):
         value = state.get("P")
@@ -100,8 +188,11 @@ def validate_worst_case(card: dict[str, Any]) -> list[str]:
     if not isinstance(worst.get("unresolved"), list):
         errors.append("worst_case.unresolved must be list")
     for index, state in enumerate(states):
-        if state.get("status") == "conditional" and (power(state) is None or not state.get("conditions") or state.get("stress_kind") != "modeled"):
-            errors.append(f"conditional states[{index}] requires numeric modeled P and conditions")
+        if state.get("status") == "conditional":
+            if power(state) is None or not isinstance(state.get("conditions"), str) or not state["conditions"].strip() or state.get("stress_kind") not in {"modeled", "upper_bound", "lower_bound"}:
+                errors.append(f"conditional states[{index}] requires numeric P, conditions and modeled/upper_bound/lower_bound stress_kind")
+            if state.get("stress_kind") in {"upper_bound", "lower_bound"} and state.get("role") in {"worst", "worst_candidate"}:
+                errors.append(f"conditional bound states[{index}] cannot claim a ranked working-point role")
     return errors
 _P11 = frozenset({"P11-A01", "P11-A03"})
 _DEEP = frozenset(
@@ -272,7 +363,6 @@ def validate_judge_card(
                     if len(fl) < 1:
                         errs.append(f"P11 states[{i}] 须含 formula_lines，当前 0")
                     else:
-                        blob = "\n".join(str(x.get("expr") or "") for x in fl)
                         try:
                             p_val = float(
                                 s["P"] if s.get("P") is not None else s.get("P_w")
@@ -281,14 +371,16 @@ def validate_judge_card(
                             p_val = None
                         # P≈0 态允许「可忽略/≈0」，不强制再写 P= 行
                         near_zero = p_val is not None and abs(p_val) < 1e-9
-                        has_p = re.search(
+                        expressions = [str(x.get("expr") or "") for x in fl]
+                        has_bound = any(_POWER_BOUND.search(line) or _NAMED_POWER_BOUND.search(line) for line in expressions)
+                        has_p = _power_bound_formulas(expressions, p_val, s.get("stress_kind")) if has_bound else re.search(
                             r"(P\s*[=≈]|P_[A-Za-z0-9]+\s*[=≈]|P\s*[\(（]|(?:功耗|耗散功率|耗散)\s*[=≈]"
                             r"|耗散\s*可忽略|功耗\s*可忽略|≈\s*0\s*W"
                             r"|\d+(?:\.\d+)?\s*mW\b)",
-                            blob,
+                            "\n".join(expressions),
                         )
-                        if not has_p and not near_zero:
-                            errs.append(f"P11 states[{i}] formula_lines 须含功耗 P= 代入")
+                        if not has_p and (not near_zero or has_bound):
+                            errs.append(f"P11 states[{i}] formula_lines 须含功耗 P= 代入或与 P 及单位一致的上下界数值推导")
                         missing_src = sum(1 for x in fl if not str(x.get("src") or "").strip())
                         if missing_src:
                             errs.append(f"P11 states[{i}] formula_lines 有 {missing_src} 行缺 src")

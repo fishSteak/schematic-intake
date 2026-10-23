@@ -227,11 +227,16 @@ class Store:
             stamp = now()
             cur = c.execute("INSERT INTO events(run_id,type,data,created_at) VALUES(?,?,?,?)", (ident, kind, dumps(data), stamp))
             value = json.loads(row["data"])
-            for key in ("stage", "completed", "total"):
-                if key in data:
-                    value[key] = data[key]
-            if kind == "stage":
-                value["stage"] = data.get("stage", data.get("name", value.get("stage")))
+            # Technical events may carry their own stage/counts; only workflow
+            # events own the run's overall stage and progress.
+            if kind in {"stage", "progress"}:
+                for key in ("stage", "completed", "total"):
+                    if key in data:
+                        value[key] = data[key]
+                if kind == "stage":
+                    value["stage"] = data.get("stage", data.get("name", value.get("stage")))
+            elif kind == "stopping":
+                value["stage"] = "stopping"
             c.execute("UPDATE runs SET data=?,updated_at=? WHERE id=?", (dumps(value), stamp, ident))
             return {"seq": cur.lastrowid, "type": kind, "data": data, "created_at": stamp}
 

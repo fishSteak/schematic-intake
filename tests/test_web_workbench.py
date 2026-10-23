@@ -348,6 +348,35 @@ class WorkbenchTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "不在检查范围"):
             scope_objects(enumeration, ["DOES_NOT_EXIST"])
 
+    def test_technical_events_preserve_workflow_stage_and_progress(self):
+        run = self.start().json()
+        self.store.event(run["id"], "stage", {"stage": "模型评审", "completed": 4, "total": 7})
+        payload = {"stage": "cases_calc", "completed": 1, "total": 1,
+                   "signature": "fixture-signature", "detail": "工况分析与程序计算的输入、策略和全部产物校验通过"}
+        event = self.store.event(run["id"], "preparation_reused", payload)
+        current = self.client.get(f"/api/runs/{run['id']}").json()
+        self.assertEqual((current["stage"], current["completed"], current["total"]), ("模型评审", 4, 7))
+        self.assertEqual(current["completed"] / current["total"], 4 / 7)
+        self.assertEqual(event["type"], "preparation_reused")
+        self.assertEqual(event["data"], payload)
+        persisted = self.store.events(run["id"], after=event["seq"] - 1)
+        self.assertEqual(persisted, [event])
+
+    def test_workflow_events_and_stop_update_only_their_owned_state(self):
+        run = self.start().json()
+        self.store.event(run["id"], "stage", {"name": "模型评审", "completed": 4, "total": 7})
+        current = self.store.run(run["id"])
+        self.assertEqual((current["stage"], current["completed"], current["total"]), ("模型评审", 4, 7))
+        self.store.event(run["id"], "progress", {"stage": "完成", "completed": 7, "total": 7})
+        current = self.store.run(run["id"])
+        self.assertEqual((current["stage"], current["completed"], current["total"]), ("完成", 7, 7))
+        stopping = self.client.post(f"/api/runs/{run['id']}/stop").json()
+        self.assertEqual((stopping["status"], stopping["stage"], stopping["completed"], stopping["total"]),
+                         ("stopping", "stopping", 7, 7))
+        self.store.event(run["id"], "preparation_reused", {"stage": "cases_calc", "completed": 0, "total": 1})
+        current = self.store.run(run["id"])
+        self.assertEqual((current["stage"], current["completed"], current["total"]), ("stopping", 7, 7))
+
     def test_stop_blocks_late_completion_and_resume_creates_new_attempt(self):
         run = self.start().json()
         stopping = self.client.post(f"/api/runs/{run['id']}/stop").json()

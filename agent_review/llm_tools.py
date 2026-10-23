@@ -176,7 +176,8 @@ class MaterialTools:
         if net: return {'net':kg.get('nets',{}).get(net)}
         return {'stats':kg.get('stats'),'component_refs':list(kg.get('components',{})), 'nets':list(kg.get('nets',{}))}
 
-    def calculate(self, expression):
+    @staticmethod
+    def calculate(expression):
         if len(expression)>1000: raise ValueError('Expression too long')
         tree=ast.parse(expression,mode='eval')
         binary={ast.Add:operator.add,ast.Sub:operator.sub,ast.Mult:operator.mul,ast.Div:operator.truediv,ast.Pow:operator.pow}
