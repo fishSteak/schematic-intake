@@ -80,11 +80,8 @@ def _text(path,page=None):
         with zipfile.ZipFile(path) as z:
             root=ET.fromstring(z.read('word/document.xml'))
             return ' '.join(x.text or '' for x in root.iter() if x.tag.endswith('}t'))
-    raw=path.read_bytes()
-    for encoding in ('utf-8-sig','utf-16','gb18030'):
-        try:return raw.decode(encoding)
-        except (UnicodeError,LookupError):pass
-    return None
+    from agent_review.llm_tools import decode_material_text
+    return decode_material_text(path.read_bytes())[0]
 
 def validate_research(data,board,*,verify_quotes=True):
     errors=[f"{'.'.join(map(str,e.absolute_path))}: {e.message}" for e in Draft202012Validator(read_json(SCHEMA)).iter_errors(data)]
@@ -161,7 +158,8 @@ def run_research(board,enumeration,*,followup=False,force=False):
     write_json(output.with_suffix('.context.json'),task);write_json(output.with_suffix('.schema.json'),read_json(SCHEMA))
     job=folder/'job.json';write_json(job,{'board':str(board),'output':str(output),'inputs':inputs,'followup':followup})
     from agent_review.llm_tasks import task as llm_task, atomic_json
-    from agent_review.llm import LLMCancelled, LLMClient, BudgetExceeded, load_profile
+    from agent_review.llm import LLMCancelled, LLMClient, load_profile
+    from agent_review.llm_dispatch import failure_category
     profile=load_profile(task="evidence")
     errors=[];messages=None
     with LLMClient(profile) as client:
@@ -175,8 +173,9 @@ def run_research(board,enumeration,*,followup=False,force=False):
                 atomic_json(output,data);atomic_json(result_path,run)
             except LLMCancelled: raise
             except Exception as exc:
-                run={'status':'error','error':client.redact(str(exc)),'metadata':client.metadata()};atomic_json(result_path,run)
-                if isinstance(exc,BudgetExceeded):break
+                failure=failure_category(exc)
+                run={'status':'error','error':client.redact(str(exc)),'metadata':client.metadata(),**failure};atomic_json(result_path,run)
+                if not failure['repairable']:raise
             if run.get('status')!='completed':
                 print('RESEARCH_RETRY',attempt+1,run.get('error'),flush=True);continue
             try:

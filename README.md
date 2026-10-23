@@ -105,13 +105,16 @@ node --test report_ui/tests/*.test.mjs
 npm --prefix report_ui run build
 .venv/bin/python scripts/verify_standalone.py
 .venv/bin/python scripts/verify_workbench_lifecycle.py
+.venv/bin/python scripts/verify_workbench_material_scope.py
 ```
 
 `verify_standalone.py` 使用隔离目录与固定 P05-A01 程序规则，核对求解器和程序检查迁移基线，并验证报告 HTTP 读取。`verify_workbench_lifecycle.py` 用独立临时数据目录验证真实服务重启、worker 中断与续跑，保留正式工作台数据。LLM 协议测试使用模拟 HTTP，不能替代真实模型深审验收。
 
-本分支已验证本机程序检查链路：0918 板 P05-A01 的 51 个对象、报告门禁、网页 PDF 联动、复核保存、历史比较和导出。完整对象深审与问答尚未验收，不能用协议测试或程序结果替代。
+`verify_workbench_material_scope.py` 验证通过 HTTP 替换 BOM 后，只复跑指定对象，新事实与报告采用新值，旧报告和源材料保持不变；全程使用隔离数据与程序检查。可用 `--output-dir` 指定一个尚不存在的目录保留验证产物。
 
-子目录部署已通过真实 HTTPS 浏览器验证：主站登录、匿名访问拦截、报告深链刷新、材料预检、PDF、冻结来源、ZIP 下载与事件流。2026-10-23 使用工作台配置的 `gpt-6.1-sol` 完成了真实 API 连接、结构化 JSON、工具调用往返和图片识别测试；这些能力测试不代表完整对象深审与问答已验收。
+本分支已验证本机程序检查链路：0918 板 P05-A01 的 51 个对象、报告门禁、网页 PDF 联动、复核保存、历史比较和导出。真实对象问答已通过，11 条引用逐字匹配且报告未改变；问答支持按批次与对象加载历史。P11-A01/R1 已完成真实证据查证和分析草稿，但独立自检、工程卡交付及完整深审报告发布尚未验收，不能用协议测试或程序结果替代。
+
+子目录部署已通过真实 HTTPS 浏览器验证：主站登录、匿名访问拦截、报告深链刷新、材料预检、PDF、冻结来源、ZIP 下载与事件流。2026-10-23 使用工作台配置的 `gpt-6.1-sol` 完成了真实 API 连接、结构化 JSON、工具调用往返和图片识别测试；这些能力测试不代表完整深审已验收。长分析的请求等待时间已调整为 600 秒。服务随后返回 HTTP 503；重新保存用户提供的配置后，模型列表确认包含所选模型，但推理接口仍不可用，待服务恢复后继续最终交付验收，详细记录见方案文档。
 
 ## 仓库内容
 

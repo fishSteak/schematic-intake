@@ -60,6 +60,7 @@ export const api = {
   report: id => request(`/api/reports/${segment(id)}/data`),
   feedback: id => request(`/api/reviews/${segment(id)}/feedback`),
   saveFeedback: (run, rule, object, body) => request(`/api/reviews/${segment(run)}/${segment(rule)}/${segment(object)}/feedback`, json('PUT', body)),
+  questions: (run, rule, object) => request(`/api/reviews/${segment(run)}/${segment(rule)}/${segment(object)}/questions`),
   ask: (run, rule, object, body) => request(`/api/reviews/${segment(run)}/${segment(rule)}/${segment(object)}/questions`, { ...json('POST', body), timeout: 300000 }),
   profiles: () => request('/api/model-profiles'),
   saveProfile: body => request('/api/model-profiles', json('PUT', body)),

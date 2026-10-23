@@ -692,8 +692,11 @@ def run(
     write_json(o / "judge_jobs.json", {"jobs": dispatch, "concurrency": concurrency, "reused_n": len(reused),"attempt_id":attempt_id})
 
     if not dry_run and dispatch:
-        from agent_review.llm_dispatch import dispatch as dispatch_llm
-        dispatch_llm(board, concurrency=concurrency)
+        from agent_review.llm_dispatch import dispatch as dispatch_llm, raise_for_execution_failures
+        dispatch_result=dispatch_llm(board, concurrency=concurrency)
+        # A timeout, exhausted request budget or unusable provider cannot be
+        # repaired by generating the same analysis again with a fresh budget.
+        raise_for_execution_failures(dispatch_result)
 
     done = 0
     failed = 0
@@ -735,10 +738,9 @@ def run(
 
             if not out_p.is_file():
                 failed += 1
-                write_json(
-                    out_p.with_suffix(".failed.json"),
-                    {"object": obj, "rule_id": rid, "error": "orchestrator did not write card"},
-                )
+                failure_path=out_p.with_suffix('.failed.json')
+                if not failure_path.is_file():
+                    write_json(failure_path,{'object':obj,'rule_id':rid,'error':'model did not deliver a card'})
                 continue
             card = read_json(out_p)
             run_results = read_json(o/'sdk_judge_result.json').get('results',[]) if (o/'sdk_judge_result.json').is_file() else []

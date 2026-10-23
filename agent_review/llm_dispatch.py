@@ -8,7 +8,9 @@ from pathlib import Path
 import uuid
 from kernel.util import ROOT, read_json, out_dir
 from agent_review.batching import safe_object_name
-from agent_review.llm import LLMCancelled, LLMClient, load_profile
+from agent_review.llm import (LLMCancelled, LLMClient, load_profile, LLMError,
+    LLMTransportError, LLMHTTPError, BudgetExceeded, ConfigurationError,
+    OutputValidationError, ProtocolError)
 from agent_review.llm_tasks import task, atomic_json, check_cancelled
 
 def _prompt(*names):
@@ -26,6 +28,22 @@ def _embedded(schema, name):
 def _record(path, event):
     path.parent.mkdir(parents=True,exist_ok=True)
     with path.open('a',encoding='utf-8') as stream: stream.write(json.dumps(event,ensure_ascii=False)+'\n')
+
+def failure_category(error):
+    """Only model output/contract failures can be fixed by semantic repair."""
+    if isinstance(error,OutputValidationError):return {'error_kind':'output_validation','repairable':True}
+    if isinstance(error,LLMTransportError):return {'error_kind':error.kind,'repairable':False}
+    if isinstance(error,LLMHTTPError):return {'error_kind':'http','status_code':error.status_code,'repairable':False}
+    if isinstance(error,BudgetExceeded):return {'error_kind':'budget','repairable':False}
+    if isinstance(error,ConfigurationError):return {'error_kind':'configuration','repairable':False}
+    if isinstance(error,ProtocolError):return {'error_kind':'protocol','repairable':False}
+    return {'error_kind':'execution','repairable':False}
+
+def raise_for_execution_failures(result):
+    failures=[row for row in result.get('results',[]) if not row.get('ok') and row.get('repairable') is False]
+    if failures:
+        row=failures[0]
+        raise LLMError('Review execution failed ('+row['error_kind']+'): '+row['error'])
 
 def _legacy_schema(rid,obj,context):
     """Expose the current shared contract; rule-specific semantics stay in validators."""
@@ -73,7 +91,7 @@ def _object_impl(board,job,obj,run_id,client):
     common=_prompt('judge/review_v1.common.md') if native else _prompt('_common_judge.md')
     policy=_prompt('judge/review_v1.power.md' if native else 'judge/_power_decision.md') if rid=='P11-A01' else ''
     analysis_prompt=_prompt('judge/'+rid+'.analysis.md','judge/'+rid+'.md')
-    if not analysis_prompt: raise ValueError('No review prompt for '+rid)
+    if not analysis_prompt: raise ConfigurationError('No review prompt for '+rid)
     analysis_schema={'type':'object','properties':{'analysis':{'type':'string','minLength':40}},'required':['analysis'],'additionalProperties':False}
     messages=None;checkpoint=None;recovered_stage=None
     key=job.get('execution_hash')
@@ -163,7 +181,7 @@ def _object_impl(board,job,obj,run_id,client):
             _record(log,{'type':'phase_completed','phase':'contract','run_id':run_id})
             return {'object':obj,'model':metadata['model'],'provider':metadata['provider'],'usage':metadata['usage']}
         atomic_json(base.with_suffix('.invalid.json'),{'errors':errors,'card':card,'attempt':attempt+1})
-    raise ValueError('Card validation failed: '+'; '.join(errors[:8]))
+    raise OutputValidationError('Card validation failed: '+'; '.join(errors[:8]))
 
 def dispatch(board, *, concurrency=2):
     board=Path(board);source=read_json(out_dir(board)/'judge_jobs.json')
@@ -175,10 +193,11 @@ def dispatch(board, *, concurrency=2):
                     'model':objects[-1]['model'],'provider':objects[-1]['provider']}
         except LLMCancelled: raise
         except Exception as exc:
+            failure={'error':str(exc),**failure_category(exc)}
             for obj in job['objects']:
                 atomic_json(out_dir(board)/'agent_jobs'/job['rule_id']/(safe_object_name(obj)+'.failed.json'),
-                            {'error':str(exc),'run_id':ident})
-            return {'job_id':job['job_id'],'ok':False,'run':ident,'error':str(exc)}
+                            {**failure,'run_id':ident})
+            return {'job_id':job['job_id'],'ok':False,'run':ident,**failure}
     results=[]
     with ThreadPoolExecutor(max_workers=max(1,min(int(concurrency),8))) as pool:
         for future in as_completed([pool.submit(run_job,job) for job in source['jobs']]):

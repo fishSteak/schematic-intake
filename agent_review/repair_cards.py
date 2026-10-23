@@ -71,6 +71,9 @@ def repair(board,kg,enumeration,*,concurrency=2,max_attempts=3,geometry_feedback
     sources={(j['rule_id'],obj):j for j in initial['jobs'] for obj in j['objects']}
     sources=recover_source_jobs(board,sources,enumeration)
     dispatched=read_json(o/'sdk_judge_result.json')
+    from agent_review.llm_dispatch import raise_for_execution_failures
+    if dispatched.get('attempt_id')==initial.get('attempt_id'):
+        raise_for_execution_failures(dispatched)
     source_runs={r['job_id']:r.get('run') for r in dispatched.get('results',[])} if dispatched.get('attempt_id')==initial.get('attempt_id') else {}
     frozen=material_hash(board);records=[]
     route_repairs={(r['rule_id'],r['object']):r for r in geometry_feedback or []}
@@ -128,7 +131,8 @@ def repair(board,kg,enumeration,*,concurrency=2,max_attempts=3,geometry_feedback
         write_json(o/'judge_jobs.json',{'jobs':jobs,'concurrency':concurrency,'attempt_id':attempt,'mode':'autonomous_repair'})
         print('AUTONOMOUS_REPAIR',len(jobs),flush=True)
         from agent_review.llm_dispatch import dispatch
-        dispatch(board,concurrency=concurrency)
+        dispatch_result=dispatch(board,concurrency=concurrency)
+        raise_for_execution_failures(dispatch_result)
         if material_hash(board)!=frozen:raise RuntimeError('Evidence changed during delivery repair')
         result=read_json(o/'sdk_judge_result.json')
         if result.get('attempt_id')!=attempt:raise RuntimeError('No matching current repair execution')

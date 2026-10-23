@@ -12,7 +12,7 @@ from unittest.mock import patch
 import httpx
 
 from agent_review import llm_dispatch, llm_tasks
-from agent_review.llm import LLMClient, Profile
+from agent_review.llm import LLMClient, Profile, LLMError
 from agent_review.review_contract import validate_review
 from agent_review.validate_job import validate_judge_card
 from kernel.util import ROOT, read_json, write_json
@@ -90,6 +90,7 @@ class LLMDispatchTests(unittest.TestCase):
             body = json.loads(request.content)
             self.requests.append(body)
             value = response_factory(body)
+            if isinstance(value,httpx.Response):return value
             is_tool = isinstance(value, list)
             return httpx.Response(200, json={
                 'id': 'response-' + str(len(self.requests)), 'model': 'actual-model',
@@ -149,6 +150,9 @@ class LLMDispatchTests(unittest.TestCase):
         self.assertEqual(self.base.with_suffix('.json').read_bytes(), original)
         self.assertIn('immutable criterion', json.dumps(read_json(self.base.with_suffix('.invalid.json'))))
         self.assertIn('immutable criterion', self.requests[-1]['messages'][-1]['content'])
+        self.assertTrue(result['results'][0]['repairable'])
+        self.assertEqual(result['results'][0]['error_kind'],'output_validation')
+        llm_dispatch.raise_for_execution_failures(result)
 
     def test_budget_is_shared_across_analysis_check_and_finalization(self):
         self.legacy_fixture()
@@ -156,7 +160,35 @@ class LLMDispatchTests(unittest.TestCase):
         self.assertEqual(result['failed'], 1)
         self.assertEqual(client.request_count, 2)
         self.assertIn('budget exhausted', result['results'][0]['error'])
+        self.assertEqual(result['results'][0]['error_kind'],'budget')
+        self.assertFalse(result['results'][0]['repairable'])
         self.assertFalse(self.base.with_suffix('.json').exists())
+        with self.assertRaisesRegex(LLMError,'budget'):
+            llm_dispatch.raise_for_execution_failures(result)
+        # The real repair entry point rejects this dispatch before any new client
+        # or budget is created, including direct CLI/followup repair callers.
+        from agent_review.repair_cards import repair
+        with patch.object(llm_dispatch,'dispatch') as retry:
+            with self.assertRaisesRegex(LLMError,'budget'):
+                repair(self.board,{}, {'by_rule':{'P05-A01':['R1']}})
+        retry.assert_not_called()
+
+    def test_transport_and_http_failures_preserve_category_and_cannot_enter_repair(self):
+        self.legacy_fixture()
+        def timeout(body):raise httpx.ReadTimeout('SECRET_URL should not escape')
+        for output,kind,status in ((timeout,'timeout',None),(lambda body:httpx.Response(401,text='SECRET_BODY'),'http',401)):
+            with self.subTest(kind=kind):
+                result,client=self.dispatch(output,profile=replace(self.profile,max_retries=1))
+                row=result['results'][0]
+                self.assertEqual(row['error_kind'],kind)
+                self.assertFalse(row['repairable'])
+                self.assertEqual(row.get('status_code'),status)
+                self.assertEqual(client.request_count,2 if kind=='timeout' else 1)
+                failed=read_json(self.base.with_suffix('.failed.json'))
+                self.assertEqual(failed['error_kind'],kind)
+                self.assertNotIn('SECRET_',json.dumps(result)+json.dumps(failed))
+                with self.assertRaisesRegex(LLMError,kind):llm_dispatch.raise_for_execution_failures(result)
+                self.assertFalse(self.base.with_suffix('.json').exists())
 
     def test_model_cannot_mark_real_review_as_dry_run_or_supply_provenance(self):
         self.legacy_fixture()

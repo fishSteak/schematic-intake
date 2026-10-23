@@ -67,7 +67,20 @@ def material_hash(board):
     for folder in ('cache','review_out/cache','review_out/datasheets','review_out/sch','review_out/context_store'):
         for p in sorted((board/folder).rglob('*')):
             if p.is_file() and not set(p.parts)&{'history','quarantine','tombstones'}:
-                files[str(p.relative_to(board))]=hashlib.sha256(p.read_bytes()).hexdigest()
+                relative=str(p.relative_to(board))
+                if folder=='review_out/context_store' and p.name=='ledger.jsonl' and p.parent==board/folder:
+                    # Append-only audit activity is not new engineering evidence.
+                    continue
+                if folder=='review_out/context_store' and p.name=='manifest.json' and p.parent==board/folder:
+                    manifest=read_json(p)
+                    manifest.pop('reused',None)
+                    if isinstance(manifest.get('seal'),dict):
+                        manifest['seal'].pop('at',None)
+                    # Keep the plan, epoch, entry revisions/hashes and seal state.
+                    # init_reuse/reseal must not invalidate unchanged analysis.
+                    files[relative]=digest(manifest)
+                else:
+                    files[relative]=hashlib.sha256(p.read_bytes()).hexdigest()
     return digest(files)
 
 def checkpoint(board,rid,obj,key):

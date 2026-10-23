@@ -22,7 +22,7 @@ from jsonschema import Draft202012Validator
 from .config import Profile
 from .errors import (
     BudgetExceeded, ConfigurationError, LLMCancelled, LLMError,
-    LLMHTTPError, OutputValidationError, ProtocolError,
+    LLMHTTPError, LLMTransportError, OutputValidationError, ProtocolError,
 )
 
 EventHandler = Callable[[dict[str, Any]], None]
@@ -262,17 +262,21 @@ class LLMClient:
                 check_cancelled(cancelled)
                 return result
             except LLMHTTPError as error:
+                retry_reason = {"error_kind": "http", "status_code": error.status_code}
                 if not error.retryable or attempt >= self.profile.max_retries:
                     raise
-            except (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError):
+            except (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError) as error:
                 # A request might have reached the provider. Never replay a partial
                 # response stream; no tools or publication are run from fragments.
+                kind = "timeout" if isinstance(error, httpx.TimeoutException) else "network"
+                retry_reason = {"error_kind": kind}
                 if self.profile.stream or attempt >= self.profile.max_retries:
-                    raise LLMError("LLM transport timed out or disconnected; provider completion is unknown") from None
+                    raise LLMTransportError(kind) from None
             if self.request_count >= self.profile.max_requests:
                 raise BudgetExceeded("LLM request budget exhausted")
             wait = delay if delay is not None else min(self.profile.retry_backoff * (2 ** attempt), 30.0)
-            emit(on_event, {"type": "llm.retry", "request": self.request_count, "delay_seconds": wait})
+            emit(on_event, {"type": "llm.retry", "request": self.request_count, "delay_seconds": wait,
+                            **retry_reason})
             # Check cancellation throughout backoff, not only before another HTTP request.
             remaining = wait
             while remaining > 0:

@@ -14,7 +14,7 @@ import httpx
 
 from agent_review.llm import (
     BudgetExceeded, ConfigurationError, LLMCancelled, LLMClient,
-    LLMHTTPError, OutputValidationError, Profile, ProtocolError,
+    LLMHTTPError, LLMTransportError, OutputValidationError, Profile, ProtocolError,
     ToolError, ToolResult, configuration_available, generate_json,
     load_profile, probe_profile, profile_fingerprint, run_tools,
 )
@@ -146,15 +146,36 @@ class LLMRuntimeTests(unittest.TestCase):
 
     def test_retry_is_bounded_and_http_errors_do_not_expose_body(self):
         seen = []
+        events = []
         def handler(request):
             seen.append(request)
             return httpx.Response(503, headers={"Retry-After": "0"}, json={"error": "SECRET_TOKEN should not be printed"})
         client = self.make_client(handler, max_retries=2, api_key="SECRET_TOKEN")
         with self.assertRaises(LLMHTTPError) as raised:
-            client.complete([{"role": "user", "content": "test"}])
+            client.complete([{"role": "user", "content": "test"}], on_event=events.append)
         self.assertEqual(len(seen), 3)
         self.assertNotIn("SECRET_TOKEN", str(raised.exception))
         self.assertEqual(raised.exception.status_code, 503)
+        retries=[event for event in events if event['type']=='llm.retry']
+        self.assertEqual([event['status_code'] for event in retries],[503,503])
+        self.assertTrue(all(event['error_kind']=='http' for event in retries))
+        self.assertNotIn('SECRET_TOKEN',json.dumps(events))
+
+    def test_transport_retry_reports_only_safe_error_category(self):
+        for exception,kind in ((httpx.ReadTimeout,'timeout'),(httpx.ConnectError,'network')):
+            with self.subTest(kind=kind):
+                events=[]
+                def handler(request):
+                    raise exception('https://private.example/?api_key=SECRET_TOKEN',request=request)
+                client=self.make_client(handler,max_retries=1)
+                with self.assertRaises(LLMTransportError) as raised:
+                    client.complete([{'role':'user','content':'test'}],on_event=events.append)
+                self.assertEqual(raised.exception.kind,kind)
+                self.assertEqual(client.request_count,2)
+                retries=[event for event in events if event['type']=='llm.retry']
+                self.assertEqual([event['error_kind'] for event in retries],[kind])
+                self.assertNotIn('private.example',json.dumps(events)+str(raised.exception))
+                self.assertNotIn('SECRET_TOKEN',json.dumps(events)+str(raised.exception))
 
     def test_auth_failure_is_not_retried(self):
         client = self.make_client(lambda request: httpx.Response(401, text="secret"))

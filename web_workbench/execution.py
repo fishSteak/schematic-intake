@@ -2,6 +2,7 @@
 from __future__ import annotations
 import hashlib
 import json
+import os
 import shutil
 from pathlib import Path
 from kernel.util import ROOT, read_json, write_json, out_dir
@@ -96,6 +97,115 @@ def scope_objects(enumeration, objects):
     data['stats']={**data.get('stats',{}),'judge_pairs':sum(map(len,data['by_rule'].values()))}
     return data
 
+
+def case_preparation_signature(board, kg, enumeration):
+    """Bind auxiliary model work to frozen sources, settings and implementation."""
+    from agent_review.evidence_loop import source_revision
+    from agent_review.execution_policy import digest
+    from agent_review.llm import profile_fingerprint
+    board=Path(board)
+    names={'web_workbench/execution.py','agent_review/evidence_loop.py',
+           'agent_review/execution_policy.py','agent_review/p11_pipeline.py',
+           'agent_review/program_bridge.py','agent_review/batching.py',
+           'agent_review/llm_auxiliary.py','agent_review/llm_tasks.py','agent_review/llm_tools.py',
+           'agent_review/stages/cases_stage.py','agent_review/stages/calc_stage.py',
+           'agent_review/prompts/path_draft.md'}
+    for directory in ('agent_review/board_paths','agent_review/llm','kernel','solve_prog'):
+        names.update(str(path.relative_to(ROOT)) for path in (ROOT/directory).rglob('*.py'))
+    names.update(str(path.relative_to(ROOT)) for path in (ROOT/'rules').glob('*.json'))
+    implementation={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in sorted(names)}
+    inputs={}
+    for name in ('review_out/materials.json','review_out/design_graph.json','review_out/sch_index.json',
+                 'review_out/operating_conditions.json','review_out/design_task.json','main_analysis.json',
+                 'selection_delivery.json','review_config.json','detail_presentation.json'):
+        path=board/name
+        inputs[name]=hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+    return digest({'source_revision':source_revision(board),'kg':kg,'inputs':inputs,
+                   'scope':enumeration.get('by_rule',{}),'implementation':implementation,
+                   'model':profile_fingerprint(task='path_draft'),
+                   'skip_agent':os.environ.get('BOARD_PATHS_SKIP_AGENT','').strip()})
+
+
+def case_preparation_outputs(board):
+    """Validate complete stage outputs and return their exact byte identities."""
+    from agent_review.batching import safe_object_name
+    board=Path(board);o=out_dir(board)
+    required=['board_paths/index.json','board_paths/path_draft_jobs.json',
+              'board_paths/projection_stats.json','board_paths/assist.json',
+              'operating_cases/_bundle.json','program_stress/_bundle.json',
+              'p11_cases_result.json','p11_stress_result.json']
+    if any(not (o/name).is_file() for name in required):
+        raise ValueError('工况或计算输出尚未完整生成')
+    # The bundles and object files must describe the same completed calculation.
+    for folder in ('operating_cases','program_stress'):
+        bundle=read_json(o/folder/'_bundle.json')
+        if not isinstance(bundle,dict):raise ValueError('工况或计算汇总格式无效')
+        for rid,objects in bundle.items():
+            if not isinstance(objects,dict):raise ValueError('工况或计算对象格式无效')
+            for ref,document in objects.items():
+                path=o/folder/safe_object_name(rid)/(safe_object_name(ref)+'.json')
+                if not isinstance(document,dict):raise ValueError('工况或计算对象格式无效')
+                expected={key:value for key,value in document.items() if not str(key).startswith('_')} if folder=='operating_cases' else document
+                if read_json(path)!=expected:
+                    raise ValueError('工况或计算对象文件与汇总不一致')
+    jobs=read_json(o/'board_paths/path_draft_jobs.json').get('jobs') or []
+    if jobs and os.environ.get('BOARD_PATHS_SKIP_AGENT','').strip() not in {'1','true','yes'}:
+        results=read_json(o/'board_paths/sdk_path_draft_result.json').get('results') or []
+        by_id={row.get('job_id'):row for row in results}
+        for job in jobs:
+            row=by_id.get(job.get('job_id')) or {}
+            if not row.get('ok') or not row.get('wrote'):
+                raise ValueError('模型工况任务尚未成功完成')
+            for key,record in (('out_path',job),('metadata_path',row)):
+                path=(board/record[key]).resolve()
+                if not path.is_relative_to(o.resolve()) or not path.is_file():
+                    raise ValueError('模型工况任务缺少输出或来源记录')
+                if key=='metadata_path' and read_json(path).get('status')!='completed':
+                    raise ValueError('模型工况任务来源记录未完成')
+    paths={o/name for name in required}
+    for folder in ('board_paths','operating_cases','program_stress','llm_runs/path_draft','research_assets/llm'):
+        paths.update(path for path in (o/folder).rglob('*') if path.is_file())
+    hashes={}
+    for path in sorted(paths):
+        if path.is_symlink() or not path.resolve().is_relative_to(o.resolve()):
+            raise ValueError('工况输出路径无效')
+        raw=path.read_bytes()
+        if path.suffix=='.json':json.loads(raw)
+        elif path.suffix=='.jsonl':
+            for line in raw.splitlines():
+                if line.strip():json.loads(line)
+        hashes[str(path.relative_to(board))]=hashlib.sha256(raw).hexdigest()
+    return hashes
+
+
+def prepare_cases(board, kg, enumeration, *, resume, emit):
+    """Reuse only fully completed, unchanged cases/calc segments on a resume."""
+    from agent_review.stages import cases_stage,calc_stage
+    from agent_review.llm_tasks import atomic_json
+    marker=Path(board)/'history/preparation-checkpoints/cases-calc.json'
+    signature=case_preparation_signature(board,kg,enumeration)
+    if resume:
+        try:
+            saved=read_json(marker)
+            if saved.get('signature')==signature and saved.get('outputs')==case_preparation_outputs(board):
+                check_cancelled()
+                emit('preparation_reused',{'stage':'cases_calc','signature':signature,
+                    'detail':'工况分析与程序计算的输入、策略和全部产物校验通过'})
+                return
+        except (OSError,ValueError,KeyError,TypeError):pass
+    marker.unlink(missing_ok=True)
+    cases_stage.run(board,kg,skip_agent=False);check_cancelled()
+    calc_stage.run(board,kg);check_cancelled()
+    if case_preparation_signature(board,kg,enumeration)!=signature:
+        raise ValueError('工况分析期间材料或执行策略发生变化，请重新运行')
+    try:outputs=case_preparation_outputs(board)
+    except (OSError,ValueError,KeyError,TypeError):
+        # Existing fallback policy can still deliver a visibly incomplete case;
+        # it must never become a reusable successful model-preparation segment.
+        return
+    atomic_json(marker,{'signature':signature,'outputs':outputs})
+
+
 def execute_run(run, board_dir, workspace, emit, cancelled):
     from agent_review.stages import enumerate_stage,program_stage,context_build,judge,aggregate_stage,gate,cases_stage,calc_stage
     from agent_review.rule_modes import filter_enumeration_for_agent,split_rule_ids
@@ -152,7 +262,7 @@ def execute_run(run, board_dir, workspace, emit, cancelled):
         from agent_review.llm import load_profile
         load_profile(run.get('profile_path'))  # Fail before starting any model task when unconfigured.
         if agent_enum['rule_ids']:
-            cases_stage.run(board,kg,skip_agent=False);check_cancelled();calc_stage.run(board,kg)
+            prepare_cases(board,kg,agent_enum,resume=bool(run.get('resume')),emit=emit)
             context_meta=context_build.run(board,kg,agent_enum,use_sdk=False,concurrency=run['concurrency'])
             checked=judge.run(board,kg,agent_enum,concurrency=run['concurrency'],resume=bool(run.get('resume')))
             if checked.get('failed'):

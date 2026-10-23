@@ -8,6 +8,7 @@ from .errors import (
     LLMCancelled,
     LLMError,
     LLMHTTPError,
+    LLMTransportError,
     OutputValidationError,
     ProtocolError,
     ToolError,
@@ -17,6 +18,6 @@ from .runtime import ToolResult, generate_json, probe_profile, run_tools
 __all__ = [
     "Profile", "load_profile", "profile_fingerprint", "configuration_available", "Completion", "LLMClient", "ToolResult",
     "generate_json", "run_tools", "probe_profile", "LLMError", "ConfigurationError",
-    "LLMHTTPError", "LLMCancelled", "BudgetExceeded", "ProtocolError",
+    "LLMHTTPError", "LLMTransportError", "LLMCancelled", "BudgetExceeded", "ProtocolError",
     "OutputValidationError", "ToolError",
 ]

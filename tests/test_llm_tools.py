@@ -1,5 +1,6 @@
 """Source scope and actual computation/image outputs supplied to the LLM."""
 import base64
+import hashlib
 from pathlib import Path
 import tempfile
 import unittest
@@ -25,6 +26,34 @@ class MaterialToolTests(unittest.TestCase):
             with self.subTest(value=value),self.assertRaises(ValueError):self.tools.read_material(value)
         other=self.board/'review_out/agent_jobs/RULE/other.json';write_json(other,{'answer':'not evidence'})
         with self.assertRaises(ValueError):self.tools.read_material(str(other))
+
+    def test_material_text_encodings_preserve_source_bytes_and_character_slices(self):
+        text='位号,厂家,型号,阻值\r\nR7,厚声,0603WAF4702T5E,47kΩ\r\n'
+        variants=[('utf-8-sig',text,'utf-8-sig'),('utf-16',text,'utf-16'),
+                  ('utf-16-be',text,'utf-16'),('gbk',text,'gb18030'),
+                  ('gb18030',text+'𠀀扩展字符\r\n','gb18030')]
+        for codec,source,expected_encoding in variants:
+            with self.subTest(codec=codec):
+                raw=source.encode(codec)
+                if codec=='utf-16-be':raw=b'\xfe\xff'+raw
+                path=self.raw/'source.csv';path.write_bytes(raw)
+                result=self.tools.read_material('material_inputs/source.csv')
+                self.assertEqual(result['text'],source)
+                self.assertEqual(result['encoding'],expected_encoding)
+                self.assertEqual(result['sha256'],hashlib.sha256(raw).hexdigest())
+                self.assertEqual(result['size'],len(raw))
+                self.assertEqual(result['total_chars'],len(source))
+                start=source.index('厚声')
+                sliced=self.tools.read_material('material_inputs/source.csv',start=start,limit=2)
+                self.assertEqual(sliced['text'],'厚声')
+                self.assertEqual(sliced['sha256'],result['sha256'])
+
+    def test_material_text_does_not_silently_replace_malformed_bytes(self):
+        for raw in (b'\xff',b'\xff\xfeA'):
+            with self.subTest(raw=raw):
+                (self.raw/'broken.csv').write_bytes(raw)
+                with self.assertRaises(UnicodeDecodeError):
+                    self.tools.read_material('material_inputs/broken.csv')
 
     def test_arithmetic_rejects_python_and_dc_matches_voltage_divider(self):
         self.assertAlmostEqual(self.tools.calculate('12**2 / 1000')['value'],.144)

@@ -8,11 +8,55 @@ from unittest.mock import patch
 from kernel.util import write_json,read_json
 from kernel.util import ROOT
 from agent_review.applicability import exclusions
-from agent_review.execution_policy import checkpoint,execution_hash,two_turn
+from agent_review.execution_policy import checkpoint,execution_hash,material_hash,two_turn
 from agent_review.enumerate import enumerate_board
 from agent_review.review_contract import business_node_alias_errors
 
 class OptimizationTests(unittest.TestCase):
+    def context_fixture(self, board):
+        from agent_review.context_store import ContextStore
+        from agent_review.seed_context import seed_all
+        kg={'components':{'R1':{'type':'resistor','value':'47k','pins':[]}},'nets':{}}
+        o=board/'review_out';write_json(board/'materials.json',{})
+        write_json(o/'board_kg.json',kg);write_json(o/'materials.json',{})
+        planned=[{'kind':'object','key':'R1'}]
+        store=ContextStore(o)
+        settings={'board_kg_path':o/'board_kg.json','planned':planned,'materials_hash':'fixture-inputs'}
+        store.init(**settings);seed_all(store,kg,o,planned);store.seal()
+        return store,settings
+
+    def test_resume_audit_activity_preserves_valid_analysis_checkpoint(self):
+        with tempfile.TemporaryDirectory() as td:
+            board=Path(td);store,settings=self.context_fixture(board)
+            before=material_hash(board)
+            signature=execution_hash('P11-A01',{'fact':'unchanged'},before)
+            root=board/'history/execution-checkpoints/P11-A01/R1'/signature
+            analysis=root/'review_out/agent_jobs/P11-A01/R1.analysis.md'
+            analysis.parent.mkdir(parents=True);analysis.write_text('completed fixture analysis')
+            write_json(root/'stage.json',{'stage':'analysis','execution_hash':signature,
+                'analysis_hash':hashlib.sha256(analysis.read_bytes()).hexdigest()})
+            manifest_before=(store.root/'manifest.json').read_bytes()
+            ledger_before=(store.root/'ledger.jsonl').read_bytes()
+            self.assertTrue(store.init(**settings)['reused'])
+            self.assertNotEqual(manifest_before,(store.root/'manifest.json').read_bytes())
+            self.assertNotEqual(ledger_before,(store.root/'ledger.jsonl').read_bytes())
+            store.fetch(['object:R1']);store.seal()
+            self.assertEqual(before,material_hash(board))
+            resumed=execution_hash('P11-A01',{'fact':'unchanged'},material_hash(board))
+            self.assertEqual(signature,resumed)
+            self.assertEqual(checkpoint(board,'P11-A01','R1',resumed)['stage'],'analysis')
+
+    def test_material_hash_still_detects_context_and_seal_changes(self):
+        with tempfile.TemporaryDirectory() as td:
+            board=Path(td);store,_=self.context_fixture(board)
+            before=material_hash(board)
+            path=next((store.root/'objects').glob('*.json'));original=path.read_bytes()
+            changed=read_json(path);changed['fields']['value']='56k';write_json(path,changed)
+            self.assertNotEqual(before,material_hash(board))
+            path.write_bytes(original);self.assertEqual(before,material_hash(board))
+            store.unseal(reason='new evidence')
+            self.assertNotEqual(before,material_hash(board))
+
     def test_business_nodes_use_material_names_but_internal_ids_and_units_are_allowed(self):
         data={'decision':{'explanation':'释放接口吸流会抬高X，放宽Y处需求仍较重。'}}
         self.assertTrue(business_node_alias_errors(data,{'N_SUPPLY','N_LOAD'}))

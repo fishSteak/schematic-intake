@@ -26,6 +26,23 @@ from kernel.util import read_json, write_json
 VERSION = 'material-tools.v1'
 
 
+def decode_material_text(raw):
+    """Decode source bytes strictly, preserving text for literal evidence quotes.
+
+    Match the BOM adapter's byte-order-mark handling before trying UTF-8 and
+    the GB18030 superset of GBK. Never guess UTF-16 without its BOM: arbitrary
+    even-length GBK data can otherwise decode into unrelated Unicode text.
+    """
+    if raw.startswith((b'\xff\xfe\x00\x00', b'\x00\x00\xfe\xff')):
+        return raw.decode('utf-32'), 'utf-32'
+    if raw.startswith((b'\xff\xfe', b'\xfe\xff')):
+        return raw.decode('utf-16'), 'utf-16'
+    try:
+        return raw.decode('utf-8-sig'), 'utf-8-sig'
+    except UnicodeDecodeError:
+        return raw.decode('gb18030'), 'gb18030'
+
+
 def tool(name, description, properties, required=()):
     return {'type': 'function', 'function': {'name': name, 'description': description,
         'parameters': {'type': 'object', 'properties': properties,
@@ -128,9 +145,11 @@ class MaterialTools:
             raise ValueError('Use page tools for PDFs or read the prepared text/JSON extraction')
         if not 0 <= start <= 10_000_000 or not 1 <= limit <= 32000: raise ValueError('Read bounds invalid')
         raw=p.read_bytes()
-        try: value=raw.decode('utf-8-sig')
-        except UnicodeDecodeError: value=raw.decode('gb18030')
-        return {**self.identity(p),'text':value[start:start+limit],'start':start,'total_chars':len(value)}
+        value,encoding=decode_material_text(raw)
+        # Bind the identity to the same bytes that supplied the returned quote.
+        return {'path':str(p.relative_to(self.board)) if p.is_relative_to(self.board) else str(p),
+                'sha256':hashlib.sha256(raw).hexdigest(),'size':len(raw),'encoding':encoding,
+                'text':value[start:start+limit],'start':start,'total_chars':len(value)}
 
     def pdf_page(self, path, page=1, render=True):
         import pymupdf

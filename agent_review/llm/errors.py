@@ -5,6 +5,13 @@ class LLMError(RuntimeError):
     pass
 
 
+class LLMTransportError(LLMError):
+    def __init__(self, kind: str):
+        self.kind = 'timeout' if kind == 'timeout' else 'network'
+        super().__init__('LLM request timed out; provider completion is unknown' if self.kind == 'timeout'
+                         else 'LLM transport disconnected; provider completion is unknown')
+
+
 class ConfigurationError(LLMError):
     pass
 
