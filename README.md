@@ -6,6 +6,8 @@
 
 需要 Python 3.12、Node.js >=24 和 npm。Node 用于 EPRJ2 解析与前端构建；可用 `SCHEMATIC_NODE` 指定 Node 可执行文件。
 
+评审图需要同时覆盖中文、器件编号和数学符号的字体。Debian / Ubuntu 可执行 `sudo apt-get install fonts-unifont` 安装完整字符后备；绘图会检查字形覆盖并保留请求字号。仅有部分中文字体可能仍缺少公式中的减号或上标。
+
 Linux / macOS，在仓库根目录执行：
 
 ```bash

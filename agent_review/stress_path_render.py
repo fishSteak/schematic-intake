@@ -42,17 +42,43 @@ VERDICT_FAIL = (244, 63, 94)
 # 不在这里按位号保存坐标。
 
 def _font(size: int, *, bold: bool = False) -> ImageFont.ImageFont:
+    weight = "Bold" if bold else "Regular"
+    # Prefer CJK fonts before Latin-only fallbacks. Linux report workers do
+    # not have the Windows font aliases, and Pillow's default has no Chinese.
     names = (
-        ("msyhbd.ttc", "segoeuib.ttf", "arialbd.ttf", "msyh.ttc")
-        if bold
-        else ("msyh.ttc", "segoeui.ttf", "arial.ttf", "simhei.ttf")
+        *(("msyhbd.ttc", "msyh.ttc", "simhei.ttf") if bold else ("msyh.ttc", "simhei.ttf")),
+        f"/usr/share/fonts/opentype/noto/NotoSansCJK-{weight}.ttc",
+        f"/usr/share/fonts/truetype/noto/NotoSansCJK-{weight}.ttc",
+        f"/usr/share/fonts/opentype/noto/NotoSansSC-{weight}.otf",
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+        "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+        "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+        "/usr/share/fonts/opentype/unifont/unifont.otf",
+        "/usr/share/fonts/truetype/unifont/unifont_sample.ttf",
+        "/usr/share/fonts/truetype/unifont/unifont.ttf",
+        *(("segoeuib.ttf", "arialbd.ttf") if bold else ("segoeui.ttf", "arial.ttf")),
     )
-    for name in names:
+
+    def covers_labels(font: ImageFont.FreeTypeFont) -> bool:
+        missing = bytes(font.getmask("\U0010ffff"))
+        # Some distro CJK fallback fonts omit even ASCII. Equations and
+        # component names must remain readable alongside the Chinese labels.
+        return all(bytes(font.getmask(char)) != missing for char in "中文R1WΩ≤≥±·−⁻⁶²×℃")
+
+    for name in dict.fromkeys(names):
         try:
-            return ImageFont.truetype(name, size)
+            font = ImageFont.truetype(name, size)
+            if covers_labels(font):
+                return font
         except Exception:
             continue
-    return ImageFont.load_default()
+    try:
+        return ImageFont.load_default(size=size)
+    except TypeError:
+        # Older Pillow releases only provide the fixed-size bitmap fallback.
+        return ImageFont.load_default()
 
 
 def _z(pt: tuple[float, float], zoom: float) -> tuple[float, float]:

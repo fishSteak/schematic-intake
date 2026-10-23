@@ -13,6 +13,7 @@ import hashlib
 import json
 import re
 import sys
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -815,7 +816,14 @@ def _spec_from_verified_figure(board_pdf, kg, card, *, rule_id, obj, state):
                     selected = chain[:6]
                 power = state.get("P")
                 relation={'upper_bound':'功耗上界 ≤','lower_bound':'功耗下界 ≥'}.get(state.get('stress_kind'),'功耗 ≈')
-                calc_title = f"{obj} {relation} {power * 1000:.2f} mW" if type(power) in (int, float) else f"{obj} 计算过程"
+                calc_title = f"{obj} 计算过程"
+                if type(power) in (int, float):
+                    # Decimal conversion preserves the card's bound; rounding
+                    # an upper bound down (or lower bound up) changes its claim.
+                    milliwatts = format(Decimal(str(power)) * 1000, "f")
+                    if "." in milliwatts:
+                        milliwatts = milliwatts.rstrip("0").rstrip(".")
+                    calc_title = f"{obj} {relation} {milliwatts} mW"
                 markers.append({"at": transform(dut_loc["x"], dut_loc["y"]),
                                 "title": calc_title,
                                 "body": "\n".join(r["expr"] for r in selected[:6]),
@@ -1386,6 +1394,36 @@ def _states_of(card: dict[str, Any]) -> list[dict[str, Any]]:
     return out
 
 
+def _prepare_schematic_pdf(o: Path) -> tuple[Path, str]:
+    """Prepare the drawing source before report generation on a cold workspace."""
+    from kernel.report_workbench import _resolve_schematic_pdf, ensure_schematic_pdf
+
+    source = _resolve_schematic_pdf(o)
+    if source is None:
+        raise FileNotFoundError("无法生成评审图：缺少可读取的原理图 PDF")
+    try:
+        with fitz.open(source) as doc:
+            if not doc.is_pdf or doc.needs_pass or doc.page_count < 1:
+                raise ValueError("invalid schematic PDF")
+    except (OSError, ValueError, RuntimeError) as exc:
+        raise ValueError("无法生成评审图：原理图 PDF 损坏、加密或没有可读取页面") from exc
+    dest = o / "sch" / "schematic.pdf"
+    try:
+        source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+        if not ensure_schematic_pdf(o, source):
+            raise OSError("PDF copy failed")
+        # The report helper uses size/mtime as a fast path; drawings must use
+        # the selected source bytes even when an older copy has identical stats.
+        if hashlib.sha256(dest.read_bytes()).hexdigest() != source_hash:
+            import shutil
+            shutil.copy2(source, dest)
+            if hashlib.sha256(dest.read_bytes()).hexdigest() != source_hash:
+                raise OSError("PDF source/copy hash mismatch")
+    except OSError as exc:
+        raise OSError("无法生成评审图：原理图 PDF 报告副本准备失败或内容不一致") from exc
+    return dest, source_hash
+
+
 def run(
     board: Path,
     *,
@@ -1393,11 +1431,12 @@ def run(
     objects: list[str] | None = None,
 ) -> dict[str, Any]:
     o = out_dir(board)
-    pdf = o / "sch" / "schematic.pdf"
+    pdf = None
+    pdf_hash = None
     kg_path = o / "board_kg.json"
     enum_path = o / "agent_enumeration.json"
-    if not pdf.is_file() or not enum_path.is_file():
-        return {"skipped": True, "reason": "缺原理图或枚举"}
+    if not enum_path.is_file():
+        return {"skipped": True, "reason": "缺枚举"}
     kg = read_json(kg_path) if kg_path.is_file() else {}
     enum = read_json(enum_path)
     want = set(rule_ids) if rule_ids else set(enum.get('rule_ids') or FIGURE_RULES)
@@ -1441,6 +1480,10 @@ def run(
                 if i != primary:
                     obj_bucket[slug] = {"status": "text_only", "state_index": i, "reason": "其他工况仅作文字比较"}
                     continue
+                if pdf is None:
+                    # Text-only scopes need no PDF. Both standalone drawing and
+                    # aggregation must prepare it before the renderer reads sch/.
+                    pdf, pdf_hash = _prepare_schematic_pdf(o)
                 # The business caption is model prose, never router diagnostics.
                 caption=str(st.get('route_summary') or '')
                 # Direct model contracts already own their current wording.
@@ -1463,7 +1506,7 @@ def run(
                                    + json.dumps([card.get('main_analysis'),card.get('decision_basis')],ensure_ascii=False,sort_keys=True)
                                    + json.dumps(kg, ensure_ascii=False, sort_keys=True)
                                    + caption + hashlib.sha256(Path(__file__).read_bytes()+(Path(__file__).parent/'stress_path_render.py').read_bytes()+(Path(__file__).parent/'figure_contract.py').read_bytes()).hexdigest()
-                                   + str(pdf.stat().st_mtime_ns)).encode("utf-8")).hexdigest()[:16]
+                                   + pdf_hash).encode("utf-8")).hexdigest()[:16]
                 meta_path = dest / "meta.json"
                 if meta_path.is_file() and (dest / "flow.png").is_file():
                     try:
@@ -1536,6 +1579,7 @@ def run(
                         relation_diagram=(card['main_analysis'].get('figure') or {}).get('kind')=='cross_case_relations')
                 meta["routing_complete"] = complete
                 meta["fingerprint"] = fp
+                meta["source_pdf_sha256"] = pdf_hash
                 meta["status"] = "ok"
                 meta["flow_rev"] = 28
                 meta["source"] = source
