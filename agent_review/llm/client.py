@@ -37,11 +37,16 @@ class Completion:
     response_id: str | None = None
     model: str | None = None
     finish_reason: str | None = None
+    output_items: list[dict[str, Any]] | None = None
 
     def message(self) -> dict[str, Any]:
         message: dict[str, Any] = {"role": "assistant", "content": self.content or None}
         if self.tool_calls:
             message["tool_calls"] = copy.deepcopy(self.tool_calls)
+        if self.output_items is not None:
+            # A single controller message can retain the entire Responses output
+            # sequence through existing checkpoint/transcript call sites.
+            message["_response_output"] = copy.deepcopy(self.output_items)
         return message
 
 
@@ -131,11 +136,11 @@ class LLMClient:
             if isinstance(value, list):
                 return [summarize(item) for item in value]
             if isinstance(value, dict):
-                if value.get("type") == "image_url":
+                if value.get("type") in ("image_url", "input_image"):
                     image_count += 1
                     budget = 16384
                     image_value = value.get("image_url")
-                    url = image_value.get("url", "") if isinstance(image_value, dict) else ""
+                    url = image_value.get("url", "") if isinstance(image_value, dict) else image_value or ""
                     if isinstance(url, str) and url.startswith("data:image/") and ";base64," in url:
                         try:
                             from PIL import Image
@@ -147,7 +152,7 @@ class LLMClient:
                     return {"type": "image_url", "image_url": {"url": "[image content reserved separately]"}}
                 return {key: summarize(item) for key, item in value.items()}
             return value
-        inputs = {key: payload[key] for key in ("messages", "tools", "response_format") if key in payload}
+        inputs = {key: payload[key] for key in ("messages", "input", "instructions", "tools", "response_format", "text") if key in payload}
         text_tokens = len(json.dumps(summarize(inputs), ensure_ascii=False, allow_nan=False).encode("utf-8"))
         return {"status": "configured" if self.profile.max_context_tokens is not None else "not_configured",
                 "max_context_tokens": self.profile.max_context_tokens,
@@ -162,16 +167,20 @@ class LLMClient:
         if tools and not self.profile.supports_tools:
             raise ConfigurationError("This model profile does not support tool calls")
         if not self.profile.supports_images:
-            for message in messages:
-                if isinstance(message.get("content"), list) and any(
-                    isinstance(part, dict) and part.get("type") == "image_url" for part in message["content"]
-                ):
-                    raise ConfigurationError("This model profile does not support image input")
+            def has_image(value):
+                if isinstance(value,list):return any(has_image(item) for item in value)
+                if isinstance(value,dict):
+                    return value.get('type') in ('image_url','input_image') or any(has_image(item) for item in value.values())
+                return False
+            if has_image(messages):raise ConfigurationError("This model profile does not support image input")
+        if self.profile.wire_api == "responses":
+            return self._responses_payload(messages, schema, tools)
         payload: dict[str, Any] = {
             "model": self.profile.model,
             "messages": copy.deepcopy(messages),
             self.profile.token_parameter: self.profile.max_tokens,
             "stream": self.profile.stream,
+            "store": False,
         }
         if self.profile.stream:
             payload["stream_options"] = {"include_usage": True}
@@ -197,6 +206,74 @@ class LLMClient:
                     "role": "system",
                     "content": "Return one JSON value satisfying this JSON schema: " + json.dumps(schema, ensure_ascii=False),
                 })
+        return payload
+
+    def _responses_payload(self, messages, schema, tools):
+        inputs = []
+        for message in messages:
+            if "_response_output" in message:
+                items = message["_response_output"]
+                if not isinstance(items,list) or any(not isinstance(item,dict) or not isinstance(item.get('type'),str) for item in items):
+                    raise ConfigurationError("Invalid saved Responses output items")
+                inputs.extend(copy.deepcopy(items))
+                continue
+            if message.get('type'):
+                inputs.append(copy.deepcopy(message))
+                continue
+            role = message.get('role')
+            if role == 'tool':
+                if not isinstance(message.get('tool_call_id'),str) or not isinstance(message.get('content'),str):
+                    raise ConfigurationError("Invalid tool output message")
+                inputs.append({'type':'function_call_output','call_id':message['tool_call_id'],'output':message['content']})
+                continue
+            if role not in {'system','developer','user','assistant'}:
+                raise ConfigurationError("Invalid Responses input message role")
+            content = message.get('content')
+            if isinstance(content,list):
+                parts=[]
+                for part in content:
+                    if not isinstance(part,dict):raise ConfigurationError("Invalid Responses input content")
+                    if part.get('type') == 'text':
+                        parts.append({'type':'input_text','text':part.get('text','')})
+                    elif part.get('type') == 'image_url':
+                        image=part.get('image_url')
+                        if not isinstance(image,dict) or not isinstance(image.get('url'),str):
+                            raise ConfigurationError("Invalid image input")
+                        parts.append({'type':'input_image','image_url':image['url'],'detail':image.get('detail','auto')})
+                    elif part.get('type') in {'input_text','input_image','output_text'}:
+                        parts.append(copy.deepcopy(part))
+                    else:raise ConfigurationError("Unsupported Responses input content")
+                content=parts
+            elif content is not None and not isinstance(content,str):
+                raise ConfigurationError("Invalid Responses input content")
+            if content:
+                inputs.append({'role':role,'content':content})
+            for call in message.get('tool_calls') or []:
+                function=call.get('function') or {}
+                inputs.append({'type':'function_call','call_id':call.get('id'),
+                               'name':function.get('name'),'arguments':function.get('arguments')})
+        payload={'model':self.profile.model,'input':inputs,'max_output_tokens':self.profile.max_tokens,
+                 'stream':self.profile.stream,'store':False,'include':['reasoning.encrypted_content']}
+        if tools:
+            flat=[]
+            for tool in tools:
+                if tool.get('type')!='function' or not isinstance(tool.get('function'),dict):
+                    raise ConfigurationError("Only declared function tools are supported")
+                function=copy.deepcopy(tool['function'])
+                function.setdefault('strict',False)
+                flat.append({'type':'function',**function})
+            payload['tools']=flat
+        if schema is not None:
+            try:Draft202012Validator.check_schema(schema)
+            except Exception:raise ConfigurationError("The requested output schema is invalid") from None
+            if self.profile.structured_output=='none':
+                raise ConfigurationError("This model profile does not support structured output")
+            if self.profile.structured_output=='json_schema':
+                payload['text']={'format':{'type':'json_schema','name':'review_result',
+                                          'strict':self.profile.strict_schema,'schema':copy.deepcopy(schema)}}
+            else:
+                payload['text']={'format':{'type':'json_object'}}
+                inputs.insert(0,{'role':'system','content':'Return one JSON value satisfying this JSON schema: '+json.dumps(schema,ensure_ascii=False)})
         return payload
 
     def complete(
@@ -237,7 +314,9 @@ class LLMClient:
                         if response.status_code >= 300:
                             delay = self._retry_delay(response, attempt)
                             raise LLMHTTPError(response.status_code, retryable=response.status_code == 429 or response.status_code >= 500)
-                        result = self._read_stream(response, on_event=on_event, cancelled=cancelled)
+                        result = (self._read_responses_stream(response, on_event=on_event, cancelled=cancelled)
+                                  if self.profile.wire_api == 'responses' else
+                                  self._read_stream(response, on_event=on_event, cancelled=cancelled))
                 else:
                     response = self._client.post(self.profile.endpoint, headers=headers, json=payload, timeout=self.profile.timeout)
                     if response.status_code >= 300:
@@ -248,14 +327,14 @@ class LLMClient:
                         raw = response.json()
                     except ValueError:
                         raise ProtocolError("LLM service returned invalid JSON") from None
-                    result = self._parse_response(raw)
+                    result = self._parse_responses_response(raw) if self.profile.wire_api == 'responses' else self._parse_response(raw)
                 check_cancelled(cancelled)
                 # Retain real provider usage even if validation subsequently fails.
                 self.completions.append(result)
                 emit(on_event, {"type": "llm.response", "response_id": result.response_id,
                                 "provider": self.profile.provider, "model": result.model or self.profile.model,
                                 "usage": result.usage, "finish_reason": result.finish_reason})
-                if result.finish_reason in {"length", "content_filter"}:
+                if result.finish_reason in {"length", "content_filter", "incomplete"}:
                     raise OutputValidationError("Model response was truncated or filtered")
                 if schema is not None and not result.tool_calls:
                     parse_json(result.content, schema)
@@ -339,6 +418,124 @@ class LLMClient:
             raise ProtocolError("Invalid response identity metadata")
         return Completion(content=content, tool_calls=copy.deepcopy(calls), usage=copy.deepcopy(usage),
                           response_id=raw.get("id"), model=raw.get("model"), finish_reason=choice.get("finish_reason"))
+
+    @staticmethod
+    def _parse_responses_response(raw: Any) -> Completion:
+        if not isinstance(raw,dict) or raw.get('error'):
+            raise ProtocolError('Responses API returned an error')
+        status=raw.get('status')
+        if not isinstance(status,str) or status not in {'completed','incomplete'}:
+            raise ProtocolError('Responses API did not return a completed response')
+        outputs=raw.get('output')
+        if not isinstance(outputs,list):raise ProtocolError('Responses API output items are missing')
+        texts=[];calls=[];ids=set();refused=False
+        for item in outputs:
+            if not isinstance(item,dict) or not isinstance(item.get('type'),str):
+                raise ProtocolError('Invalid Responses output item')
+            if item.get('status') is not None and item['status']!='completed' and status=='completed':
+                raise ProtocolError('Completed response contains an unfinished output item')
+            if item['type']=='function_call':
+                call_id=item.get('call_id')
+                if not isinstance(call_id,str) or not call_id or call_id in ids:
+                    raise ProtocolError('Invalid or duplicate Responses function call ID')
+                if not isinstance(item.get('name'),str) or not item['name'] or not isinstance(item.get('arguments'),str):
+                    raise ProtocolError('Invalid Responses function call')
+                ids.add(call_id)
+                calls.append({'id':call_id,'type':'function','function':{'name':item['name'],'arguments':item['arguments']}})
+            elif item['type']=='message':
+                if item.get('role')!='assistant' or not isinstance(item.get('content'),list):
+                    raise ProtocolError('Invalid Responses assistant message')
+                for part in item['content']:
+                    if not isinstance(part,dict):raise ProtocolError('Invalid Responses message content')
+                    if part.get('type')=='output_text':
+                        if not isinstance(part.get('text'),str):raise ProtocolError('Invalid Responses output text')
+                        texts.append(part['text'])
+                    elif part.get('type')=='refusal':refused=True
+        content=''.join(texts)
+        if not content.strip() and not calls and not refused and status=='completed':
+            raise ProtocolError('Responses API returned no model output')
+        usage=copy.deepcopy(raw.get('usage'))
+        if usage is not None:
+            if not isinstance(usage,dict):raise ProtocolError('Invalid usage metadata')
+            # Keep the provider fields and expose established accounting names.
+            for source,target in (('input_tokens','prompt_tokens'),('output_tokens','completion_tokens')):
+                if source in usage:usage[target]=usage[source]
+        if any(raw.get(key) is not None and not isinstance(raw[key],str) for key in ('id','model')):
+            raise ProtocolError('Invalid response identity metadata')
+        finish='incomplete' if status=='incomplete' else 'content_filter' if refused else 'tool_calls' if calls else 'stop'
+        return Completion(content=content,tool_calls=calls,usage=usage,response_id=raw.get('id'),
+                          model=raw.get('model'),finish_reason=finish,output_items=copy.deepcopy(outputs))
+
+    def _stream_text_emitter(self,on_event):
+        pending=''
+        def output(text, *, final=False):
+            nonlocal pending
+            if not self.profile.api_key:
+                if text:emit(on_event,{'type':'llm.delta','text':text})
+                return
+            pending+=text
+            safe=pending.replace(self.profile.api_key,'[redacted]');hold=0
+            if not final:
+                for count in range(1,min(len(safe),len(self.profile.api_key)-1)+1):
+                    if safe.endswith(self.profile.api_key[:count]):hold=count
+            ready=safe[:-hold] if hold else safe
+            pending=safe[-hold:] if hold else ''
+            if ready:emit(on_event,{'type':'llm.delta','text':ready})
+        return output
+
+    def _read_responses_stream(self,response, *, on_event, cancelled):
+        buffer=[];completed=None;items={};emit_text=self._stream_text_emitter(on_event)
+        def consume(data):
+            nonlocal completed
+            if data=='[DONE]':return
+            try:event=json.loads(data)
+            except ValueError:raise ProtocolError('Malformed Responses stream event') from None
+            if not isinstance(event,dict) or not isinstance(event.get('type'),str):
+                raise ProtocolError('Malformed Responses stream event')
+            kind=event['type']
+            if kind in {'error','response.failed'} or event.get('error'):
+                raise ProtocolError('Responses stream returned an error')
+            if kind=='response.output_text.delta':
+                if not isinstance(event.get('delta'),str):raise ProtocolError('Invalid Responses text delta')
+                emit_text(event['delta'])
+            elif kind=='response.output_item.done':
+                index=event.get('output_index');item=event.get('item')
+                if type(index) is not int or index<0 or not isinstance(item,dict):
+                    raise ProtocolError('Invalid completed Responses stream item')
+                if index in items and items[index]!=item:
+                    raise ProtocolError('Conflicting completed Responses stream item')
+                items[index]=copy.deepcopy(item)
+            elif kind in {'response.completed','response.incomplete'}:
+                raw=event.get('response')
+                if not isinstance(raw,dict):raise ProtocolError('Responses stream terminal response is missing')
+                expected='completed' if kind=='response.completed' else 'incomplete'
+                if raw.get('status')!=expected:raise ProtocolError('Responses stream terminal status mismatch')
+                completed=copy.deepcopy(raw)
+        for line in response.iter_lines():
+            check_cancelled(cancelled)
+            if line.startswith('data:'):buffer.append(line[5:].lstrip(' '))
+            elif not line and buffer:
+                consume('\n'.join(buffer));buffer.clear()
+                if completed is not None:break
+        if buffer and completed is None:consume('\n'.join(buffer))
+        if completed is None:raise ProtocolError('Responses stream ended before a complete response')
+        output=completed.get('output')
+        if not output and items:
+            if sorted(items)!=list(range(len(items))):raise ProtocolError('Responses stream output sequence is incomplete')
+            completed['output']=[items[index] for index in sorted(items)]
+        elif isinstance(output,list):
+            for index,item in items.items():
+                if index>=len(output) or not isinstance(output[index],dict):
+                    raise ProtocolError('Responses stream output sequence is inconsistent')
+                prior=output[index]
+                if prior.get('id') and item.get('id') and prior['id']!=item['id']:
+                    raise ProtocolError('Responses stream output identity mismatch')
+                # Done reasoning items contain the final encrypted_content. Keep
+                # it even when a compatible server omits it in the terminal list.
+                output[index]={**prior,**item}
+        result=self._parse_responses_response(completed)
+        emit_text('',final=True)
+        return result
 
     def _read_stream(self, response: httpx.Response, *, on_event: EventHandler | None, cancelled: CancelCheck | None) -> Completion:
         raw: dict[str, Any] = {"choices": [{"message": {"role": "assistant", "content": "", "tool_calls": []}}]}
@@ -465,6 +662,7 @@ class LLMClient:
                     all_reported = False
         return self.redact({
             "provider": self.profile.provider,
+            "wire_api": self.profile.wire_api,
             "model": models[-1] if models else self.profile.model,
             "requested_model": self.profile.model,
             "models": models,

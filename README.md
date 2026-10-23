@@ -68,7 +68,9 @@ VITE_BASE_PATH=/schematic/ npm --prefix report_ui run build -- --outDir dist-pub
 
 ## 模型设置
 
-在网页“模型设置”中填写 API 地址、模型名和凭据，保存后执行连接测试。首版使用 OpenAI-compatible Chat Completions 协议，支持对应兼容服务和本机模型 API。不同服务的工具、图片、JSON Schema 与流式能力需要按实际情况配置；连接测试只报告已实测项目，图片能力不会冒充已验证。
+在网页“模型设置”中填写 API 地址、模型名和凭据，选择 Chat Completions 或 Responses 协议，保存后执行连接测试。旧配置默认使用 Chat Completions；Responses 直接请求服务的 `/responses` 接口，应用保留会话及工具调用上下文，请求设置 `store: false`。不同服务的工具、图片、JSON Schema 与流式能力需要按实际情况配置；连接测试只报告已实测项目，图片能力不会冒充已验证。
+
+Responses 请求和工具往返格式依据 [OpenAI 官方迁移说明](https://developers.openai.com/api/docs/guides/migrate-to-responses)，无服务端会话依赖；模型返回的推理项与工具调用项随本机检查点保存，供下一轮请求重放。切换协议会使旧执行检查点及能力测试结果失效。
 
 也可为 Python 命令行入口配置：
 
@@ -78,7 +80,7 @@ export SCHEMATIC_LLM_MODEL='填写实际已部署模型名'
 # 服务需要密钥时，在本机设置 SCHEMATIC_LLM_API_KEY。
 ```
 
-或将 `SCHEMATIC_LLM_PROFILE` 指向私有 JSON 配置。字段包括 `provider`、`base_url`、`model`、`api_key_env`、`timeout`、`max_tokens`、`max_context_tokens`、`max_turns`、`max_requests`、`supports_tools`、`supports_images`、`structured_output`、`stream`。可以用 `profiles` 和 `tasks` 分别指定 `review`、`evidence`、`prose`、`remediation` 等任务。`max_context_tokens` 可留空；配置后应用按保守文本/图片估算检查每个请求预算，不代表探测了服务商的最大窗口。`max_requests` 限制单个模型子任务（如一个对象的多阶段评审），整次板级运行可能包含多个子任务。不要将密钥提交到仓库；网页配置保存于本机私有文件，API 返回脱敏信息，报告不包含配置文件。
+或将 `SCHEMATIC_LLM_PROFILE` 指向私有 JSON 配置。字段包括 `provider`、`wire_api`（`chat` 或 `responses`）、`base_url`、`model`、`api_key_env`、`timeout`、`max_tokens`、`max_context_tokens`、`max_turns`、`max_requests`、`supports_tools`、`supports_images`、`structured_output`、`stream`。可以用 `profiles` 和 `tasks` 分别指定 `review`、`evidence`、`prose`、`remediation` 等任务。`max_context_tokens` 可留空；配置后应用按保守文本/图片估算检查每个请求预算，不代表探测了服务商的最大窗口。`max_requests` 限制单个模型子任务（如一个对象的多阶段评审），整次板级运行可能包含多个子任务。不要将密钥提交到仓库；网页配置保存于本机私有文件，API 返回脱敏信息，报告不包含配置文件。
 
 模型通过应用提供的材料读取、PDF 页面、网表查询、算术、直流求解和公开来源查找工具取得证据。模型不执行 shell 或直接写正式产物。引用、结构、工程契约和报告门禁失败时保留错误记录，不发布未经校验的结果。未配置服务时 AI 功能明确报错，没有 CLI 回退。
 
@@ -115,6 +117,8 @@ npm --prefix report_ui run build
 本分支已验证本机程序检查链路：0918 板 P05-A01 的 51 个对象、报告门禁、网页 PDF 联动、复核保存、历史比较和导出。真实对象问答已通过，11 条引用逐字匹配且报告未改变；问答支持按批次与对象加载历史。P11-A01/R1 已完成真实证据查证和分析草稿，但独立自检、工程卡交付及完整深审报告发布尚未验收，不能用协议测试或程序结果替代。
 
 子目录部署已通过真实 HTTPS 浏览器验证：主站登录、匿名访问拦截、报告深链刷新、材料预检、PDF、冻结来源、ZIP 下载与事件流。2026-10-23 使用工作台配置的 `gpt-6.1-sol` 完成了真实 API 连接、结构化 JSON、工具调用往返和图片识别测试；这些能力测试不代表完整深审已验收。长分析的请求等待时间已调整为 600 秒。服务随后返回 HTTP 503；重新保存用户提供的配置后，模型列表确认包含所选模型，但推理接口仍不可用，待服务恢复后继续最终交付验收，详细记录见方案文档。
+
+当前默认配置经用户确认使用 `gpt-6.1-sol` + Responses，密钥保留于本机私有配置，所有请求设置 `store: false`。本轮协议回归与全量测试通过（Python 264 项中 263 通过、1 项平台跳过，Node 17 项通过），独立仓库验证通过。实际网关的 Responses 普通与流式请求、工作台能力探测仍返回 HTTP 503；完整深审交付尚未验收。
 
 ## 仓库内容
 

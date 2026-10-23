@@ -20,6 +20,7 @@ class Profile:
     base_url: str
     model: str
     provider: str = "openai-compatible"
+    wire_api: str = "chat"
     api_key: str = field(default="", repr=False, compare=False)
     api_key_env: str = ""
     timeout: float = 120.0
@@ -39,6 +40,8 @@ class Profile:
     def __post_init__(self) -> None:
         if not isinstance(self.provider, str) or self.provider not in {"openai-compatible", "openai_compatible", "openai", "ollama"}:
             raise ConfigurationError("Unsupported LLM provider protocol")
+        if not isinstance(self.wire_api,str) or self.wire_api not in {"chat", "responses"}:
+            raise ConfigurationError("wire_api must be chat or responses")
         try:
             parsed = urlsplit(self.base_url)
             valid_url = parsed.scheme in {"http", "https"} and bool(parsed.hostname) and parsed.port != 0
@@ -78,7 +81,11 @@ class Profile:
     @property
     def endpoint(self) -> str:
         base = self.base_url.rstrip("/")
-        return base if base.endswith("/chat/completions") else base + "/chat/completions"
+        for suffix in ("/chat/completions", "/responses"):
+            if base.endswith(suffix):
+                base = base[:-len(suffix)]
+                break
+        return base + ("/responses" if self.wire_api == "responses" else "/chat/completions")
 
     def public(self) -> dict[str, Any]:
         """Non-secret, UI-safe profile metadata."""
@@ -91,7 +98,7 @@ class Profile:
         data = self.public()
         for name in ("api_key_env", "api_key_configured"):
             data.pop(name, None)
-        data["protocol_version"] = "llm-chat-v1"
+        data["protocol_version"] = "llm-http-v2-store-false"
         return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
@@ -130,7 +137,7 @@ def load_profile(path: str | Path | None = None, task: str = "review") -> Profil
     for name in ("api_key", "api_key_env"):
         if name in data and data[name] is None:
             data[name] = ""
-    for name in ("base_url", "model", "provider"):
+    for name in ("base_url", "model", "provider", "wire_api"):
         value = os.environ.get("SCHEMATIC_LLM_" + name.upper())
         if value and not data.get(name):
             data[name] = value

@@ -126,7 +126,8 @@ class WorkbenchTests(unittest.TestCase):
     def test_profile_unknown_fields_and_invalid_protocol_are_rejected(self):
         payload = {"base_url": "http://127.0.0.1:9999/v1", "model": "fixture"}
         for extra in ({"has_api_key": True}, {"profile_path": "/tmp/foreign.json"},
-                      {"provider": "codex-cli"}, {"api_key_env": "INVALID NAME"}, {"max_retries": 6}):
+                      {"provider": "codex-cli"}, {"api_key_env": "INVALID NAME"}, {"max_retries": 6},
+                      {"wire_api": "unknown"}, {"wire_api": None}, {"wire_api": True}):
             response = self.client.put("/api/model-profiles", json={**payload, **extra})
             self.assertEqual(response.status_code, 422, response.text)
         self.assertEqual(self.store.profiles(), [])
@@ -136,6 +137,68 @@ class WorkbenchTests(unittest.TestCase):
         profile = self.store.profile(response.json()["id"], private=True)
         self.assertTrue(profile["stream"])
         self.assertFalse(profile["supports_images"])
+
+    def test_wire_api_defaults_to_chat_and_reads_legacy_profiles(self):
+        base = {"base_url": "http://127.0.0.1:9999/v1", "model": "fixture"}
+        response = self.client.put("/api/model-profiles", json=base)
+        self.assertEqual(response.status_code, 200, response.text)
+        profile = response.json()
+        self.assertEqual(profile["wire_api"], "chat")
+        private = self.store.profile(profile["id"], private=True)
+        path = Path(private["profile_path"])
+        saved = json.loads(path.read_text())
+        self.assertEqual(saved.pop("wire_api"), "chat")
+        # Simulate a pre-wire_api configuration in this isolated fixture only.
+        atomic_json(path, saved, private=True)
+        with self.store.connection(write=True) as connection:
+            row = connection.execute("SELECT data FROM profiles WHERE id=?", (profile["id"],)).fetchone()
+            data = json.loads(row["data"])
+            data.pop("wire_api")
+            connection.execute("UPDATE profiles SET data=? WHERE id=?", (json.dumps(data), profile["id"]))
+        self.assertEqual(self.client.get("/api/model-profiles").json()["profiles"][0]["wire_api"], "chat")
+
+    def test_responses_profile_is_frozen_and_legacy_updates_preserve_protocol(self):
+        base = {"base_url": "http://127.0.0.1:9999/v1", "model": "fixture"}
+        response = self.client.put("/api/model-profiles", json={**base, "wire_api": "responses"})
+        self.assertEqual(response.status_code, 200, response.text)
+        profile = response.json()
+        self.assertEqual(profile["wire_api"], "responses")
+        run = self.start(mode="review", rule_ids=["P11-A01"], profile_id=profile["id"]).json()
+        frozen = Path(self.store.run(run["id"])["profile_path"])
+        self.assertEqual(json.loads(frozen.read_text())["wire_api"], "responses")
+        self.assertEqual(frozen.stat().st_mode & 0o777, 0o600)
+        response = self.client.put("/api/model-profiles", json={**base, "id": profile["id"], "name": "legacy edit"})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["wire_api"], "responses")
+        reopened = Store(self.home, repository=self.repo)
+        self.assertEqual(reopened.profile(profile["id"], private=True)["wire_api"], "responses")
+        self.client.put("/api/model-profiles", json={**base, "id": profile["id"], "wire_api": "chat"})
+        self.assertEqual(self.store.profile(profile["id"])["wire_api"], "chat")
+        self.assertEqual(json.loads(frozen.read_text())["wire_api"], "responses")
+
+    def test_wire_api_probe_receipt_is_bound_to_selected_protocol(self):
+        base = {"base_url": "http://127.0.0.1:9999/v1", "model": "fixture"}
+        profile = self.client.put("/api/model-profiles", json={**base, "wire_api": "responses"}).json()
+        def probe(configured):
+            self.assertEqual(configured.wire_api, "responses")
+            return {"ok": True, "tested": {"connection": True, "tools": True}}
+        with patch("agent_review.llm.probe_profile", side_effect=probe):
+            response = self.client.post(f"/api/model-profiles/{profile['id']}/test")
+        self.assertEqual(response.status_code, 200, response.text)
+        receipt = response.json()
+        self.assertEqual(receipt["wire_api"], "responses")
+        self.assertEqual(self.client.get("/api/model-profiles").json()["profiles"][0]["probe"], receipt)
+        self.client.put("/api/model-profiles", json={**base, "id": profile["id"], "name": "renamed"})
+        self.assertEqual(self.store.profile(profile["id"])["probe"], receipt)
+        self.client.put("/api/model-profiles", json={**base, "id": profile["id"], "wire_api": "chat"})
+        changed = self.store.profile(profile["id"])
+        self.assertIsNone(changed["probe"])
+        self.assertNotEqual(self.store.probe_identity(changed["profile_path"])[0], receipt["profile_signature"])
+        with patch("agent_review.llm.probe_profile", side_effect=RuntimeError("fixture unavailable")):
+            failed = self.client.post(f"/api/model-profiles/{profile['id']}/test")
+        self.assertEqual(failed.status_code, 422)
+        self.assertEqual(failed.json()["wire_api"], "chat")
+        self.assertEqual(self.store.profile(profile["id"])["probe"]["wire_api"], "chat")
 
     def test_context_budget_is_nullable_positive_integer_and_persisted(self):
         base = {"base_url": "http://127.0.0.1:9999/v1", "model": "fixture"}

@@ -256,7 +256,7 @@ def probe_profile(
                 raise ProtocolError("Image capability test did not read the visible code correctly")
         metadata = client.metadata()
         context = metadata["context"]
-        return {"ok": True, "provider": profile.provider, "model": metadata["model"],
+        return {"ok": True, "provider": profile.provider, "wire_api":profile.wire_api, "model": metadata["model"],
                 "tested": {"connection": True, "structured_output": True,
                            "tools": True if profile.supports_tools else "disabled",
                            "vision": True if profile.supports_images else "disabled",

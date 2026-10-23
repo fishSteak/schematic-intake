@@ -48,6 +48,7 @@ class ProfileInput(Payload):
     id: str | None = None
     name: str = Field(default="默认模型", min_length=1, max_length=100)
     provider: str = "openai-compatible"
+    wire_api: Literal["chat", "responses"] = "chat"
     base_url: str = Field(min_length=1, max_length=2000)
     model: str = Field(min_length=1, max_length=200)
     api_key_env: str | None = None
@@ -480,13 +481,21 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
             raise ValueError("模型接口需为不含凭据或查询参数的 HTTP(S) 地址")
         from dataclasses import fields
         from agent_review.llm import Profile, LLMError
+        supplied = payload.model_dump()
+        if payload.id and "wire_api" not in payload.model_fields_set:
+            # Older clients have no protocol selector. Updating a name or other
+            # setting must not silently change an existing Responses endpoint.
+            try:
+                supplied["wire_api"] = store.profile(payload.id).get("wire_api", "chat")
+            except NotFound:
+                pass
         known = {field.name for field in fields(Profile)}
-        values = {key: value for key, value in payload.model_dump().items() if key in known and value is not None}
+        values = {key: value for key, value in supplied.items() if key in known and value is not None}
         try:
             Profile(**values)
         except LLMError as exc:
             raise ValueError(str(exc)) from exc
-        return public_profile(store.save_profile(payload.model_dump()))
+        return public_profile(store.save_profile(supplied))
 
     @app.post("/api/model-profiles/{profile_id}/test")
     def test_profile(profile_id: str):
@@ -498,6 +507,7 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
             configured = load_profile(Path(profile["profile_path"]))
             identity = configured.signature(), hashlib.sha256(configured.api_key.encode()).hexdigest()
             result = probe_profile(configured)
+            result["wire_api"] = configured.wire_api
             result["capabilities"] = result.get("tested", {})
             return store.save_probe(profile_id, result, identity)
         except Exception as exc:
@@ -507,7 +517,7 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
             for secret in secrets:
                 if secret:
                     detail = detail.replace(secret, "[redacted]")
-            result = {"ok": False, "error": detail[:2000], "tested": {}, "capabilities": {}, "vision": "not_tested",
+            result = {"ok": False, "wire_api": profile.get("wire_api", "chat"), "error": detail[:2000], "tested": {}, "capabilities": {}, "vision": "not_tested",
                       "context": {"max_context_tokens": profile.get("max_context_tokens"), "status": "not_tested", "provider_window_verified": False}}
             return JSONResponse(store.save_probe(profile_id, result, identity), status_code=422)
 

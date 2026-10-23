@@ -271,6 +271,7 @@ class Store:
         if not row:
             raise NotFound("尚未配置模型服务")
         data = json.loads(row["data"])
+        data.setdefault("wire_api", "chat")
         data.update(id=row["id"], default=bool(row["is_default"]))
         data["probe"] = None
         if probe:
@@ -320,10 +321,11 @@ class Store:
             prior = self.profile(ident, private=True)
         except NotFound:
             prior = {}
-        clean = {k: v for k, v in values.items() if k in {"name", "provider", "base_url", "model", "api_key_env", "api_key", "timeout", "max_tokens", "max_context_tokens", "max_turns", "max_requests", "temperature", "max_retries", "stream", "structured_output", "strict_schema", "supports_tools", "supports_images", "token_parameter"}}
+        clean = {k: v for k, v in values.items() if k in {"name", "provider", "wire_api", "base_url", "model", "api_key_env", "api_key", "timeout", "max_tokens", "max_context_tokens", "max_turns", "max_requests", "temperature", "max_retries", "stream", "structured_output", "strict_schema", "supports_tools", "supports_images", "token_parameter"}}
         if clean.get("api_key") is None:
             clean.pop("api_key", None)
         full = {**{k: v for k, v in prior.items() if k not in {"id", "profile_path", "default", "has_api_key", "probe"}}, **clean}
+        full.setdefault("wire_api", "chat")
         path = self.home / "profiles" / (ident + ".json")
         atomic_json(path, full, private=True)
         public = {k: v for k, v in full.items() if k != "api_key"}
