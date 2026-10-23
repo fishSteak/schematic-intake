@@ -1,0 +1,10 @@
+{
+  "name": "schematic-intake",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {},
+  "description": "Schematic review with local Codex CLI transport"
+}

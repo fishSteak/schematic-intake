@@ -1,0 +1,17 @@
+{
+  "name": "jlc-project-json-reference",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "exports": "./src/index.mjs",
+  "scripts": {
+    "convert": "node cli.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "adm-zip": "0.5.16"
+  }
+}

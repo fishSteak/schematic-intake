@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Unified presentation detail.v2 / analysis.v1",
+  "type": "object",
+  "required": [
+    "version",
+    "module_order",
+    "module_titles",
+    "headline",
+    "verdict",
+    "materials",
+    "assessment_title",
+    "assessment_rows",
+    "assessment_text",
+    "assessment_checks",
+    "primary",
+    "comparisons",
+    "audit_scenarios",
+    "evidence",
+    "gaps",
+    "basis",
+    "prose_status",
+    "notes",
+    "analysis_contract",
+    "analysis_steps",
+    "key_assumptions",
+    "analysis_origin"
+  ],
+  "properties": {
+    "version": {
+      "const": "detail.v2"
+    },
+    "module_order": {
+      "const": [
+        "summary",
+        "premises",
+        "assessment",
+        "primary",
+        "comparisons",
+        "audit",
+        "datasheets",
+        "schematics"
+      ]
+    },
+    "module_titles": {
+      "type": "object"
+    },
+    "headline": {
+      "type": "string"
+    },
+    "verdict": {
+      "enum": [
+        "pass",
+        "fail",
+        "pending",
+        "not_applicable"
+      ]
+    },
+    "materials": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "label",
+          "text"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "assessment_title": {
+      "type": "string"
+    },
+    "assessment_rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "label",
+          "text"
+        ]
+      }
+    },
+    "assessment_text": {
+      "type": "string"
+    },
+    "assessment_checks": {
+      "type": "array"
+    },
+    "primary": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/scenario"
+        }
+      ]
+    },
+    "comparisons": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    },
+    "audit_scenarios": {
+      "type": "array"
+    },
+    "evidence": {
+      "type": "array"
+    },
+    "gaps": {
+      "type": "array"
+    },
+    "basis": {
+      "type": "object"
+    },
+    "prose_status": {
+      "enum": [
+        "native",
+        "original",
+        "ready",
+        "source_insufficient",
+        "source_conflict"
+      ]
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "analysis_contract": {
+      "const": "analysis.v1"
+    },
+    "analysis_steps": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text",
+          "assumption_refs"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "assumption_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "key_assumptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "status",
+          "source"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "supported",
+              "model_assumption",
+              "unresolved",
+              "recorded"
+            ]
+          },
+          "source": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "analysis_origin": {
+      "enum": [
+        "native_model",
+        "merged_model",
+        "legacy_model_reused",
+        "unavailable"
+      ]
+    }
+  },
+  "$defs": {
+    "scenario": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "route_summary",
+        "conditions",
+        "calculations"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "route_summary": {
+          "type": "string"
+        },
+        "conditions": {
+          "type": "array"
+        },
+        "calculations": {
+          "type": "array"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,2082 @@
+{
+  "version": "3.0",
+  "authority": "rewritten-intent-steps-2026-09-17",
+  "xlsx_titles_are_anchors_only": true,
+  "process_source": "intent_steps_15",
+  "gate": "六件套缺一停评",
+  "datasheet": "AI自搜失败标缺手册",
+  "fail_not_overridden_by_missing": true,
+  "evidence_ladder": [
+    "oc_taskbook",
+    "pdf_jlc_annotation",
+    "regulator_topology",
+    "netname_candidate_needs_corroboration"
+  ],
+  "common": {
+    "verdicts": [
+      "是",
+      "否",
+      "待确认",
+      "不适用"
+    ],
+    "no_invent_mpn": true,
+    "screenshot_fail_only": true,
+    "forbidden_default_oc_library": true,
+    "program_final": "配方命中后的闭合才是终稿，不是程序出了数就是终稿",
+    "agent_roles": {
+      "evidence": "取证员：仅待确认 stuck；开关 --skip-sdk",
+      "critic": "批评员：仅闭合卡；开关 --skip-critic；--skip-sdk 不跳过"
+    },
+    "check_item_slots": {
+      "L1_objects": "enumerate(board_kg) → 对象列表",
+      "L2_recipes": "topology_recipes 本项子集，允许空（空则全待确认）",
+      "L3_predicate": "match 成立才算数、才落是/否",
+      "L4_critic": "只打已闭合卡；challenge 只降不升；--skip-sdk 不跳过；--skip-critic 才跳过"
+    },
+    "sheet_scope": {
+      "device": "仅器件所在页。本项不跟两端网络跨页。",
+      "net": "仅该网络出现过的图幅。",
+      "nets": "器件所在页 + 两端网络出现过的图幅（GND 全板铺开不跟）。",
+      "peer_caps": "器件所在页 + 同网电容所在页（不跟电源网全板其它器件）。",
+      "path": "器件所在页 + 路径相关位号所在页（不跟电源网全板）。"
+    }
+  },
+  "items": [
+    {
+      "rule_id": "P04-A01",
+      "name_anchor": "网络名仅使用英文字母、数字和下划线",
+      "intent": "用户显式网名只许 A-Za-z0-9_。系统内部号单独清单，不参与否决。",
+      "sheet_scope": "net",
+      "scope_in": [
+        "原理图导线NET",
+        "原理图网络标识/端口"
+      ],
+      "scope_out": [
+        "位号字符集",
+        "封装名",
+        "电气正确性"
+      ],
+      "verdict": {
+        "pass": "用户网名非空且全部合法",
+        "fail": "至少一条含空格、中文、+、-、.或其他非法字符",
+        "insufficient": "原理图抽不出网标",
+        "na": "空板已在门禁停评"
+      },
+      "calibers": [
+        "+12V的+不在默认允许集→否",
+        "任务书明文允许电源网+/-/.时只对写明的那类网生效"
+      ],
+      "forbidden": [
+        "内部号漏进用户集",
+        "用户网漏进内部集",
+        "按工程习惯放行+",
+        "用BOM或规格书补网名对象"
+      ],
+      "program_can": [
+        1,
+        2,
+        3
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "收集网名",
+          "read": [
+            "jlc"
+          ],
+          "take": "原始字符串与来源页",
+          "compare": "",
+          "produce": "raw[]"
+        },
+        {
+          "n": 2,
+          "action": "拆内部网",
+          "read": [],
+          "take": "N$前缀、无名网、EDA自动编号",
+          "compare": "命中→内部；其余→用户",
+          "produce": "user_nets[] internal[]"
+        },
+        {
+          "n": 3,
+          "action": "字符集",
+          "read": [
+            "design_task"
+          ],
+          "take": "user_nets",
+          "compare": "默认仅[A-Za-z0-9_]",
+          "produce": "illegal[]"
+        },
+        {
+          "n": 4,
+          "action": "否项截图",
+          "read": [
+            "pdf",
+            "jlc"
+          ],
+          "take": "illegal网标所在页",
+          "compare": "仅否项",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 5,
+          "action": "改名建议",
+          "read": [],
+          "take": "illegal原名",
+          "compare": "不编造未出现的功能",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P04-A03",
+      "name_anchor": "不同逻辑网络不得误用同名标号；同一逻辑网络跨页名称必须一致",
+      "intent": "图上同名网标出现次数。只出现 1 次按漏标标出，电路连通仍可能成立。出现 2 次及以上通过。卡上只写次数，不列出每处网标来源。",
+      "sheet_scope": "net",
+      "scope_in": [
+        "原理图导线NET",
+        "原理图网络标识/端口"
+      ],
+      "scope_out": [
+        "P04-A01字符集",
+        "P07-A05未受控短接",
+        "BOM网名",
+        "规格书",
+        "仅网表有名、图上无标"
+      ],
+      "verdict": {
+        "pass": "该用户网名图上同名网标≥2",
+        "fail": "该用户网名图上同名网标只有 1 处",
+        "insufficient": "用户网名非空但网标来源抽不出",
+        "na": "用户网名为空"
+      },
+      "calibers": [
+        "1 处标出漏标，不因网表已连通而改通过",
+        "≥2 处通过",
+        "所有用户网名同一规则：网络标识按符号去重；同一页导线NET不重复加一次",
+        "卡上不写每处网标来源"
+      ],
+      "forbidden": [
+        "用引脚功能猜误合并",
+        "把电气正确当成网标次数通过",
+        "用BOM或规格书补网名对象"
+      ],
+      "program_can": [
+        1,
+        2
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "收集图面网标",
+          "read": [
+            "jlc"
+          ],
+          "take": "导线NET、网络标识",
+          "compare": "BOM/规格书/仅网表有名→不进名单",
+          "produce": "user_nets[]"
+        },
+        {
+          "n": 2,
+          "action": "判是否同一逻辑",
+          "read": [
+            "datasheet"
+          ],
+          "take": "引脚功能、电压域、源/宿",
+          "compare": "同名冲突→误合并；跨页连通异名→异名",
+          "produce": "conflict[] alias[]"
+        },
+        {
+          "n": 3,
+          "action": "合法除外",
+          "read": [
+            "design_task"
+          ],
+          "take": "局部作用域",
+          "compare": "有依据的局部同名、一对多不进冲突",
+          "produce": "filtered"
+        },
+        {
+          "n": 4,
+          "action": "否项截图",
+          "read": [
+            "pdf"
+          ],
+          "take": "冲突两侧页",
+          "compare": "两边网标可见",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 5,
+          "action": "改名建议",
+          "read": [],
+          "take": "真实功能/域/方向",
+          "compare": "意图不明不自动改名",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P05-A01",
+      "name_anchor": "每个装配电阻的阻值字段完整且可解析",
+      "intent": "每颗装配电阻标注同时含阻值、精度、封装，且阻值可解析。不是功耗检查。",
+      "sheet_scope": "device",
+      "scope_in": [
+        "装配电阻",
+        "阵列单元",
+        "图面标注",
+        "BOM分字段"
+      ],
+      "scope_out": [
+        "额定功率",
+        "工作功耗"
+      ],
+      "verdict": {
+        "pass": "全部装配R三项齐且阻值可解析",
+        "fail": "缺阻值/精度/封装或阻值不可解析",
+        "insufficient": "图面与BOM冲突且无受控等价规则",
+        "na": "装配电阻=0"
+      },
+      "calibers": [
+        "缺精度=否不是缺手册",
+        "手册不得把缺标注写成是"
+      ],
+      "forbidden": [
+        "猜填精度/封装"
+      ],
+      "program_can": [
+        1,
+        2,
+        3
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列出装配电阻",
+          "read": [
+            "bom",
+            "tel",
+            "jlc",
+            "pdf"
+          ],
+          "take": "ref mpn value footprint DNP",
+          "compare": "",
+          "produce": "R_list[]"
+        },
+        {
+          "n": 2,
+          "action": "解析三项",
+          "read": [
+            "pdf",
+            "bom"
+          ],
+          "take": "4R7=4.7Ω 10k=10kΩ 精度 封装",
+          "compare": "",
+          "produce": "parsed|missing"
+        },
+        {
+          "n": 3,
+          "action": "判定齐套",
+          "read": [],
+          "take": "步2",
+          "compare": "三项齐且可解析→通过；缺→否",
+          "produce": "子结果"
+        },
+        {
+          "n": 4,
+          "action": "否项截图",
+          "read": [
+            "pdf"
+          ],
+          "take": "缺标注位号页",
+          "compare": "仅否项",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 5,
+          "action": "建议标注",
+          "read": [
+            "datasheet",
+            "bom"
+          ],
+          "take": "有出处才填",
+          "compare": "禁止猜填",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P05-A06",
+      "name_anchor": "每个装配电容的容值字段完整且可解析",
+      "intent": "原理图上的电容，图面标注同时含容值、额定耐压、介质、封装。BOM、规格书不补对象、不补四字段。不是耐压降额。",
+      "sheet_scope": "device",
+      "scope_in": [
+        "原理图电容位号",
+        "图面Value/PDF邻字"
+      ],
+      "scope_out": [
+        "工作电压降额",
+        "按封装猜容值",
+        "BOM",
+        "规格书",
+        "料号编码"
+      ],
+      "verdict": {
+        "pass": "全部装配C四项齐且容值可解析",
+        "fail": "缺项或容值不可解析",
+        "insufficient": "标注与MPN编码冲突",
+        "na": "装配电容=0"
+      },
+      "calibers": [
+        "普通数字不一律当三位码",
+        "不按封装猜容值",
+        "邻近电源网名+12V不当耐压",
+        "料号/手册不补图面缺项"
+      ],
+      "forbidden": [
+        "编造容值",
+        "用BOM或规格书补四字段"
+      ],
+      "program_can": [
+        1,
+        2,
+        3
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列出图面电容",
+          "read": [
+            "jlc",
+            "pdf"
+          ],
+          "take": "ref mpn value 极性",
+          "compare": "",
+          "produce": "C_list[]"
+        },
+        {
+          "n": 2,
+          "action": "解析容值",
+          "read": [
+            "pdf",
+            "jlc"
+          ],
+          "take": "pF/nF/µF或三位码104=100nF",
+          "compare": "按标注语境",
+          "produce": "容值或不可解析"
+        },
+        {
+          "n": 3,
+          "action": "核耐压/介质/封装",
+          "read": [
+            "pdf",
+            "jlc"
+          ],
+          "take": "四项",
+          "compare": "齐套",
+          "produce": "子结果"
+        },
+        {
+          "n": 4,
+          "action": "与MPN对照",
+          "read": [
+            "datasheet"
+          ],
+          "take": "有则比",
+          "compare": "不符列入冲突",
+          "produce": "冲突表"
+        },
+        {
+          "n": 5,
+          "action": "否项截图",
+          "read": [
+            "pdf"
+          ],
+          "take": "缺标注位号",
+          "compare": "仅否项",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 6,
+          "action": "建议",
+          "read": [],
+          "take": "有出处才填",
+          "compare": "",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P07-A05",
+      "name_anchor": "不同电源域、差分对正负端、隔离两侧或互斥输出不得被导线或同名网络直接相连",
+      "intent": "禁止对不得直连。0Ω/NetTie/跳线/任务书豁免只有写明依据才算受控。未受控短接=0。",
+      "sheet_scope": "nets",
+      "scope_in": [
+        "电源域",
+        "差分P/N",
+        "隔离两侧",
+        "互斥输出",
+        "真实通路"
+      ],
+      "scope_out": [
+        "网名字符集",
+        "去耦把电源脚连到同一电源网"
+      ],
+      "verdict": {
+        "pass": "禁止对为零或全部为受控连接",
+        "fail": "存在无依据直连",
+        "insufficient": "轨域或隔离/互斥未定义无法画禁止对",
+        "na": "任务书声明无此类结构且图面一致"
+      },
+      "calibers": [
+        "见0Ω不自动受控",
+        "域划分猜不出却判是=假绿"
+      ],
+      "forbidden": [
+        "编造豁免"
+      ],
+      "program_can": [
+        2
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "标禁止对",
+          "read": [
+            "oc",
+            "design_task",
+            "jlc",
+            "tel"
+          ],
+          "take": "域/差分/隔离/互斥",
+          "compare": "",
+          "produce": "pairs[]"
+        },
+        {
+          "n": 2,
+          "action": "追踪真实通路",
+          "read": [
+            "tel",
+            "jlc"
+          ],
+          "take": "网名跨页层次口0Ω",
+          "compare": "是否连通",
+          "produce": "shorts[]"
+        },
+        {
+          "n": 3,
+          "action": "受控白名单",
+          "read": [
+            "design_task",
+            "bom"
+          ],
+          "take": "0Ω NetTie 跳线说明",
+          "compare": "无依据不得扣除",
+          "produce": "uncontrolled[]"
+        },
+        {
+          "n": 4,
+          "action": "否项截图",
+          "read": [
+            "pdf"
+          ],
+          "take": "两端",
+          "compare": "连线可见",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 5,
+          "action": "建议",
+          "read": [],
+          "take": "拆网或补依据",
+          "compare": "",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P11-A01",
+      "name_anchor": "电阻最大稳态耗散功率≤额定功率×50%",
+      "intent": "P_max≤0.5×P_rated。温度/安装降额归父项，本子项不判。",
+      "sheet_scope": "nets",
+      "scope_in": [
+        "装配电阻",
+        "P_rated",
+        "取证阶梯应力"
+      ],
+      "scope_out": [
+        "脉冲应力",
+        "P05标注齐套",
+        "Tamb",
+        "温度降额曲线",
+        "安装允许功率"
+      ],
+      "verdict": {
+        "pass": "每颗数字闭合且P_max≤0.5×P_rated",
+        "fail": "任一颗超0.5×P_rated",
+        "insufficient": "缺P_rated或阶梯走完仍无应力；须按颗写block_class",
+        "na": "装配电阻=0"
+      },
+      "calibers": [
+        "取证阶梯取V或I",
+        "纯R网+OC多态包络得P_max",
+        "串联进钳位先拆通路情况：未上电、稳压管区间、开关管导通、钳位节点端口对地；同一串共用；压降未抽出时按 0 作上界，上界超过限额则否，上界未超过则待确认；任务书未写的端口对地不单独立否",
+        "同通道运放 OUT–IN− 同网抄 IN+；未闭合则待确认；禁止 VDD 冒充跟随器输出",
+        "是/否必须挂 recipe_id；无配方不得出数字结论",
+        "禁止信号电阻功耗很小写成是",
+        "禁止用Tamb/降额曲线挡本项",
+        "object_cards须公式与定位；项级notes按block_class汇总"
+      ],
+      "forbidden": [
+        "乱改阻值凑功耗",
+        "封装看起来够大写成是",
+        "51颗同一句盖待确认"
+      ],
+      "program_can": [
+        1,
+        4
+      ],
+      "agent_must": [
+        "取证员仅待确认：对着 stuck 取证；禁止无补丁升绿",
+        "批评员只打已闭合卡：配方 match 是否仍成立；只降不升；--skip-sdk 不跳过",
+        "facts_patch 须带 source；无来源丢弃",
+        "禁止口头是/否覆盖 verdicts.json"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列出装配电阻",
+          "read": [
+            "bom",
+            "tel",
+            "jlc"
+          ],
+          "take": "ref R mpn 封装",
+          "compare": "",
+          "produce": "R_list[]"
+        },
+        {
+          "n": 2,
+          "action": "查P_rated",
+          "read": [
+            "datasheet"
+          ],
+          "take": "P_rated（70℃表额或手册额定栏）",
+          "compare": "不取降额曲线",
+          "produce": "ds或缺手册"
+        },
+        {
+          "n": 3,
+          "action": "取应力",
+          "read": [
+            "oc",
+            "design_task",
+            "pdf",
+            "jlc"
+          ],
+          "take": "纯R网求解；电源网名含电压按netname_voltage闭合；OC/数字可拉地网多态取大跨压；同通道跟随器抄 IN+",
+          "compare": "跨压=|Va-Vb|；禁止单脚轨压当跨压；禁止nets.b默认GND；OC两态须枚举；禁止 VDD 冒充跟随器输出；是/否须挂 recipe_id",
+          "produce": "stress(含stress_kind/states)或缺"
+        },
+        {
+          "n": 4,
+          "action": "算P_max",
+          "read": [],
+          "take": "步2-3；多态时P_max=V_env^2/R",
+          "compare": "P_max≤0.5×P_rated；输出object_cards须含formula/定位/stress_kind/states",
+          "produce": "object_cards[]按颗通过/否/待确认(含页码模块与原因)"
+        },
+        {
+          "n": 5,
+          "action": "否项截图",
+          "read": [
+            "pdf"
+          ],
+          "take": "超限位号",
+          "compare": "仅否项",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 6,
+          "action": "选型建议",
+          "read": [],
+          "take": "更大功率/封装",
+          "compare": "保持阻值功能",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P11-A03",
+      "name_anchor": "电容最大工作电压≤额定耐压×50%",
+      "intent": "V_cap,max≤0.5×V_rated并核极性。按取证阶梯取电压，禁止只用网名赋压判是。",
+      "sheet_scope": "device",
+      "scope_in": [
+        "装配电容两端网",
+        "极性",
+        "V_rated",
+        "取证阶梯电压"
+      ],
+      "scope_out": [
+        "P05四字段",
+        "ESR"
+      ],
+      "verdict": {
+        "pass": "全部装配C电压来源闭合且通过",
+        "fail": "超0.5×V_rated或极性反",
+        "insufficient": "缺V_rated，或阶梯走完仍无电压，或多源打架",
+        "na": "装配电容=0"
+      },
+      "calibers": [
+        "阶梯：工况/任务书→PDF/嘉立创电压标注→稳压器输出→网名仅候选须印证",
+        "仅网名不能闭合"
+      ],
+      "forbidden": [
+        "程序把网名写成已闭合工作电压并判是"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列出两端网",
+          "read": [
+            "tel",
+            "jlc",
+            "bom"
+          ],
+          "take": "ref mpn 两端网 极性",
+          "compare": "",
+          "produce": "C_list[]"
+        },
+        {
+          "n": 2,
+          "action": "查V_rated",
+          "read": [
+            "datasheet"
+          ],
+          "take": "额定耐压",
+          "compare": "",
+          "produce": "ds或缺手册"
+        },
+        {
+          "n": 3,
+          "action": "按阶梯取V_cap,max",
+          "read": [
+            "oc",
+            "design_task",
+            "pdf",
+            "jlc",
+            "datasheet"
+          ],
+          "take": "轨表/标注/稳压器/网名候选",
+          "compare": "高优先级优先；网名须印证；打架待确认",
+          "produce": "Vwork+source"
+        },
+        {
+          "n": 4,
+          "action": "比门限+极性",
+          "read": [],
+          "take": "步2-3",
+          "compare": "超限或反接→否；无Vwork→待确认",
+          "produce": "子结果"
+        },
+        {
+          "n": 5,
+          "action": "否项截图",
+          "read": [
+            "pdf"
+          ],
+          "take": "超限/反接位号",
+          "compare": "仅否项",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 6,
+          "action": "选型建议",
+          "read": [],
+          "take": "更高耐压",
+          "compare": "不编MPN",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P11-A07",
+      "name_anchor": "电感温升不超过项目或数据手册限值",
+      "intent": "装配电感同时过两道门：Isat≥1.5×I_sat_cmp；M=T_max−T_amb−ΔT>10℃。分列子结果，总词取更严。电流分口径。",
+      "sheet_scope": "device",
+      "scope_in": [
+        "装配电感L",
+        "共模",
+        "功率电感"
+      ],
+      "scope_out": [
+        "EMI布局",
+        "DCR压降本身"
+      ],
+      "verdict": {
+        "pass": "有电感且每颗两道门都闭合且通过",
+        "fail": "任一颗电流或温升不满足",
+        "insufficient": "缺Isat、缺可用温升曲线/T_max、或缺计算电流所需量",
+        "na": "装配电感=0"
+      },
+      "calibers": [
+        "饱和电流I_sat_cmp对齐手册Isat定义",
+        "温升用I_RMS读曲线",
+        "同一数字两用会假绿或假红",
+        "25℃直流曲线不得用于高频大电流"
+      ],
+      "forbidden": [
+        "无曲线拍ΔT",
+        "Isat通过就当温升通过",
+        "截图代替公式",
+        "编造候选MPN",
+        "电流不大写成是"
+      ],
+      "program_can": [
+        1,
+        3,
+        4
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "识别全部电感",
+          "read": [
+            "pdf",
+            "bom",
+            "tel",
+            "jlc"
+          ],
+          "take": "三源交叉DNP剔除",
+          "compare": "",
+          "produce": "L_list[]"
+        },
+        {
+          "n": 2,
+          "action": "查Isat、温升曲线、T_max",
+          "read": [
+            "datasheet"
+          ],
+          "take": "定义页码适用条件",
+          "compare": "读不出点→缺手册",
+          "produce": "ds{Isat,curve,T_max,pages}"
+        },
+        {
+          "n": 3,
+          "action": "比Isat≥1.5×I_sat_cmp",
+          "read": [
+            "oc",
+            "design_task"
+          ],
+          "take": "I_sat_cmp与手册定义对齐",
+          "compare": "不得用RMS过直流Isat",
+          "produce": "电流子结果"
+        },
+        {
+          "n": 4,
+          "action": "读曲线算M>10℃",
+          "read": [
+            "datasheet",
+            "oc"
+          ],
+          "take": "I_heat=I_RMS；Tamb",
+          "compare": "等于10℃为否；缺曲线不得口头ΔT",
+          "produce": "温升子结果"
+        },
+        {
+          "n": 5,
+          "action": "否项截图",
+          "read": [
+            "pdf",
+            "jlc"
+          ],
+          "take": "步3/4为否的位号",
+          "compare": "禁止缺手册假截图",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 6,
+          "action": "选型候选条件",
+          "read": [],
+          "take": "失败者I_work f L Tamb",
+          "compare": "缺参不编MPN",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P12-A01",
+      "name_anchor": "IC实际供电范围位于推荐工作范围内且不超过绝对最大值",
+      "intent": "逐IC供电脚：稳态∈手册推荐工作范围；适用瞬态≤绝对最大值。绝对最大值当工作范围=错。取电同P11-A03阶梯。",
+      "sheet_scope": "device",
+      "scope_in": [
+        "IC供电脚",
+        "推荐范围",
+        "abs max",
+        "取证阶梯供电"
+      ],
+      "scope_out": [
+        "P16去耦",
+        "GPIO电平"
+      ],
+      "verdict": {
+        "pass": "全部供电脚闭合：稳态∈推荐，瞬态≤abs max",
+        "fail": "稳态越推荐或瞬态越abs max",
+        "insufficient": "无推荐范围，或阶梯未闭合供电，或来源打架",
+        "na": "无IC"
+      },
+      "calibers": [
+        "推荐与abs max分栏",
+        "网名不当已闭合电压"
+      ],
+      "forbidden": [
+        "pintable把abs max填进vcc_min/max当推荐"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列供电脚与来源",
+          "read": [
+            "tel",
+            "datasheet",
+            "jlc"
+          ],
+          "take": "ref.pin net 上游电源",
+          "compare": "",
+          "produce": "rails[]"
+        },
+        {
+          "n": 2,
+          "action": "查推荐范围与abs max",
+          "read": [
+            "datasheet"
+          ],
+          "take": "Vrec_min/max Vabs 上下电",
+          "compare": "分栏",
+          "produce": "ds或缺手册"
+        },
+        {
+          "n": 3,
+          "action": "取实际供电",
+          "read": [
+            "oc",
+            "pdf",
+            "jlc",
+            "tel"
+          ],
+          "take": "与P11-A03同一阶梯",
+          "compare": "稳态与瞬态分开",
+          "produce": "Vop或歧义"
+        },
+        {
+          "n": 4,
+          "action": "比较",
+          "read": [],
+          "take": "步2-3",
+          "compare": "稳态∈推荐；瞬态≤abs",
+          "produce": "子结果"
+        },
+        {
+          "n": 5,
+          "action": "否项截图",
+          "read": [
+            "pdf"
+          ],
+          "take": "该IC电源脚",
+          "compare": "仅否项",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 6,
+          "action": "建议",
+          "read": [],
+          "take": "改轨或换料",
+          "compare": "不编MPN",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P12-A02",
+      "name_anchor": "发送端VOH/VOL与接收端VIH/VIL在全工况下兼容",
+      "intent": "数字信号发送/接收：VOH_min≥VIH_min、VOL_max≤VIL_max；与P21-A01共享阈值证据。缺阈值→待确认；禁止0.7×VCC。",
+      "sheet_scope": "net",
+      "scope_in": [
+        "多IC信号网",
+        "VOH/VOL",
+        "VIH/VIL"
+      ],
+      "scope_out": [
+        "电源网",
+        "纯模拟无逻辑"
+      ],
+      "verdict": {
+        "pass": "全网闭合且阈值兼容",
+        "fail": "明确不兼容",
+        "insufficient": "有网但阈值未抽出",
+        "na": "无两颗及以上IC的信号网"
+      },
+      "calibers": [
+        "推挽/开漏/双向分列",
+        "与P21-A01共享证据"
+      ],
+      "forbidden": [
+        "0.7×VCC 冒充通过"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "缺阈值保持待确认"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列发送/接收端",
+          "read": [
+            "tel"
+          ],
+          "take": "网与驱动类型",
+          "compare": "",
+          "produce": "links[]"
+        },
+        {
+          "n": 2,
+          "action": "抽阈值",
+          "read": [
+            "datasheet"
+          ],
+          "take": "VOH VOL VIH VIL",
+          "compare": "缺则待确认",
+          "produce": "thresholds"
+        },
+        {
+          "n": 3,
+          "action": "比较",
+          "read": [],
+          "take": "步2",
+          "compare": "VOH≥VIH且VOL≤VIL",
+          "produce": "子结果"
+        }
+      ]
+    },
+    {
+      "rule_id": "P12-A03",
+      "name_anchor": "有源器件温度等级覆盖项目最低/最高环境温度",
+      "intent": "有源器件工作温度范围覆盖项目环境；另核自热结温；不得用存储温度代替工作温度。任务书无环境温度要求则整项不适用。",
+      "sheet_scope": "device",
+      "scope_in": [
+        "有源器件",
+        "二极管",
+        "工作温度",
+        "项目Tamb"
+      ],
+      "scope_out": [
+        "仅存储温度冒充",
+        "无源RCL"
+      ],
+      "verdict": {
+        "pass": "温度等级覆盖项目Tamb",
+        "fail": "环境超出工作温度",
+        "insufficient": "有Tamb但缺手册工作温度等级",
+        "na": "无有源器件，或任务书未给出项目环境温度"
+      },
+      "calibers": [
+        "工作≠存储温度",
+        "缺Tamb→不适用（非整项待确认）"
+      ],
+      "forbidden": [
+        "用存储温度升绿",
+        "缺Tamb升待确认"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "有Tamb时对照工作温区；缺手册等级→待确认"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列有源器件与后缀",
+          "read": [
+            "tel",
+            "bom"
+          ],
+          "take": "MPN温度后缀",
+          "compare": "",
+          "produce": "actives[]"
+        },
+        {
+          "n": 2,
+          "action": "取环境与手册范围",
+          "read": [
+            "oc",
+            "datasheet"
+          ],
+          "take": "Tamb_min/max 工作温度",
+          "compare": "覆盖",
+          "produce": "子结果"
+        }
+      ]
+    },
+    {
+      "rule_id": "P12-A04",
+      "name_anchor": "MOS管最大Vds≤额定Vds×70%",
+      "intent": "MOSFET：VDS_peak≤0.70×VDS_rated；缺瞬态峰值→待确认。",
+      "sheet_scope": "device",
+      "scope_in": [
+        "MOSFET",
+        "VDS峰值",
+        "额定VDS"
+      ],
+      "scope_out": [
+        "BJT集电极电压冒充"
+      ],
+      "verdict": {
+        "pass": "峰值≤0.7×额定",
+        "fail": "峰值超限",
+        "insufficient": "缺额定或缺瞬态峰值",
+        "na": "无MOSFET"
+      },
+      "calibers": [
+        "0.70×VDS_rated"
+      ],
+      "forbidden": [
+        "无峰值升绿"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "缺峰值保持待确认"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列MOS与漏源网",
+          "read": [
+            "tel"
+          ],
+          "take": "DS连接",
+          "compare": "",
+          "produce": "mos[]"
+        },
+        {
+          "n": 2,
+          "action": "取额定与峰值",
+          "read": [
+            "datasheet",
+            "oc"
+          ],
+          "take": "VDS_rated VDS_peak",
+          "compare": "≤0.7×",
+          "produce": "子结果"
+        }
+      ]
+    },
+    {
+      "rule_id": "P12-A05",
+      "name_anchor": "MOS管最大Ids≤额定Ids×70%",
+      "intent": "持续ID≤0.70×额定；脉冲/线性另查SOA。勿把VDS字段当电流。",
+      "sheet_scope": "device",
+      "scope_in": [
+        "MOSFET",
+        "ID",
+        "SOA"
+      ],
+      "scope_out": [
+        "用VDS字段判电流"
+      ],
+      "verdict": {
+        "pass": "持续与脉冲均闭合通过",
+        "fail": "超0.7×ID或越SOA",
+        "insufficient": "缺ID额定/工况/SOA",
+        "na": "无MOSFET"
+      },
+      "calibers": [
+        "持续与脉冲分列"
+      ],
+      "forbidden": [
+        "VDS冒充ID"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "缺证据待确认"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列MOS电流工况",
+          "read": [
+            "tel",
+            "oc"
+          ],
+          "take": "持续/脉冲",
+          "compare": "",
+          "produce": "mos[]"
+        },
+        {
+          "n": 2,
+          "action": "对ID与SOA",
+          "read": [
+            "datasheet"
+          ],
+          "take": "ID_rated SOA",
+          "compare": "≤0.7×；SOA",
+          "produce": "子结果"
+        }
+      ]
+    },
+    {
+      "rule_id": "P12-A06",
+      "name_anchor": "TVS反向工作电压高于正常信号上限，最大钳位电压低于后级绝对最大耐压",
+      "intent": "正常电压<VRWM；钳位峰值低于后级适用限制；浪涌与ESD分列。",
+      "sheet_scope": "device",
+      "scope_in": [
+        "TVS",
+        "VRWM",
+        "VC",
+        "后级abs max"
+      ],
+      "scope_out": [
+        "用HBM替代系统ESD"
+      ],
+      "verdict": {
+        "pass": "正常/浪涌/ESD子项均闭合",
+        "fail": "明确不满足",
+        "insufficient": "缺威胁波形或后级依据",
+        "na": "无TVS"
+      },
+      "calibers": [
+        "浪涌与ESD分列"
+      ],
+      "forbidden": [
+        "标称电压冒充ESD通过"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "缺匹配依据→待确认"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列TVS与后级",
+          "read": [
+            "tel"
+          ],
+          "take": "保护路径",
+          "compare": "",
+          "produce": "tvs[]"
+        },
+        {
+          "n": 2,
+          "action": "分列浪涌/ESD比较",
+          "read": [
+            "datasheet",
+            "oc"
+          ],
+          "take": "VRWM VC 后级限制",
+          "compare": "分类型",
+          "produce": "子结果"
+        }
+      ]
+    },
+    {
+      "rule_id": "P12-A07",
+      "name_anchor": "连接器额定电流、插拔寿命和防护等级覆盖整机需求",
+      "intent": "电流/插拔寿命/防护分列比较；任务书无整机需求则整项不适用；有需求时不自补统一比例或1000次。",
+      "sheet_scope": "device",
+      "scope_in": [
+        "连接器",
+        "电流",
+        "寿命",
+        "IP等级"
+      ],
+      "scope_out": [
+        "自造70%/1000次门槛"
+      ],
+      "verdict": {
+        "pass": "三子项（适用者）均符合",
+        "fail": "任一明确不符合",
+        "insufficient": "有整机需求但缺厂家额定",
+        "na": "无连接器，或任务书未给出电流/插拔/防护整机需求"
+      },
+      "calibers": [
+        "分列判定",
+        "缺整机需求→不适用（非整项待确认）"
+      ],
+      "forbidden": [
+        "未确认的70%/1000次通用门槛",
+        "缺整机需求升待确认"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "有整机需求时分列对照；缺厂家额定→待确认"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列连接器与场景",
+          "read": [
+            "tel",
+            "oc"
+          ],
+          "take": "触点与用途",
+          "compare": "",
+          "produce": "cn[]"
+        },
+        {
+          "n": 2,
+          "action": "对需求与额定",
+          "read": [
+            "datasheet",
+            "oc"
+          ],
+          "take": "电流寿命防护",
+          "compare": "分列",
+          "produce": "子结果"
+        }
+      ]
+    },
+    {
+      "rule_id": "P14-A02",
+      "name_anchor": "存在反接风险的输入具有反接保护或批准豁免",
+      "intent": "风险入口正接/反接两态推演保护有效，或任务书条款批准豁免。有MOS≠通过。熔丝不是防反。",
+      "sheet_scope": "path",
+      "scope_in": [
+        "任务书外部供电口",
+        "连接器",
+        "入口链",
+        "二极管/MOS/控制器"
+      ],
+      "scope_out": [
+        "P14-A06三功能",
+        "熔丝过流本身"
+      ],
+      "verdict": {
+        "pass": "每个风险入口保护有效或引用豁免条款号",
+        "fail": "无有效保护且无豁免",
+        "insufficient": "入口是否可反接任务书未定义",
+        "na": "无外部供电入口"
+      },
+      "calibers": [
+        "有MOS≠通过",
+        "熔丝不是防反"
+      ],
+      "forbidden": [
+        "口头豁免"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "找可能接反的入口",
+          "read": [
+            "jlc",
+            "design_task",
+            "tel"
+          ],
+          "take": "接口插入极性后级",
+          "compare": "不是全部+NV网名",
+          "produce": "entries[]"
+        },
+        {
+          "n": 2,
+          "action": "两态推演",
+          "read": [
+            "datasheet"
+          ],
+          "take": "正接能供电；反接后级不承受反向",
+          "compare": "核算损耗",
+          "produce": "保护有效/无效"
+        },
+        {
+          "n": 3,
+          "action": "查豁免",
+          "read": [
+            "design_task"
+          ],
+          "take": "条款号",
+          "compare": "无条款不得口头豁免",
+          "produce": "豁免或无"
+        },
+        {
+          "n": 4,
+          "action": "否项截图",
+          "read": [
+            "pdf"
+          ],
+          "take": "入口路径",
+          "compare": "仅否项",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 5,
+          "action": "建议",
+          "read": [],
+          "take": "二极管/理想二极管条件",
+          "compare": "不编MPN",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P14-A06",
+      "name_anchor": "外部可插拔供电接口具有负载开关、限流和软启动",
+      "intent": "范围内每个外部可插拔供电接口，开关/限流/软启三项分别判。常带电再插负载时仅EN上电软启不能证明该次插入受控。",
+      "sheet_scope": "path",
+      "scope_in": [
+        "可插拔供电口",
+        "完整供电与EN通路"
+      ],
+      "scope_out": [
+        "非供电口",
+        "P14-A02防反"
+      ],
+      "verdict": {
+        "pass": "清单内每口三项都通过",
+        "fail": "任一口任一项失败（总词否，子表保留）",
+        "insufficient": "是否供电口/可插拔/插入带电任务书未写",
+        "na": "无外部可插拔供电口且有分类依据"
+      },
+      "calibers": [
+        "三项分开",
+        "热插拔不算EN上电软启",
+        "范围不明判不适用=假绿"
+      ],
+      "forbidden": [
+        "有芯片代替功能推理",
+        "默认豁免"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "全量接口分类",
+          "read": [
+            "jlc",
+            "design_task"
+          ],
+          "take": "供电/非供电 入/出 插拔 插入带电",
+          "compare": "",
+          "produce": "供电口清单"
+        },
+        {
+          "n": 2,
+          "action": "沿供电+控制通路",
+          "read": [
+            "tel",
+            "datasheet"
+          ],
+          "take": "开关能否关断；限流；软启是否作用于该次插入",
+          "compare": "",
+          "produce": "三功能子结果"
+        },
+        {
+          "n": 3,
+          "action": "分项统计",
+          "read": [],
+          "take": "子表",
+          "compare": "不用合并有芯片掩盖缺项",
+          "produce": "接口表"
+        },
+        {
+          "n": 4,
+          "action": "否项截图",
+          "read": [
+            "pdf"
+          ],
+          "take": "缺功能的口",
+          "compare": "仅否项",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 5,
+          "action": "建议",
+          "read": [],
+          "take": "三功能条件",
+          "compare": "不编MPN",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P16-A01",
+      "name_anchor": "每个IC电源引脚具有0.1μF或数据手册指定的高频去耦电容",
+      "intent": "每个IC电源脚或手册允许电源组有高频去耦。手册优先，否则缺省0.1µF。原理图只判连接与容值；PCB就近标转PCB。同网一只电容不能覆盖所有脚。",
+      "sheet_scope": "peer_caps",
+      "scope_in": [
+        "手册电源脚",
+        "同网电容容值只数装配"
+      ],
+      "scope_out": [
+        "用PCB就近代替连接检查",
+        "P07域短接"
+      ],
+      "verdict": {
+        "pass": "每个电源脚/允许组有目标电容且装配；同时每脚pcb=转PCB",
+        "fail": "某脚无电容或容值/数量不符手册或缺省0.1µF",
+        "insufficient": "封装电源脚枚举不出",
+        "na": "无IC"
+      },
+      "calibers": [
+        "0.047-0.22µF窗口不得当通过",
+        "转PCB不是否也不是单独把整项打成是"
+      ],
+      "forbidden": [
+        "同网任意一只电容覆盖所有脚"
+      ],
+      "program_can": [
+        3
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列电源脚/电源组",
+          "read": [
+            "datasheet",
+            "tel"
+          ],
+          "take": "ref.pin net 分轨",
+          "compare": "",
+          "produce": "power_pins[]"
+        },
+        {
+          "n": 2,
+          "action": "查去耦目标",
+          "read": [
+            "datasheet"
+          ],
+          "take": "手册；无则0.1µF",
+          "compare": "是否允许组内共享",
+          "produce": "target"
+        },
+        {
+          "n": 3,
+          "action": "逐脚匹配",
+          "read": [
+            "tel",
+            "bom"
+          ],
+          "take": "同网电容value装配",
+          "compare": "组共享仅当手册允许",
+          "produce": "每脚有/无"
+        },
+        {
+          "n": 4,
+          "action": "转PCB",
+          "read": [],
+          "take": "无layout",
+          "compare": "不证明就近",
+          "produce": "pcb=转PCB"
+        },
+        {
+          "n": 5,
+          "action": "连接失败截图",
+          "read": [
+            "pdf"
+          ],
+          "take": "无去耦的IC",
+          "compare": "仅连接失败",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 6,
+          "action": "建议",
+          "read": [],
+          "take": "按手册补电容",
+          "compare": "不编MPN",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P18-A02",
+      "name_anchor": "晶体负载电容按CL公式及寄生电容计算",
+      "intent": "两端模型CL_eff=C1×C2/(C1+C2)+C_par，计入芯片内部电容且不重复算，落入手册CL范围。C_par无约定不拍3pF。",
+      "sheet_scope": "peer_caps",
+      "scope_in": [
+        "无源晶体",
+        "两端C",
+        "CL",
+        "Cin",
+        "C_par约定"
+      ],
+      "scope_out": [
+        "有源晶振",
+        "无约定时的走线长度本身"
+      ],
+      "verdict": {
+        "pass": "每颗晶体公式闭合且在范围内",
+        "fail": "算出越范围",
+        "insufficient": "缺CL、缺C1/C2、或缺C_par约定",
+        "na": "无无源晶体"
+      },
+      "calibers": [
+        "不拍3pF",
+        "Cin不重复算"
+      ],
+      "forbidden": [
+        "示波器图例填CL"
+      ],
+      "program_can": [
+        4
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "找晶体与两端C",
+          "read": [
+            "bom",
+            "tel"
+          ],
+          "take": "Y C1 C2 振荡器脚",
+          "compare": "",
+          "produce": "对象"
+        },
+        {
+          "n": 2,
+          "action": "查CL与Cin",
+          "read": [
+            "datasheet"
+          ],
+          "take": "CL范围、内部电容",
+          "compare": "",
+          "produce": "ds或缺手册"
+        },
+        {
+          "n": 3,
+          "action": "取C_par",
+          "read": [
+            "oc",
+            "design_task"
+          ],
+          "take": "有约定用约定",
+          "compare": "无则缺约定",
+          "produce": "C_par或缺失"
+        },
+        {
+          "n": 4,
+          "action": "代入公式",
+          "read": [],
+          "take": "容差最坏 Cin只加一次",
+          "compare": "与CL范围比",
+          "produce": "通过/否"
+        },
+        {
+          "n": 5,
+          "action": "否项截图",
+          "read": [
+            "pdf"
+          ],
+          "take": "晶体网络",
+          "compare": "仅否项",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 6,
+          "action": "建议改C1/C2",
+          "read": [],
+          "take": "公式反算",
+          "compare": "不编料号",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P42-A01",
+      "name_anchor": "原理图位号集合不存在重复位号",
+      "intent": "独立装配实体位号唯一。合法多单元A/B不算错。不可用嘉立创instances分组数代替唯一性。",
+      "sheet_scope": "device",
+      "scope_in": [
+        "网表",
+        "嘉立创symbols/instances",
+        "BOM位号层次"
+      ],
+      "scope_out": [
+        "P42-A04 MPN/Value"
+      ],
+      "verdict": {
+        "pass": "无独立实体冲突",
+        "fail": "两个独立装配实体同位号",
+        "insufficient": "层次实例无法展开",
+        "na": "六件套齐则必走到本项"
+      },
+      "calibers": [
+        "dict键唯一不是唯一性证明"
+      ],
+      "forbidden": [
+        "用instances分组计数代替唯一性"
+      ],
+      "program_can": [
+        1,
+        2,
+        3
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "提全部位号与层次",
+          "read": [
+            "tel",
+            "jlc",
+            "bom"
+          ],
+          "take": "ref 单元 层次路径",
+          "compare": "",
+          "produce": "实体表"
+        },
+        {
+          "n": 2,
+          "action": "区分单元vs实体",
+          "read": [],
+          "take": "EDA多门规则",
+          "compare": "合法同位号剔除",
+          "produce": "待比实体"
+        },
+        {
+          "n": 3,
+          "action": "查重复",
+          "read": [],
+          "take": "层次路径+位号",
+          "compare": "冲突列出页",
+          "produce": "dup[]"
+        },
+        {
+          "n": 4,
+          "action": "否项截图",
+          "read": [
+            "pdf"
+          ],
+          "take": "冲突两侧页",
+          "compare": "仅否项",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 5,
+          "action": "建议改位号",
+          "read": [],
+          "take": "冲突对",
+          "compare": "",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P42-A04",
+      "name_anchor": "同位号的MPN/型号和Value在原理图、BOM与变体文件中一致",
+      "intent": "同版本同变体列出原理图独有、BOM独有、共有。共有比MPN与Value。不以共有匹配掩盖整颗缺失。",
+      "sheet_scope": "device",
+      "scope_in": [
+        "三源位号",
+        "MPN",
+        "Value",
+        "排除规则"
+      ],
+      "scope_out": [
+        "P42-A01重复"
+      ],
+      "verdict": {
+        "pass": "剩余差集皆有排除依据且共有字段一致",
+        "fail": "无依据独有或MPN/Value不一致",
+        "insufficient": "多变体或机械件/测试点排除规则未给",
+        "na": "六件套齐则必走到；无变体文件按单一变体"
+      },
+      "calibers": [
+        "共有全对但漏1颗无依据独有→否",
+        "差集规则不明→待确认"
+      ],
+      "forbidden": [
+        "以共有匹配掩盖缺料"
+      ],
+      "program_can": [
+        1,
+        3
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿",
+        "facts_patch 须带 source；无来源丢弃"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "三源位号集合",
+          "read": [
+            "tel",
+            "bom",
+            "jlc",
+            "pdf"
+          ],
+          "take": "独有/共有",
+          "compare": "",
+          "produce": "三个集合"
+        },
+        {
+          "n": 2,
+          "action": "合法差集",
+          "read": [
+            "design_task",
+            "bom"
+          ],
+          "take": "排除 DNP 机械件测试点",
+          "compare": "无规则不得全判否也不得全判是",
+          "produce": "剩余差集或待确认"
+        },
+        {
+          "n": 3,
+          "action": "共有比MPN/Value",
+          "read": [
+            "bom",
+            "tel"
+          ],
+          "take": "单位统一后缀不丢",
+          "compare": "",
+          "produce": "字段冲突"
+        },
+        {
+          "n": 4,
+          "action": "否项列表+截图",
+          "read": [
+            "pdf",
+            "bom"
+          ],
+          "take": "冲突或无依据独有",
+          "compare": "仅否项",
+          "produce": "pages_checked[]"
+        },
+        {
+          "n": 5,
+          "action": "建议",
+          "read": [],
+          "take": "补料或改标注",
+          "compare": "",
+          "produce": "fix[]"
+        }
+      ]
+    },
+    {
+      "rule_id": "P14-A05",
+      "name_anchor": "浪涌保护器件的工作电压、钳位电压和能量能力匹配端口威胁等级",
+      "intent": "按连接器枚举端口。威胁等级来自任务书。浪涌器件的工作电压、钳位电压、能量来自手册额定栏。齐纳 Vz 不算浪涌能量。无配方不得是/否。",
+      "sheet_scope": "path",
+      "scope_in": [
+        "连接器",
+        "入口电源网上的 TVS/压敏/GDT",
+        "任务书威胁等级"
+      ],
+      "scope_out": [
+        "用齐纳稳压电压冒充钳位能量",
+        "无威胁等级仍判通过"
+      ],
+      "verdict": {
+        "pass": "每个端口的浪涌器件额定与任务书威胁等级匹配，且配方命中",
+        "fail": "额定已抽出且低于威胁等级",
+        "insufficient": "有连接器但威胁等级或浪涌额定未抽出，或配方为空",
+        "na": "无连接器"
+      },
+      "calibers": [
+        "齐纳 Vz 不是浪涌钳位电压"
+      ],
+      "forbidden": [
+        "看见二极管就判通过",
+        "无配方升绿"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列连接器",
+          "read": [
+            "tel"
+          ],
+          "take": "入口电源网",
+          "compare": "",
+          "produce": "ports[]"
+        },
+        {
+          "n": 2,
+          "action": "列同网防护器件",
+          "read": [
+            "tel",
+            "bom"
+          ],
+          "take": "TVS/压敏/GDT；排除齐纳 Vz",
+          "compare": "",
+          "produce": "clamps[]"
+        },
+        {
+          "n": 3,
+          "action": "对威胁等级",
+          "read": [
+            "design_task",
+            "datasheet"
+          ],
+          "take": "威胁等级与 Vrwm/Vc/能量",
+          "compare": "缺则待确认",
+          "produce": "待确认或配方闭合"
+        }
+      ]
+    },
+    {
+      "rule_id": "P16-A05",
+      "name_anchor": "模拟电源根据噪声预算使用RC或磁珠隔离",
+      "intent": "只枚举模拟电源网、模拟电源脚和磁珠。噪声预算来自任务书。无对象则不适用。有对象但无预算或无配方则待确认。",
+      "sheet_scope": "nets",
+      "scope_in": [
+        "模拟电源网名",
+        "模拟电源脚名",
+        "磁珠"
+      ],
+      "scope_out": [
+        "单轨启发式判通过",
+        "看见磁珠就判隔离成立"
+      ],
+      "verdict": {
+        "pass": "噪声预算已写且 RC/磁珠配方命中",
+        "fail": "预算已写且隔离件不满足配方",
+        "insufficient": "有模拟电源或磁珠，但预算或配方未闭合",
+        "na": "无模拟电源轨、无模拟电源脚、无磁珠"
+      },
+      "calibers": [
+        "无对象才不适用"
+      ],
+      "forbidden": [
+        "无噪声预算判不通过",
+        "无配方升绿"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列模拟电源与磁珠",
+          "read": [
+            "tel",
+            "bom"
+          ],
+          "take": "网名、引脚名、磁珠料号",
+          "compare": "",
+          "produce": "objects[]"
+        },
+        {
+          "n": 2,
+          "action": "读噪声预算",
+          "read": [
+            "design_task"
+          ],
+          "take": "预算",
+          "compare": "未写则待确认",
+          "produce": "待确认"
+        }
+      ]
+    },
+    {
+      "rule_id": "P19-A03",
+      "name_anchor": "复位信号上拉/下拉电压和默认状态满足器件要求",
+      "intent": "按复位网枚举。列出同网电阻和另一端，不把另一端猜成上拉轨。器件复位阈值和默认状态从手册抽出。无复位网则不适用。禁止用上升时间公式升绿。",
+      "sheet_scope": "nets",
+      "scope_in": [
+        "RESET/RST/NRST/POR 网或引脚",
+        "同网电阻"
+      ],
+      "scope_out": [
+        "0.69·Rp·C 口头通过",
+        "绝对最大额定冒充复位阈值"
+      ],
+      "verdict": {
+        "pass": "上拉或下拉电压和默认状态与手册复位要求一致，且配方命中",
+        "fail": "阈值已抽出且电平不满足",
+        "insufficient": "有复位网但阈值或默认状态未抽出",
+        "na": "无复位网"
+      },
+      "calibers": [
+        "无复位对象才不适用"
+      ],
+      "forbidden": [
+        "看见上拉电阻就判通过",
+        "无配方升绿"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列复位网",
+          "read": [
+            "tel"
+          ],
+          "take": "网名和引脚名",
+          "compare": "",
+          "produce": "reset_nets[]"
+        },
+        {
+          "n": 2,
+          "action": "列电阻与阈值",
+          "read": [
+            "tel",
+            "datasheet"
+          ],
+          "take": "电阻另一端；手册复位阈值和默认状态",
+          "compare": "缺则待确认",
+          "produce": "待确认"
+        }
+      ]
+    },
+    {
+      "rule_id": "P21-A01",
+      "name_anchor": "发送端输出电平与接收端VIH/VIL阈值兼容",
+      "intent": "只列连接两颗及以上 IC 的信号网。电源网和地排除。引脚功能未抽出时不指定发送端。VOH/VOL 与 VIH/VIL 只用手册推荐栏。禁止 0.7×VCC，禁止绝对最大额定冒充。无配方不得是/否。",
+      "sheet_scope": "nets",
+      "scope_in": [
+        "两颗及以上 IC 的信号网"
+      ],
+      "scope_out": [
+        "电源脚",
+        "地",
+        "0.7×VCC 启发式",
+        "单轨即判通过"
+      ],
+      "verdict": {
+        "pass": "每条信号网 VOH≥VIH 且 VOL≤VIL，且配方命中",
+        "fail": "阈值已抽出且不兼容",
+        "insufficient": "有信号网但阈值未抽出或引脚功能未分出发送端",
+        "na": "没有连接两颗及以上 IC 的信号网"
+      },
+      "calibers": [
+        "同域不等于已经兼容"
+      ],
+      "forbidden": [
+        "0.7×VCC",
+        "绝对最大额定代替 VIH/VIL",
+        "无配方升绿"
+      ],
+      "program_can": [
+        1
+      ],
+      "agent_must": [
+        "仅待确认：对着 stuck 取证",
+        "禁止无补丁升绿"
+      ],
+      "steps": [
+        {
+          "n": 1,
+          "action": "列芯片之间的信号网",
+          "read": [
+            "tel"
+          ],
+          "take": "排除电源和地",
+          "compare": "至少两颗 IC",
+          "produce": "nets[]"
+        },
+        {
+          "n": 2,
+          "action": "抽阈值",
+          "read": [
+            "datasheet"
+          ],
+          "take": "VOH/VOL 与 VIH/VIL 推荐栏",
+          "compare": "缺则待确认",
+          "produce": "待确认"
+        }
+      ]
+    }
+  ]
+}

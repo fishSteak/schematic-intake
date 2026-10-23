@@ -1,0 +1,14 @@
+{
+  "board_name": "0918全量",
+  "product": "",
+  "netlist": "../../materials/0918全量/Netlist_原版拆分-PDF重建-R1_2026-09-11.tel",
+  "bom": "../../materials/0918全量/BOM_原版拆分-PDF重建-R1_2026-09-11.csv",
+  "schematic_pdf": "../../materials/0918全量/SCH_原版拆分-PDF重建-R1_2026-09-11(1).pdf",
+  "eprj2": "../../materials/0918全量/原版拆分-PDF重建-2026-09-05_copy.eprj2",
+  "operating_conditions": "../../materials/0918全量/operating_conditions_defaults.yaml",
+  "design_task_book": "../../materials/0918全量/design_task_signed.yaml",
+  "design_task_book_docx": "../../materials/0918全量/原版拆分重建项目_电子设计任务书_v0.1.docx",
+  "drc": "../../materials/0918全量/schDrcLog_2026-09-08.txt",
+  "rules": "../../rules/product_center_15.json",
+  "note": "原始材料取自仓库内 materials/0918全量（与原同级目录 0918全量材料 内容一致）；DRC 日志不在六件套门禁内"
+}

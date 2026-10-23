@@ -1,0 +1,10 @@
+[
+  {"id":"summary","title":"对象评审摘要"},
+  {"id":"premises","title":"材料与分析思路"},
+  {"id":"assessment","title":"判定要点"},
+  {"id":"primary","title":"评审主工况"},
+  {"id":"comparisons","title":"其他工况比较"},
+  {"id":"audit","title":"判定证据与未解边界"},
+  {"id":"datasheets","title":"规格书资料"},
+  {"id":"schematics","title":"关联图幅"}
+]

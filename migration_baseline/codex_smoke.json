@@ -1,0 +1,7 @@
+{
+  "passed": true,
+  "backend": "codex-cli",
+  "turns": 3,
+  "same_session": true,
+  "file_delivery": true
+}

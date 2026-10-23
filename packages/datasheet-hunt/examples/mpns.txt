@@ -1,0 +1,4 @@
+# 一行一个料号；也可用 mpn,位号
+LM393DR
+L78L12ACZ-AP
+MMBD4148SE

@@ -1,0 +1,17 @@
+{
+  "note": "金标板 IC 直链；步骤2写入 review_out/datasheets/url_hints.json，供 search_and_fetch 优先下载",
+  "urls": {
+    "L78L12ACZ-AP": "https://www.st.com/resource/en/datasheet/l78l.pdf",
+    "LM339DR": "https://www.ti.com/lit/ds/symlink/lm2901.pdf",
+    "LM358BIDR": "https://www.ti.com/lit/ds/symlink/lm358b.pdf",
+    "LM393DR": "https://www.ti.com/lit/ds/symlink/lm393.pdf",
+    "LM392MX/NOPB": "https://www.ti.com/lit/ds/symlink/lm392.pdf",
+    "CD4066BM96": "https://www.ti.com/lit/ds/symlink/cd4066b.pdf",
+    "MC14584BDR2G": "https://www.onsemi.com/pdf/datasheet/mc14584b-d.pdf",
+    "LL4148": "https://www.vishay.com/docs/85522/ll4148.pdf",
+    "1N5241B": "https://www.onsemi.com/pdf/datasheet/1n5221b-d.pdf",
+    "MMBD4148SE": "https://www.onsemi.com/pdf/datasheet/mmbd4148-d.pdf",
+    "MMBD4148CA": "https://www.onsemi.com/pdf/datasheet/mmbd4148-d.pdf",
+    "MMBD4148CC": "https://www.onsemi.com/pdf/datasheet/mmbd4148-d.pdf"
+  }
+}

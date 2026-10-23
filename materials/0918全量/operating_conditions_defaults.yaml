@@ -1,0 +1,115 @@
+# =============================================================================
+# 产品中心 · 常见工况默认标准库（P3）· 板级公共 Base 能力
+# -----------------------------------------------------------------------------
+# 定位：公开、可复用的「默认工况与降额基线」，属于评审机 base 能力，
+#       **不属于**某个检查项的私有配置，也不做「检查项 ↔ 块」绑定。
+# 用法：作为板级公共工况标准库挂到 review_out/operating_conditions_base.json；
+#       各项检查按需引用。confirmed_by_business=true 时按【工况标准】敢判；
+#       false 时仅能挂【假设工况】，不得假装已获业务签字。
+# 开关：confirmed_by_business — 本版按用户确认：默认库视为正确硬标准。
+# 谁消费：由 engineer_policy.yaml 的 p3（策略层）决定哪些项要声明已套用本库；
+#         本文件只维护工况本体，不维护 rule_id 列表。
+# =============================================================================
+
+version: "1.0"
+scope: board_base          # 板级公共基线，非单检项私有
+confirmed_by_business: true
+
+# ---------------------------------------------------------------------------
+# 默认工况块（按物理量 / 器件应力类型；检查项按需取用，不在此绑 rule_id）
+# ---------------------------------------------------------------------------
+defaults:
+
+  # 环境温度假设（℃）：商用/柜内常见温区
+  ambient_celsius:
+    desc: "环境温度默认区间。可用于温升、结温粗估等；严苛户外/车载以设计任务书为准。"
+    min: 0
+    max: 70
+    note: "商用/柜内常见温区 0～70℃；严苛环境以设计任务书为准"
+
+  # 常见逻辑/电源轨标称电压（V）
+  logic_rails_v:
+    desc: "板级常见电源轨标称，供供电范围、耐压语境等检查引用。"
+    values:
+      - 3.3   # 常见逻辑轨
+      - 5.0
+      - 12.0
+      - 24.0  # 工业常见
+
+  # 电阻降额
+  resistor_derating:
+    desc: "电阻稳态功耗降额。无实测电流时用功率粗估。"
+    max_steady_power_ratio: 0.5   # 稳态功耗不超过额定功耗的 50%
+    assume_signal_resistor_mw: 10 # 信号电阻功耗粗估上限（mW）
+    assume_pull_resistor_mw: 20   # 上拉/下拉电阻功耗粗估上限（mW）
+    note: "无实测电流：信号电阻≤10mW、上拉≤20mW 粗估；稳态按额定功耗×0.5 降额"
+
+  # 电容降额
+  capacitor_derating:
+    desc: "电容直流耐压降额。工作电压优先取所挂电源轨标称。"
+    max_dc_voltage_ratio: 0.5     # 工作电压 ≤ 额定耐压 × 50%
+    rail_voltage_from_net: true   # 工作电压从电源网名/标称抽取
+    note: "工作电压取电源轨标称；直流耐压按额定值×0.5 降额核对"
+
+  # 电感降额
+  inductor_derating:
+    desc: "电感饱和电流裕量。缺负载电流时只能声明标准比，无法数值闭合。"
+    isat_ratio: 1.5               # 建议 Isat ≥ 峰值电流 × 1.5（有电流数据时）
+    note: "缺负载电流无法数值闭合；有电流后按 Isat≥1.5×Ipeak 核对"
+
+  # MOSFET 降额
+  mosfet_derating:
+    desc: "功率管电压/电流降额。缺瞬态与负载时仅声明比例，不做假通过。"
+    vds_ratio: 0.7                # 工作 Vds ≤ Vdss × 70%
+    ids_ratio: 0.7                # 工作 Ids ≤ Id 额定 × 70%
+    note: "缺瞬态/负载时仅声明标准比：Vds/Id 均按额定×0.7"
+
+  # 保险丝 I²t / 熔断配合（确认后可用默认预期短路电流敢判）
+  fuse_i2t:
+    desc: "保险丝与短路能量配合。确认库含默认预期短路电流时，可与 F* 选型做数量级闭合。"
+    # 柜内 24V 二次侧/端子进线常见预期短路电流粗量级（非实验室实测）
+    assume_prospective_short_a: 50
+    assume_rail_v: 24
+    note: "默认预期短路电流 50A@24V 柜内二次侧；与 SMD 020/2A 级保险丝做数量级 I²t 匹配"
+
+  # IC 供电范围
+  ic_supply:
+    desc: "IC 供电是否落在手册推荐范围。轨电压从图/网表标称取；手册靠自搜规格书。"
+    note: "轨电压取电源网标称；手册推荐范围靠自搜规格书；无手册则【缺手册】"
+
+  # ---------------------------------------------------------------------------
+  # EMC / 接口威胁默认分级（替代「正式EMC分级文件」缺失时的硬标准）
+  # 正式EMC分级文件 = 项目签署的接口威胁矩阵（逐口 ESD/浪涌/EFT 等级+试验标准）
+  # ---------------------------------------------------------------------------
+  emc_interface_threat:
+    desc: >
+      无正式EMC/接口威胁分级文件时，柜内工业接口板采用本默认分级。
+      正式文件通常含：接口清单、接触方式、ESD/Surge/EFT 试验等级与标准号、是否豁免。
+    environment: industrial_cabinet
+    standards_ref: "IEC 61000-4-2 / 61000-4-4 / 61000-4-5（柜内默认等级）"
+    ports:
+      power_24v_pluggable:
+        examples: ["CN1.VCC", "CN1.GND"]
+        contact: pluggable_terminal
+        esd: "接触±4kV / 空气±8kV"
+        surge: "线-地 ±0.5kV（24V DC）"
+        eft: "±1kV"
+      sensor_analog:
+        examples: ["CN1.SPDL", "0～10V"]
+        contact: pluggable_terminal
+        esd: "接触±4kV / 空气±8kV"
+        surge: "线-地 ±0.5kV"
+        eft: "±0.5kV"
+      plc_digital_out:
+        examples: ["CN1.OUT_ORI"]
+        contact: pluggable_terminal
+        esd: "接触±4kV / 空气±8kV"
+        surge: "线-地 ±0.5kV"
+        eft: "±1kV"
+      debug_header:
+        examples: ["CN2"]
+        contact: temporary_debug
+        esd: "接触±2kV（调试口，装机后宜屏蔽）"
+        surge: "不适用（非长线）"
+        eft: "不适用"
+    note: "柜内安装接口板默认威胁分级；有正式EMC分级文件时以正式文件为准"

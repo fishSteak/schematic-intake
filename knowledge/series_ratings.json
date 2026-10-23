@@ -1,0 +1,113 @@
+{
+  "version": "1.0",
+  "note": "跨板复用手册额定参数；禁止他板判定词污染。按系列匹配 MPN。",
+  "series": [
+    {
+      "id": "uni-royal-0603-waf",
+      "mpn_pattern": "^0603WAF\\d+[A-Z]?T5E$",
+      "manufacturer": "UNI-ROYAL",
+      "p_rated_w": 0.1,
+      "p_rated_temp_c": 70,
+      "power_code": "WA",
+      "power_code_meaning": "1/10W",
+      "extract_note": "厚声 UNI-ROYAL 厚膜电阻系列表：0603 WA=1/10W @70℃",
+      "datasheet_url_hint": "https://datasheet.lcsc.com/datasheet/pdf/0a975aaa49b7c97f38a963127be4a823.pdf?productCode=C23018",
+      "lcsc_product_name_regex": "100mW|1/10W"
+    },
+    {
+      "id": "zener-1n5241b",
+      "mpn_pattern": "^1N5241B$",
+      "vz_nom_v": 11.0,
+      "vz_min_v": 10.45,
+      "vz_max_v": 11.55,
+      "izt_a": 0.02,
+      "zzt_ohm": 22,
+      "izk_a": 0.00025,
+      "extract_note": "1N5241B：Vz 10.45/11/11.55 V，Izt 20 mA，Zzt 22 Ω，Izk 0.25 mA",
+      "lcsc_product_name_regex": "ZENER\\s*11V|11V",
+      "pin_roles": {"1": "anode", "2": "cathode"}
+    },
+    {
+      "id": "mmbd4148ca",
+      "mpn_pattern": "^MMBD4148CA$",
+      "pin_roles": {"1": "cathode", "2": "cathode", "3": "anode"},
+      "vf_model_v": 0.7,
+      "extract_note": "MMBD4148CA 共阳极：3 脚阳极，1、2 脚阴极。手册只给 IF=10mA 时 VF≤1.0V，工作点压降取 0.7V"
+    },
+    {
+      "id": "mmbd4148cc",
+      "mpn_pattern": "^MMBD4148CC$",
+      "pin_roles": {"1": "anode", "2": "anode", "3": "cathode"},
+      "vf_model_v": 0.7,
+      "extract_note": "MMBD4148CC 共阴极：3 脚阴极，1、2 脚阳极。手册只给 IF=10mA 时 VF≤1.0V，工作点压降取 0.7V"
+    },
+    {
+      "id": "mmbd4148se",
+      "mpn_pattern": "^MMBD4148SE$",
+      "diode_pairs": [
+        {"anode": "1", "cathode": "3"},
+        {"anode": "3", "cathode": "2"}
+      ],
+      "vf_model_v": 0.7,
+      "extract_note": "ON Semi MMBD4148SE：1 脚阳极，2 脚阴极，3 脚为两管串联中点。工作点压降取 0.7V，手册上限另列"
+    },
+    {
+      "id": "bav99-series",
+      "mpn_pattern": "^BAV99",
+      "diode_pairs": [
+        {"anode": "1", "cathode": "3"},
+        {"anode": "3", "cathode": "2"}
+      ],
+      "vf_model_v": 0.7,
+      "extract_note": "BAV99 串联双二极管：1 脚阳极，2 脚阴极，3 脚为串联中点。工作点压降取 0.7V"
+    },
+    {
+      "id": "bav70-cc",
+      "mpn_pattern": "^BAV70",
+      "pin_roles": {"1": "anode", "2": "anode", "3": "cathode"},
+      "vf_model_v": 0.7,
+      "extract_note": "BAV70 共阴极：3 脚阴极，1、2 脚阳极。工作点压降取 0.7V"
+    },
+    {
+      "id": "bav56-ca",
+      "mpn_pattern": "^BAV56",
+      "pin_roles": {"1": "cathode", "2": "cathode", "3": "anode"},
+      "vf_model_v": 0.7,
+      "extract_note": "BAV56 共阳极：3 脚阳极，1、2 脚阴极。工作点压降取 0.7V"
+    },
+    {
+      "id": "ll4148-family",
+      "mpn_pattern": "^(LL4148|LL4448|1N4148|1N914)",
+      "pin_roles": {"1": "cathode", "2": "anode"},
+      "vf_model_v": 0.7,
+      "extract_note": "两脚开关二极管：色环端为阴极，封装脚位 1 阴极、2 阳极。工作点压降取 0.7V，手册上限另列"
+    },
+    {
+      "id": "2sc1623",
+      "mpn_pattern": "^2SC1623",
+      "pin_roles": {"1": "base", "2": "emitter", "3": "collector"},
+      "vce_sat_ic_a": 0.1,
+      "vce_sat_ib_a": 0.01,
+      "extract_note": "2SC1623 SOT-23：1 基极，2 发射极，3 集电极。VCE(sat) 手册条件 Ic=100mA、Ib=10mA"
+    },
+    {
+      "id": "silicon-switching-diode",
+      "mpn_pattern": "^MMBD4148",
+      "vf_model_v": 0.7,
+      "extract_note": "小信号开关二极管。后缀未识别时只取工作点压降 0.7V，不猜脚位"
+    },
+    {
+      "id": "cd4066",
+      "mpn_pattern": "^CD4066",
+      "switch_channels": [
+        {"a": "1", "b": "2", "control": "13"},
+        {"a": "3", "b": "4", "control": "5"},
+        {"a": "8", "b": "9", "control": "6"},
+        {"a": "10", "b": "11", "control": "12"}
+      ],
+      "ron_ohm": 0,
+      "ron_typ_ohm": 125,
+      "extract_note": "CD4066 四路模拟开关。控制脚接在正电源上时按导通。导通电阻 0 是负载上界，Iz 为下界。15V 典型导通电阻 125Ω 只作对照"
+    }
+  ]
+}

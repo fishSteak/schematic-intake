@@ -1,0 +1,2472 @@
+[
+  {
+    "path": "kernel\\agent_reason.py",
+    "action": "copied",
+    "sha256": "5bbdaa6f1fe408dea7170a0cebd4b6d774d3d15945e6a5e219a2e985853cde38"
+  },
+  {
+    "path": "kernel\\behavior_bridge.py",
+    "action": "copied",
+    "sha256": "0586d07ce5245fc176863a7a5484a051d3582058c22d3e5e4893aa75ac30bf6d"
+  },
+  {
+    "path": "kernel\\cause.py",
+    "action": "copied",
+    "sha256": "7d9c063079d55dd76c64c277dbeaf5f714aedbd6e025650de66ac8c557979c59"
+  },
+  {
+    "path": "kernel\\confidence.py",
+    "action": "copied",
+    "sha256": "f132534d0678c6a2a42d7e889d3f45425f0bcc250ee8450e01b5751023289fbc"
+  },
+  {
+    "path": "kernel\\dc_modes.py",
+    "action": "copied",
+    "sha256": "a4de6e97d490669b81a73205e8fdbac2970b29b43aef511cceb70e39c9007eb3"
+  },
+  {
+    "path": "kernel\\facts_patch.py",
+    "action": "copied",
+    "sha256": "321cf63362166b44a7ba22e378e881c0a066273d5830e2f12ec2ea9a7f0412df"
+  },
+  {
+    "path": "kernel\\knowledge.py",
+    "action": "retain_intake",
+    "source_sha256": "bb2c59f6d9db129c7ef6dcaba29118ff8611aa8dba19475e2e8f65af5d2e5ffc"
+  },
+  {
+    "path": "kernel\\lcsc.py",
+    "action": "retain_intake",
+    "source_sha256": "a4cf4d4313f1f11b8f0ca2279886c90334b6b6e51a73ce6b445c4a297802e0a9"
+  },
+  {
+    "path": "kernel\\pintable.py",
+    "action": "retain_intake",
+    "source_sha256": "9602ae99499eab74ded0753f4a148bda32a4e2b649a8bdf1157ac7ee04245bfe"
+  },
+  {
+    "path": "kernel\\rated_fields.py",
+    "action": "retain_intake",
+    "source_sha256": "b711b4d8ae16fc067e0e80d7b1e4932d13807d6c929e04c7d970376dce5b4293"
+  },
+  {
+    "path": "kernel\\rated_hunt.py",
+    "action": "retain_intake",
+    "source_sha256": "3656166cb55f34779b1ba949c1cf0267237e5566bdc1813cb2985f5c27195fe7"
+  },
+  {
+    "path": "kernel\\rated_registry.py",
+    "action": "retain_intake",
+    "source_sha256": "37844584d46838ff189e05be6b73642ce2adeebdefeff2a7fdf8752a64f09e53"
+  },
+  {
+    "path": "kernel\\recipes.py",
+    "action": "copied",
+    "sha256": "83924c6bf7225888bfce169a1b4244b1fdef71210c0b3afb49553df27d4b48b4"
+  },
+  {
+    "path": "kernel\\report_text.py",
+    "action": "retain_intake",
+    "source_sha256": "81034e7ea9f166cf60d29287b9ad1da39ac5be8a91dbb55ec2c7187cfba90fae"
+  },
+  {
+    "path": "kernel\\report_workbench.py",
+    "action": "copied",
+    "sha256": "36163e34c272846be6fba940314e23ab0255f363dc275eb0c1f6b6b5b827227a"
+  },
+  {
+    "path": "kernel\\resistor_network.py",
+    "action": "copied",
+    "sha256": "1d9c7f6b61fafac65e497d757f21eb52087930d6bbb3f61784b44998edd86bb1"
+  },
+  {
+    "path": "kernel\\run.py",
+    "action": "retain_intake",
+    "source_sha256": "988c1e8f33d7976e4c29f73248e733b2ae8977bf384c6e1a414a3acff56e02ac"
+  },
+  {
+    "path": "kernel\\situations.py",
+    "action": "copied",
+    "sha256": "fcf65cf86151e589dabfd9baac6a68c4b032cacf803a90932e925fb6314ee947"
+  },
+  {
+    "path": "kernel\\solution.py",
+    "action": "copied",
+    "sha256": "8cd48f3a77e8a773f567fb70db7cfd2255267bf291ea20b381f79b4f96dd32f8"
+  },
+  {
+    "path": "kernel\\source_cite.py",
+    "action": "copied",
+    "sha256": "dd7c2c6a75b3789777b9110a918eab7e7ce76baae6e421831e6dacc10320c287"
+  },
+  {
+    "path": "kernel\\xlsx_detail.py",
+    "action": "copied",
+    "sha256": "02880b50e4fd46d94e06e79497efac5b83592f0a736f677872231f9cd36510c9"
+  },
+  {
+    "path": "kernel\\checkers\\all15.py",
+    "action": "copied",
+    "sha256": "52783d1c0d396752941d8fe064a66f178576997f85c01661e12ce386342991bd"
+  },
+  {
+    "path": "kernel\\checkers\\cards.py",
+    "action": "copied",
+    "sha256": "30f6ff38a533109196c02cafe123a07e877a5fcba1e579bf4896756575e854ab"
+  },
+  {
+    "path": "kernel\\checkers\\extra4.py",
+    "action": "copied",
+    "sha256": "a8d7684010559163f6270c34ed159514976f8d1e1e6201b72fecc3e2afced743"
+  },
+  {
+    "path": "kernel\\checkers\\__init__.py",
+    "action": "copied",
+    "sha256": "c2b80e6a660996ffe6f9e88956b584de582ea67e1c9208c0afc38850aafe88bc"
+  },
+  {
+    "path": "kernel\\steps\\s2_datasheet.py",
+    "action": "retain_intake",
+    "source_sha256": "675b54783aa1e1587bb58d29f4c106bb53d04c597cf173e4587781cd7a052534"
+  },
+  {
+    "path": "solve_prog\\behavior_solve.py",
+    "action": "copied",
+    "sha256": "cd3e42519631e3d978c0f619ee2402d40923b9444fb45df0623c9df2967d26d6"
+  },
+  {
+    "path": "solve_prog\\cli.py",
+    "action": "copied",
+    "sha256": "6c0705671f6cf355956f879a53d56fd1c8f8359a0dfcfe1edd23c3379fe1366c"
+  },
+  {
+    "path": "solve_prog\\connection.py",
+    "action": "copied",
+    "sha256": "8c8b2366ea4e2d8ac211246b720e679cff20cc98f283b90584cf47248c752c37"
+  },
+  {
+    "path": "solve_prog\\deliver.py",
+    "action": "copied",
+    "sha256": "b9b3a357cd44e68a086ad5d598e3596f5e3918ba781f5b8abc53900ffd22df6f"
+  },
+  {
+    "path": "solve_prog\\extract_behavior.py",
+    "action": "copied",
+    "sha256": "e06159dd4cc22141cd87be175944969910f820fefa204939fff0bf351488800e"
+  },
+  {
+    "path": "solve_prog\\gates.py",
+    "action": "copied",
+    "sha256": "42c7e21398b60c31eb3b59a8840a1464fc89a7ac6525bf42ac916ae7d2c359aa"
+  },
+  {
+    "path": "solve_prog\\mna.py",
+    "action": "copied",
+    "sha256": "3d3c6f37ad215d40f9b3265d8efc349bec9a0726f26804f31e2e554322a697ab"
+  },
+  {
+    "path": "solve_prog\\netclass.py",
+    "action": "copied",
+    "sha256": "1c64ca382cb594ee446dc511e6d0ea355b5f343f48a9256871bc3a632ea73114"
+  },
+  {
+    "path": "solve_prog\\report_html.py",
+    "action": "copied",
+    "sha256": "b9448b25b21779007e8e71af2d453b054b5b924f681b4d0ced5a97b113b57908"
+  },
+  {
+    "path": "solve_prog\\spice.py",
+    "action": "copied",
+    "sha256": "e1536db04f81c9e1fd0e7429c907d6484d724e24ed486ef056f4291318f65006"
+  },
+  {
+    "path": "solve_prog\\stimulus.py",
+    "action": "copied",
+    "sha256": "5b2f4d0a31dfd8c13c19c005c2e8780df8d51d8d151be2b97b2a2a6befd746f3"
+  },
+  {
+    "path": "solve_prog\\test_behavior.py",
+    "action": "copied",
+    "sha256": "26ce5c177396388717455e89041e0ff38db91d6e69e106de1b1a808f196a6378"
+  },
+  {
+    "path": "solve_prog\\test_fixture.py",
+    "action": "copied",
+    "sha256": "cfccc290adf780c5209a6c9944a50aca3822a71553c9ae28250acdca2ec1f576"
+  },
+  {
+    "path": "solve_prog\\__init__.py",
+    "action": "copied",
+    "sha256": "547bc8d0e70963caaa2e6a66f70893610ad640766d5f683ab52e40854b30c387"
+  },
+  {
+    "path": "solve_prog\\__main__.py",
+    "action": "copied",
+    "sha256": "16f16dd816f446c7a6f01dc6bf167a999871945345218f0e6a5fc1c9d6823c45"
+  },
+  {
+    "path": "knowledge\\topology_recipes.json",
+    "action": "copied",
+    "sha256": "7822e727c4ad94494ee15303bdb826e4e8c11365edc6ec86ca791dd2a59663a2"
+  },
+  {
+    "path": "vendor\\expert_html\\anysearch_bridge.py",
+    "action": "copied",
+    "sha256": "6975d196a0b304ed77b664be703ee73d9dbbe1b077e99e487df84b49bfe9e64f"
+  },
+  {
+    "path": "vendor\\expert_html\\apply_adjudication_remediation.py",
+    "action": "copied",
+    "sha256": "7509ac52143ca6f292c169908a71975f0769232efba7172a49679e956e6518b0"
+  },
+  {
+    "path": "vendor\\expert_html\\apply_content_remediation.py",
+    "action": "copied",
+    "sha256": "ac590203f1b8a7d5a7964378406feaae793ed9c44ddbd596b09725db6112b423"
+  },
+  {
+    "path": "vendor\\expert_html\\apply_engineer_policy.py",
+    "action": "copied",
+    "sha256": "c6e80e1c19bd55cc571755efa220b50882169e11c8aadb11435590cf9b0453a4"
+  },
+  {
+    "path": "vendor\\expert_html\\attach_schematic_shots.py",
+    "action": "copied",
+    "sha256": "c30cde0e2129e8feeefc1ca93fd6d7a3e83f75374ab97ad37d7e3b0824e25a77"
+  },
+  {
+    "path": "vendor\\expert_html\\build_expert_html.py",
+    "action": "copied",
+    "sha256": "f4f70b30b06dbd1b51fc55e76ccae7c420b382bee8729676759936e2645466c9"
+  },
+  {
+    "path": "vendor\\expert_html\\build_pending_materials_report.py",
+    "action": "copied",
+    "sha256": "abc573f4116a24d89763397ff09fc1184eeeac5fc82b82cdc9d6138dc48a8ed4"
+  },
+  {
+    "path": "vendor\\expert_html\\build_product_html.py",
+    "action": "copied",
+    "sha256": "251e30a8771c715fa1a8799e955886f0cbd49f1325aea118b1d52396c955e5d3"
+  },
+  {
+    "path": "vendor\\expert_html\\complete_must_finish_checks.py",
+    "action": "copied",
+    "sha256": "bba29773c21eda1bf27830a7788a508c777e3e144a695874dfbea7170189651b"
+  },
+  {
+    "path": "vendor\\expert_html\\content_audit.py",
+    "action": "copied",
+    "sha256": "1ad522d886a44b4ed6cd3dac4b435af66edb959991a763e958df759f0b8849e2"
+  },
+  {
+    "path": "vendor\\expert_html\\enrich_product_evidence.py",
+    "action": "copied",
+    "sha256": "ce6817ed06b867f26f84373035cb0f18e0188007d82fcba5b06d8278d386365d"
+  },
+  {
+    "path": "vendor\\expert_html\\import_product_playbook.py",
+    "action": "copied",
+    "sha256": "5291246524626461c4f3f0cec3a3675f5d09aacffeaab027867d475167e64213"
+  },
+  {
+    "path": "vendor\\expert_html\\init_evidence_stubs.py",
+    "action": "copied",
+    "sha256": "2b75c0d32252dd465b2ae79d35d7cc93b1da3f3d34e3c2d713015cef123f23af"
+  },
+  {
+    "path": "vendor\\expert_html\\load_playbook.py",
+    "action": "copied",
+    "sha256": "7992ce041245f9f6acb54972f2c78dc61c1d09d20c01166cca1eb04fd1dce912"
+  },
+  {
+    "path": "vendor\\expert_html\\portable_paths.py",
+    "action": "copied",
+    "sha256": "b6d1ba692ed284ae41065c7a6189156aca926aa3e05d48898bdc72a5c071245c"
+  },
+  {
+    "path": "vendor\\expert_html\\rebuild_check_specific_steps.py",
+    "action": "copied",
+    "sha256": "b597f95f158fef7ab0b373bcdb67cf41f7f7a6f536654f837e9c0c034723a3b6"
+  },
+  {
+    "path": "vendor\\expert_html\\rewrite_ee_narrative.py",
+    "action": "copied",
+    "sha256": "ae2b5672df69d7382b660872294417e2d377009cdb1508639055f3ec13f6495d"
+  },
+  {
+    "path": "vendor\\expert_html\\run_product_review.py",
+    "action": "copied",
+    "sha256": "a8035f0b8896a3712786bb3595dacf0cf1d59c15410f6347f8d61c2861848e8f"
+  },
+  {
+    "path": "vendor\\expert_html\\search_and_fetch_datasheets.py",
+    "action": "copied",
+    "sha256": "327d608d90209b83eab7cdd9ba6439909ea146afabbec4429e2cc2e1dffca170"
+  },
+  {
+    "path": "vendor\\expert_html\\simplify_derivation.py",
+    "action": "copied",
+    "sha256": "2aae889ec151f66bcee04170b1b1c3be18b781539bcb235bc60bdafca71df437"
+  },
+  {
+    "path": "vendor\\expert_html\\_paths.py",
+    "action": "copied",
+    "sha256": "4e7c13f46d7878c51623aa180fa7da35fc45ccbf6ba4e476018e2121d8c7d41d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\README.md",
+    "action": "copied",
+    "sha256": "b73877a568c94f9a2000bc354a5974993f38f1d54806a387993b541dab26c8b0"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\build\\pdf.mjs",
+    "action": "copied",
+    "sha256": "a209a2124baa35cbb9015b809926f1bcec9dd1c247296290e205dd9d76cb9128"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\build\\pdf.mjs.map",
+    "action": "copied",
+    "sha256": "1f43ada9a0ed61a254dd867170017b4f8ce044e9eb607a4ced6efa8aa9d3ab70"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\build\\pdf.sandbox.mjs",
+    "action": "copied",
+    "sha256": "5e399b86b83b3bbc8c38f1de88a45b38a988a05117e9b4044a4baae2f6d557b6"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\build\\pdf.sandbox.mjs.map",
+    "action": "copied",
+    "sha256": "5b814d0635991588416943008cbced3cc1b9d08c60e6e4dd4b47928d2a00cc1d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\build\\pdf.worker.mjs",
+    "action": "copied",
+    "sha256": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\build\\pdf.worker.mjs.map",
+    "action": "copied",
+    "sha256": "ae5ea5d79fadac9ba693d5e70467074bcb183f6451dcac50337e40623831e7b0"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\compressed.tracemonkey-pldi-09.pdf",
+    "action": "copied",
+    "sha256": "3662ff519e485810520552bf301d8c3b2b917fd2f83303f4965d7abed367e113"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\debugger.css",
+    "action": "copied",
+    "sha256": "2e411131a2a8187820bdf46a97153929f83907a69ed629b594d04a2bcf97f963"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\debugger.mjs",
+    "action": "copied",
+    "sha256": "6c357eef4f78391d41ac658b5509a8bc968b33dc1d45d9bdede0d5e8c0157149"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\viewer.css",
+    "action": "copied",
+    "sha256": "b699c1f91a2a433f8d48a960abf29f4069d92dcf2ccf5693026c14956632a237"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\viewer.html",
+    "action": "copied",
+    "sha256": "69bb5560f2f61af9d5b85675b14d697370cd0ff02759d55b04a0d762b61f1f95"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\viewer.mjs",
+    "action": "copied",
+    "sha256": "eae7e16862e0f322a9de5085bc8cc9ea1441d792207599e11d43978cbb693005"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\viewer.mjs.map",
+    "action": "copied",
+    "sha256": "9d39ac0e3751cf547c8403edeefa942b86970c0688f51f534acab8f3920bbeee"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\78-EUC-H.bcmap",
+    "action": "copied",
+    "sha256": "d92a261336dc18b8c03a46eb4d462382d33f4338fa195d303256b2031434c874"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\78-EUC-V.bcmap",
+    "action": "copied",
+    "sha256": "61670bebc4e4827b67230c054fd0d820d6e30c3584d02e386804e62bbedc032a"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\78-H.bcmap",
+    "action": "copied",
+    "sha256": "ece6415b853d61e1b2560165151407d35cf16e6556932b85a13ea75276b77402"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\78-RKSJ-H.bcmap",
+    "action": "copied",
+    "sha256": "696b1f973c97623496703809eaaa5f9b40696c77540057413f4b826a08edfa7b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\78-RKSJ-V.bcmap",
+    "action": "copied",
+    "sha256": "53cb6d560ab377da48cf65d6dcacb0bdb31f13fab7066c580de38c12a73a7ff9"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\78-V.bcmap",
+    "action": "copied",
+    "sha256": "289000f02fd34872b6975503217f33abae6bee676e7d28f640473a67c8db1712"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\78ms-RKSJ-H.bcmap",
+    "action": "copied",
+    "sha256": "a2442595218f5f8bd8e1b42188e368587d876cfe0cc4cd87196f077c878f72e2"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\78ms-RKSJ-V.bcmap",
+    "action": "copied",
+    "sha256": "f8ddceba96bfd9d3740bd1789ee30d1f47c78371520a8084f71f7df58f19be0b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\83pv-RKSJ-H.bcmap",
+    "action": "copied",
+    "sha256": "44040051ec818fe09b9703472bea72efd2759d5eeb5ff0d77c718d6bb5e6d1df"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\90ms-RKSJ-H.bcmap",
+    "action": "copied",
+    "sha256": "c13e043e85ff715b75bb03801e8fd0fb8f3a75e4a48496faa6baaf92b5b48ba1"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\90ms-RKSJ-V.bcmap",
+    "action": "copied",
+    "sha256": "499bb916ce1adbe4289b6e5811f4dc20eb238cdc2ffad20cf26ae56716885bab"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\90msp-RKSJ-H.bcmap",
+    "action": "copied",
+    "sha256": "7b8b3b8bbf821702e9a4df9f3596ce292380c8c1b0925dedadbb4e4b2d80498b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\90msp-RKSJ-V.bcmap",
+    "action": "copied",
+    "sha256": "6296c2b5c07dca8128e96d5296d621a3268803d4fa0e5812a21e52fe2802aacb"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\90pv-RKSJ-H.bcmap",
+    "action": "copied",
+    "sha256": "fb5103f03d3a34547e18d316e52b6d9b26e485c662999222f84d2ba54c2e4fa8"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\90pv-RKSJ-V.bcmap",
+    "action": "copied",
+    "sha256": "7bcb5ad2ba55b9662ce379e16c2d9cc2b82d621a579807353741172e4af615c2"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Add-H.bcmap",
+    "action": "copied",
+    "sha256": "a2ffab28b990998181bcca9b0e914bb2207820f100ae31d5c469444892e5ad8e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Add-RKSJ-H.bcmap",
+    "action": "copied",
+    "sha256": "b29f4b52e2465d0485856d5e69f1ba69927deb2848d8fd328c8035583b35bb7e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Add-RKSJ-V.bcmap",
+    "action": "copied",
+    "sha256": "2aa2232c283a3f5d0997c2834a36cead0b79ce2657944cfeed08140c293460ff"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Add-V.bcmap",
+    "action": "copied",
+    "sha256": "25125d3b1be64e86b2df5b3344170b45a42bcaa0b46e43a34314ef73c166e542"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-CNS1-0.bcmap",
+    "action": "copied",
+    "sha256": "8c65be9d51a9f269a547dc12460707aaf4031ab67ebe8a2900f4b4cc6b3e450e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-CNS1-1.bcmap",
+    "action": "copied",
+    "sha256": "73152bc1a59cc594b414ac6068be48e5512b96ae85920c40e32a99269fdb0c04"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-CNS1-2.bcmap",
+    "action": "copied",
+    "sha256": "a1b8d353bdef9584c820464e8f1c9e2013d64ebf433cba0aa831dddf515818c2"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-CNS1-3.bcmap",
+    "action": "copied",
+    "sha256": "2ffc0c75c79fafde506163d3c08c390d183251009f3fbf6ae50d1167d14b9570"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-CNS1-4.bcmap",
+    "action": "copied",
+    "sha256": "98a1f470c878c6b9691a4d7aef776af8ac9b55f5587c9fafa00547f3bf655716"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-CNS1-5.bcmap",
+    "action": "copied",
+    "sha256": "ddd6e29955eb8cb545f2ebd09c628c3bbda5023256eda1b728f743c75fb77829"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-CNS1-6.bcmap",
+    "action": "copied",
+    "sha256": "317bb2db71e0e5b7b0c47b75de1da915c2e22f65f0c0861507f9ca7ba238f8a2"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-CNS1-UCS2.bcmap",
+    "action": "copied",
+    "sha256": "e665837f2197c6bd08cd8955ad4d6932cee2398e2e328b25b00e6bfb3bd72af9"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-GB1-0.bcmap",
+    "action": "copied",
+    "sha256": "8b81cce8a11d510e505704953cfa4e4ab080c1a0cab991145a3512ee433946b9"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-GB1-1.bcmap",
+    "action": "copied",
+    "sha256": "0426983081788ec7202703e71f1efa4b860f75b936994236010b39d89251a81e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-GB1-2.bcmap",
+    "action": "copied",
+    "sha256": "e67b37a83b160ab3831306a71a605893b24454ee81ac9b6123bf2d3984d268d5"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-GB1-3.bcmap",
+    "action": "copied",
+    "sha256": "aa299afc3e12a28726147305f191be28c7498078c8b182ece7886ac79cd99078"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-GB1-4.bcmap",
+    "action": "copied",
+    "sha256": "8fbd7d74c2ddb1350c1cecce54a73fde3f5453093d4bed445283ec0033d2097f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-GB1-5.bcmap",
+    "action": "copied",
+    "sha256": "c22cb2fcff24112fa31dab2111bdc51957006576d31aad5a25e67793ac01428c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-GB1-UCS2.bcmap",
+    "action": "copied",
+    "sha256": "20507620260c0c935c35afc1e70e5888aa7125d5ec7ffc03cef1959feb2c1641"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-Japan1-0.bcmap",
+    "action": "copied",
+    "sha256": "464f08905236f5703b1f5cf8358767c8b18e6bcc808840d081f1de2c7ab38134"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-Japan1-1.bcmap",
+    "action": "copied",
+    "sha256": "4c823848722187d1ffe75ae3f5f9126ccd2d7895a05fad14c919fb119e037008"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-Japan1-2.bcmap",
+    "action": "copied",
+    "sha256": "7810fb808e367e70429e90a9478fe6a3fdc3e214f25c7582ce9c2da6a242315c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-Japan1-3.bcmap",
+    "action": "copied",
+    "sha256": "84deb1828711ad3d390c9899c38abce1bf619d65ff7bf1a326ec95acc45f08f8"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-Japan1-4.bcmap",
+    "action": "copied",
+    "sha256": "3f8a4f974919c2b8bae5d10175ffa2673be140481e00840542c85d48ef184067"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-Japan1-5.bcmap",
+    "action": "copied",
+    "sha256": "1d3ce4ff28d977f8cf37a912ae4ec811f4175c3167b1ec0b2567feec3e79e1db"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-Japan1-6.bcmap",
+    "action": "copied",
+    "sha256": "5609797b9401b30be72ef9645da62a87829f058c3be4b5c623383119f584b1d9"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-Japan1-UCS2.bcmap",
+    "action": "copied",
+    "sha256": "66c5d0dc4964f4093e77b194023f3a0f689324028ec8330e1e1d0570bcba7c2f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-Korea1-0.bcmap",
+    "action": "copied",
+    "sha256": "dfb8c3874f0e5a8c3acf597d2c12d2b63e90bc5e4f0fce990ec4c56077d80b32"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-Korea1-1.bcmap",
+    "action": "copied",
+    "sha256": "62f277b7b1c441c007797ae707d5c37258d029ce4661a2b911e2e1ee35e6adc1"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-Korea1-2.bcmap",
+    "action": "copied",
+    "sha256": "1d77068af462f96d7ad28ad7e7d43eef6423c685b479d7dc25ff5df38db0380d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Adobe-Korea1-UCS2.bcmap",
+    "action": "copied",
+    "sha256": "857b723088be97255053562bfa41bd1075a7f7910d3bab59a0645c8bbc7060ff"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\B5-H.bcmap",
+    "action": "copied",
+    "sha256": "718ad0ffbef4c34f8f3f31292c462e519cd567a5511fc8b346c60010d64f4ef9"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\B5-V.bcmap",
+    "action": "copied",
+    "sha256": "b5c37383517477620ced927b6b4ffd4f4cc6230d8051b5b46a21d6768e07f7d8"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\B5pc-H.bcmap",
+    "action": "copied",
+    "sha256": "bab6028aead1d6149400e904ab10cfd319082d826473ed4c582c8eeed920f17e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\B5pc-V.bcmap",
+    "action": "copied",
+    "sha256": "41543142b9767f3b76133899fc8453282b01ad3c653acaeea42d78c5a7d08c63"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\CNS-EUC-H.bcmap",
+    "action": "copied",
+    "sha256": "e8f89cd61e6486b948205da46499d659ed0aed949b7095fd3c8e95ffe2b0e7a9"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\CNS-EUC-V.bcmap",
+    "action": "copied",
+    "sha256": "cae422bec2ac6dbe86bf921cec942bacd2d0b733ffcca5f91b3ba14e917025a0"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\CNS1-H.bcmap",
+    "action": "copied",
+    "sha256": "e8487971ab20cd16f3de3e8ac56ec994b72b658ad113f2818239dfd5108f501a"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\CNS1-V.bcmap",
+    "action": "copied",
+    "sha256": "42df8076aaa7574505e7304af83a3323ec032c4177d64b1309db8c043d594a8a"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\CNS2-H.bcmap",
+    "action": "copied",
+    "sha256": "bc6024d274d440f0625c69e25f37036ef6cb6689432ceaa160d3432a2a716ca7"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\CNS2-V.bcmap",
+    "action": "copied",
+    "sha256": "2e4f70a8afd23a121030fc2e5b5f3816e903b11e7ba8b8c09654b31c80399c38"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\ETen-B5-H.bcmap",
+    "action": "copied",
+    "sha256": "87ee6b3f5bfda5fe26fa35431264c7d73070d10dbbf398a75185d63ae322c18d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\ETen-B5-V.bcmap",
+    "action": "copied",
+    "sha256": "47dc0d2c21e3bde317947aec1675ceabc1d5460a60bf9c24334b8c407a17172c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\ETenms-B5-H.bcmap",
+    "action": "copied",
+    "sha256": "d5f5a73da4173b7da9a3a20e16f26f9cd5d12deb1553409919e0cec6fd37fdee"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\ETenms-B5-V.bcmap",
+    "action": "copied",
+    "sha256": "18252fca90f472f479af1bddd60d6ab51c8e1b55dcf6845951426504934543e0"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\ETHK-B5-H.bcmap",
+    "action": "copied",
+    "sha256": "d2f10fa519336bc4efcc7b6deb9604b75429946b40d82e311cb3a97a1994c89a"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\ETHK-B5-V.bcmap",
+    "action": "copied",
+    "sha256": "1fea3fd0d9f0f679f80505800851ef2e4131d81127e18c006938ffa2f4c8b247"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\EUC-H.bcmap",
+    "action": "copied",
+    "sha256": "f9939cd57fccdc65c5d9f4c205fd497ebdbd283643308da5663801a8c1d9c595"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\EUC-V.bcmap",
+    "action": "copied",
+    "sha256": "1283a50a706507c4436da83ede9ad7a4440be25378f2e96f6c81a430081426a3"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Ext-H.bcmap",
+    "action": "copied",
+    "sha256": "4000ed4e61a1c668ef453bbd0603cfa383defa793abd46a57ed870d7f527350b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Ext-RKSJ-H.bcmap",
+    "action": "copied",
+    "sha256": "e0d2f0df337660e73813238dd4a725f11f0621b90f3273857db253d0e7694caa"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Ext-RKSJ-V.bcmap",
+    "action": "copied",
+    "sha256": "f617a22b6d67febb187990952006c91a9f5a4db21155d268c656252d0c21985d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Ext-V.bcmap",
+    "action": "copied",
+    "sha256": "c2087fb845a9e3acea0c2922cd40e6af67e11957bec74dcd597f1285edd490ce"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GB-EUC-H.bcmap",
+    "action": "copied",
+    "sha256": "928bad06fd84a48f5ba7150d7716609119fb660f2aaa73eccad81ddab9b9d203"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GB-EUC-V.bcmap",
+    "action": "copied",
+    "sha256": "a9ad88ac2479da529b16dc48abc5952332e27bc355335f91df5729a587533324"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GB-H.bcmap",
+    "action": "copied",
+    "sha256": "1018c777a8910b5bb46d7d54a4aee9d51ca5cff8addb2b41c969d9101cb3fd1c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GB-V.bcmap",
+    "action": "copied",
+    "sha256": "0b96789143c0bbf9f1641ae7165b3456dccd14dabffcbb0bd654d5bf6f94f863"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBK-EUC-H.bcmap",
+    "action": "copied",
+    "sha256": "2103fed28650ede096a2281104a1a8a4304dae0db414342c636867522307123b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBK-EUC-V.bcmap",
+    "action": "copied",
+    "sha256": "a7fd35dd14d9dbdb955f34e6c0630618b6620dfd09d4283b2f65a65ce77fcaea"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBK2K-H.bcmap",
+    "action": "copied",
+    "sha256": "3d919ae72af16c5cc6846ec87a4326a9f125e493c59d3628429d35c2c95fe8c4"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBK2K-V.bcmap",
+    "action": "copied",
+    "sha256": "b927fdfd595c07ce9158bf2ec13f4641b2e83b01c70989dadfabd6ed7c6ac2dc"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBKp-EUC-H.bcmap",
+    "action": "copied",
+    "sha256": "d15ebd8e81fb4fe8a244f1b1e877922e03500ac69eddf5001093e502430451d2"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBKp-EUC-V.bcmap",
+    "action": "copied",
+    "sha256": "fdc736d46e642625dccc8ad8c59f2c69fc7db7a13f2e799c6c6b779e707bb97a"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBpc-EUC-H.bcmap",
+    "action": "copied",
+    "sha256": "3c4a4eb82f05abe51f6650985c630e180438bfdd491318f5d20d2ec29236e1c3"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBpc-EUC-V.bcmap",
+    "action": "copied",
+    "sha256": "215bdfa2842705624b4cf4cd29b8e3c720f1e192365e0305c11030a424c84d7c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBT-EUC-H.bcmap",
+    "action": "copied",
+    "sha256": "dc5f44e48a39f3367ae28665027d8ab1d8cedb5a9dcc5068a900acd6709f60f9"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBT-EUC-V.bcmap",
+    "action": "copied",
+    "sha256": "a1ad24e63653b8aa388c18fa5e498f007564e43dde699a9f91ccb4645c999be8"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBT-H.bcmap",
+    "action": "copied",
+    "sha256": "8afda745a505763f3ff54c8126eeb48ef376ea9ed07d9f42ff9a22c5c547ec57"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBT-V.bcmap",
+    "action": "copied",
+    "sha256": "cdc2ec5c3c7c7033290c9a8894878202f08674eb9b1ae7d36218430326768771"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBTpc-EUC-H.bcmap",
+    "action": "copied",
+    "sha256": "7b23e2f7bfdb6c918f567b7324bf858f398bd8cd5f268d74ece19a3c91bf4f32"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\GBTpc-EUC-V.bcmap",
+    "action": "copied",
+    "sha256": "d7a1b13ead9ab511cf2cd01de6ce8b02aa8e8767e84895337d7a3b67f039f93b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\H.bcmap",
+    "action": "copied",
+    "sha256": "a0233e21047ec00b852125b243cbcf30abee511155b6d8159c24f944384bc9ee"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Hankaku.bcmap",
+    "action": "copied",
+    "sha256": "b454701f7aecd7856769016dfd04ca64280a060f2c67a2466d50b4395d24974e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Hiragana.bcmap",
+    "action": "copied",
+    "sha256": "2ed669394756dd9458651cd9995ab29ab691ecb7686659003306cdf22767a414"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\HKdla-B5-H.bcmap",
+    "action": "copied",
+    "sha256": "5242bce18fb13ab4cc59b146a03eba36e4ce42667eeff09e10981a9d2aa4996b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\HKdla-B5-V.bcmap",
+    "action": "copied",
+    "sha256": "2e0537f786c0791d41a925f72bad2d4e7268aa6cbf15a1400a722672cec38e2c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\HKdlb-B5-H.bcmap",
+    "action": "copied",
+    "sha256": "fdc8159984bf5dbe475c0d5dfcb621ecee4dea07c38c668bd77f4c679e23b9b3"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\HKdlb-B5-V.bcmap",
+    "action": "copied",
+    "sha256": "b249eb9dcb915ab45057c5d4d7aa55ef88d0efbb092af6bae0b2d4705d139abf"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\HKgccs-B5-H.bcmap",
+    "action": "copied",
+    "sha256": "ab64c7fc5e9b2e97750cc4f269b0da14fd8649e49151b7598c8df86599bac591"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\HKgccs-B5-V.bcmap",
+    "action": "copied",
+    "sha256": "02ebdf7cdffb5395fb21091cd58a013a18ae5388922822f9dc6292ef16b98956"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\HKm314-B5-H.bcmap",
+    "action": "copied",
+    "sha256": "bfd8bbde6b36a9da4c1c902c74121a30d9807a7079a00eeea218be6adc223cef"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\HKm314-B5-V.bcmap",
+    "action": "copied",
+    "sha256": "2a64a815cfb6fdd480674a868762e3d161fda17543b20c9209978559f0667164"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\HKm471-B5-H.bcmap",
+    "action": "copied",
+    "sha256": "49d7c037758826b5b6c0fa329c35bbf25d3943197754e72ecd30c6fb04d745e6"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\HKm471-B5-V.bcmap",
+    "action": "copied",
+    "sha256": "be24c109e78aa4fe3c1f27d30aab3ed0741e783fa1b6b6c2719741072b54b132"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\HKscs-B5-H.bcmap",
+    "action": "copied",
+    "sha256": "08599378f41d96b40537adef6e6edcc4a787bc63f5accf47c026df4905a13914"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\HKscs-B5-V.bcmap",
+    "action": "copied",
+    "sha256": "d073542b7dad1c4cbf01c1af5f0cd13218d1281a491956e310c55702fc8705c4"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Katakana.bcmap",
+    "action": "copied",
+    "sha256": "3b6ca6642fbf8822da00d5e58a8aa275216d5c32dbf2bd73e934197fc9fc5c53"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\KSC-EUC-H.bcmap",
+    "action": "copied",
+    "sha256": "6784e16dbc5861c036c23d3e55f0d4ba0975a3e464da0ee8e49bcfff0be070c4"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\KSC-EUC-V.bcmap",
+    "action": "copied",
+    "sha256": "fdb36bad85e9924823d49db374067988e024cf80fc894711f2c9178951cbbe95"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\KSC-H.bcmap",
+    "action": "copied",
+    "sha256": "c1f6d61f1d3304fd539a65ae72624fa567ecc3853bf52e283958a7a2515b3eee"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\KSC-Johab-H.bcmap",
+    "action": "copied",
+    "sha256": "939993d213f68db763bf156217c217ae23af082b91a0eacecf3d11eb4ff8ef8c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\KSC-Johab-V.bcmap",
+    "action": "copied",
+    "sha256": "5d61967aac0e666def721e8b8d0fed8f95a879a14f2e76ce516c3d11c621e519"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\KSC-V.bcmap",
+    "action": "copied",
+    "sha256": "d7da5afd9f1fe74816d79c9325f0139a4efb6438664ebfdf9a7aa92f3034360f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\KSCms-UHC-H.bcmap",
+    "action": "copied",
+    "sha256": "5b70d8f6a4fa9e2283dc649f0ff95d906d56efbee50a20e8d2faec3a8fed078e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\KSCms-UHC-HW-H.bcmap",
+    "action": "copied",
+    "sha256": "a5e6ba22aceb02fdedee11bfb9ed138463d89e85b87810b9f075b469d936f8ec"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\KSCms-UHC-HW-V.bcmap",
+    "action": "copied",
+    "sha256": "890332a6a26880d463a12f2a6ff048bf9cf7e45077cfb1ca8815b89baa7bf411"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\KSCms-UHC-V.bcmap",
+    "action": "copied",
+    "sha256": "1631b531c9a40c8cbe24c2317dba107362e49fa6e18af620414d627c111d570c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\KSCpc-EUC-H.bcmap",
+    "action": "copied",
+    "sha256": "709480682c55cedbb0124b9960d78e28febeee0df2e34607d61aac6601647ec7"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\KSCpc-EUC-V.bcmap",
+    "action": "copied",
+    "sha256": "031707887d6fc2378a36cdb6775334fd7a236c3f95048d8436abf43fe26fc49d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\LICENSE",
+    "action": "copied",
+    "sha256": "aa92ab5a472974865a96fd4a4e9c13bb41bf6fe1b309cb6b8da48bc9e19839a2"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\NWP-H.bcmap",
+    "action": "copied",
+    "sha256": "286c6c9e335da330928a01edc3c97a3a623f1f7f3c42762b0a7dc2f651b1a78f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\NWP-V.bcmap",
+    "action": "copied",
+    "sha256": "3a75fb7b59adfb172710758c425d8ac6c93fd5360a64dd4afd5dd04e60ab4b4d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\RKSJ-H.bcmap",
+    "action": "copied",
+    "sha256": "a70de61a22a898f693f02cc011c3e3cff2e10aaa7cddb4661e456a21ae859f78"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\RKSJ-V.bcmap",
+    "action": "copied",
+    "sha256": "68c1a64506471a524ea5cfc3b3a9f8f70031989a6bd95427b1351f33ccf50b06"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\Roman.bcmap",
+    "action": "copied",
+    "sha256": "1c6b3ef9d9e5cb1aa329142ce9414b90f9b6d7f9182a2a9e927378dab8f0d43f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniCNS-UCS2-H.bcmap",
+    "action": "copied",
+    "sha256": "779428116752f34e2490a1941d24e4634c71e3c22d053b811d2090ae2fb3c704"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniCNS-UCS2-V.bcmap",
+    "action": "copied",
+    "sha256": "1e5cc184b850ea44abc2df8ae5674279df668e8edf5e2a1a2ea2bd77adbd280f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniCNS-UTF16-H.bcmap",
+    "action": "copied",
+    "sha256": "32ff139b3c7b91d6ad25f994701f3ce7b242906022c418fd73e6493fc228bfe5"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniCNS-UTF16-V.bcmap",
+    "action": "copied",
+    "sha256": "278eb1e68d1a236c60ef59472cf0176ee0d45f364285e76ca12419a08d46fb9a"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniCNS-UTF32-H.bcmap",
+    "action": "copied",
+    "sha256": "bf26eb67fe19ee5ba915799e80ca72408400aa8342fdf6a244a4f44de8f97336"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniCNS-UTF32-V.bcmap",
+    "action": "copied",
+    "sha256": "f7da3caf83ceb1cb37936fa10700d9ba6e9c3f72c5bc9724e3ac79bff0c0179e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniCNS-UTF8-H.bcmap",
+    "action": "copied",
+    "sha256": "2f2a742bcd1a84a148a4a518b9eed51a8f9c6ca5ed3bc5e2e41fff97de5dc2d8"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniCNS-UTF8-V.bcmap",
+    "action": "copied",
+    "sha256": "b7c3f10780a8c62dd1c8ff6c30dc1e4e23b6cdc87c3a96fcd514cc98ffd3af9d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniGB-UCS2-H.bcmap",
+    "action": "copied",
+    "sha256": "9201569b402e81ad8860650bd86350c4fa28e5dd5971f05fcacaf40f51de18ed"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniGB-UCS2-V.bcmap",
+    "action": "copied",
+    "sha256": "f10282335e4d64203bc2a653a3a47d745ec76c8ae04549f4d50180c1899be216"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniGB-UTF16-H.bcmap",
+    "action": "copied",
+    "sha256": "386fd39581245c034da016a92d23f3df1117d169f996100050b264fc09a84e35"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniGB-UTF16-V.bcmap",
+    "action": "copied",
+    "sha256": "0473cfbba612b92dd9918f0ff8aee9112897c48e0ffdc0eb82da3144ed8ea84a"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniGB-UTF32-H.bcmap",
+    "action": "copied",
+    "sha256": "f48a145dc4e3ed1dca1dde7111716a72306a2a4191ab05c6bae3a5c3a961cd2f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniGB-UTF32-V.bcmap",
+    "action": "copied",
+    "sha256": "106acc49b7118bdef944e32107b4f348238f3929a0a15d3b7aab7b9101535993"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniGB-UTF8-H.bcmap",
+    "action": "copied",
+    "sha256": "f217b439c80ee5fa1bc2cf6d1defcc319f8d84483d166a00ee199e05a68588df"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniGB-UTF8-V.bcmap",
+    "action": "copied",
+    "sha256": "a64df947632878eacc532fa193c735c92a383b7d66e6f8374ac193af7c64fc63"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS-UCS2-H.bcmap",
+    "action": "copied",
+    "sha256": "ad2352f40870880fbf7f8ee5abadff743fbd025fbf9830b8ada472d1c5e4da0b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS-UCS2-HW-H.bcmap",
+    "action": "copied",
+    "sha256": "16e87edca954177c0881c874859d6783220925d821b5cdfb8755b61ebd93f9ce"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS-UCS2-HW-V.bcmap",
+    "action": "copied",
+    "sha256": "1973457e2c0192819947e56068625b34fb9a72ecc8a476ce6d7eaae5f73e2e5c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS-UCS2-V.bcmap",
+    "action": "copied",
+    "sha256": "42a133d8e2ce9dd6d2288018e01592d2bf2435b326d39b94ea0b6e6a44ac33d3"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS-UTF16-H.bcmap",
+    "action": "copied",
+    "sha256": "f6a89c5688978548c83fcee990e205bc63c74274d5c69b49032a3bd4c49a05ee"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS-UTF16-V.bcmap",
+    "action": "copied",
+    "sha256": "c67126fc7c73850855186bb0d6482ac0a365057e0b58778c4ab9f234683fef53"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS-UTF32-H.bcmap",
+    "action": "copied",
+    "sha256": "96195950ce0fe24443d8eb426fa6b88534ec421d7bef9046f0b2362809cfba73"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS-UTF32-V.bcmap",
+    "action": "copied",
+    "sha256": "ed4dafda402bdd19c4d5d8bf2ab41473c0f86f384552b4c7b963d6627daedeb1"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS-UTF8-H.bcmap",
+    "action": "copied",
+    "sha256": "798fb0bf06ab0788d1f6a91c2db7de581612eef03c628f10e8f7ecd8f70ab448"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS-UTF8-V.bcmap",
+    "action": "copied",
+    "sha256": "1021611424f913b2df0bfdbe94bd327c04e224ec89d8e821c6501ea3d21f4265"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS2004-UTF16-H.bcmap",
+    "action": "copied",
+    "sha256": "710a32d7cb43fd6bd9dbf30da5971f8c941590f74441e208d852c2be0e74cc97"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS2004-UTF16-V.bcmap",
+    "action": "copied",
+    "sha256": "3b149aff5c5707b57fb3215d1775852c8b1f413ec0f679ea628f25cf87fe098d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS2004-UTF32-H.bcmap",
+    "action": "copied",
+    "sha256": "8d2658e18741af7937d586a57c89729a6fec0d86121197c1f8518aa58b29cdfb"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS2004-UTF32-V.bcmap",
+    "action": "copied",
+    "sha256": "6dd475782f2897648a683c48b2fa015a15b8f06856760bddc8a17a63f418bacb"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS2004-UTF8-H.bcmap",
+    "action": "copied",
+    "sha256": "691c614ce432b3e62486efb54e5c84c6da5afe9b51b21253bde4758feb484183"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJIS2004-UTF8-V.bcmap",
+    "action": "copied",
+    "sha256": "40a8c7ea2d46711c5f78fc9a878a7db68b1543ba5cd60ecf14f519a2deb829b7"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJISPro-UCS2-HW-V.bcmap",
+    "action": "copied",
+    "sha256": "6826f94d789d7bf1960668c1c5819c34c9585c1b23152fbc19ee81c7df08524b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJISPro-UCS2-V.bcmap",
+    "action": "copied",
+    "sha256": "493de9fd1a08f7946065d8ab58f0c3c9fe489f5a0f109f2d05a3169b4bd5789f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJISPro-UTF8-V.bcmap",
+    "action": "copied",
+    "sha256": "6181d382cf736c5e09492e8be9f26f31fa25b7462253f23ab16646af432cad81"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJISX0213-UTF32-H.bcmap",
+    "action": "copied",
+    "sha256": "692044e1fb33445668632bc9fe7386805c624864be1ddeb29d65bb0c99fc630c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJISX0213-UTF32-V.bcmap",
+    "action": "copied",
+    "sha256": "dd54e16ca7bffb3a886242549b2bf7d78a277087f7c60d2636f118c21a5b0646"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJISX02132004-UTF32-H.bcmap",
+    "action": "copied",
+    "sha256": "f80ea5a989be30ccda5a8804baef6d3b4b044d2b339bf8b31c671b2466171cf6"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniJISX02132004-UTF32-V.bcmap",
+    "action": "copied",
+    "sha256": "94c22bd99e771c5fbe0dd8dc39850570d4db0075074aca13e272813edd7cc57f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniKS-UCS2-H.bcmap",
+    "action": "copied",
+    "sha256": "a1081396ab4adb6f4a5b6c15f896963c244c1c9bcb65ce5616d06096a1b9811c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniKS-UCS2-V.bcmap",
+    "action": "copied",
+    "sha256": "6cab547431958fbdc1d401d06ebd4dd61a73f5509a10f974df32bcbca11a2e43"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniKS-UTF16-H.bcmap",
+    "action": "copied",
+    "sha256": "42d35b396286499dfae1737a07adb3a64500df37b426580bfb1d3ea872938519"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniKS-UTF16-V.bcmap",
+    "action": "copied",
+    "sha256": "5bdb7390c80dcc136cb47d41dc7460082560969c17322ee739fe3020fb642410"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniKS-UTF32-H.bcmap",
+    "action": "copied",
+    "sha256": "3a01ec51ed1b828101351e337ffb8250abe11880032e5210f881170fed2588de"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniKS-UTF32-V.bcmap",
+    "action": "copied",
+    "sha256": "dfda895eceaed081af030dbbb962b49629eea817fc3c02bae15db93d0c68acd7"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniKS-UTF8-H.bcmap",
+    "action": "copied",
+    "sha256": "3fac9c65145f72d7d42157a3b9c5ed6904632184e6a0888f2b828699afd2002f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\UniKS-UTF8-V.bcmap",
+    "action": "copied",
+    "sha256": "9ecc6cf30dd354b9778ddba163b6cc7302b087ce9f39d1ba73472d2b75ed13ca"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\V.bcmap",
+    "action": "copied",
+    "sha256": "b9ad1c0c09ff14bca52f9a28a9767eb857ad0e8946e64ba14c7387a7eb69866a"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\cmaps\\WP-Symbol.bcmap",
+    "action": "copied",
+    "sha256": "543923bead225732aba30976690ee89095a19628277b5863efecc2c728d5d7bf"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\altText_add.svg",
+    "action": "copied",
+    "sha256": "1a9591a23999e1924438b948a9f9671147f04e01e5be724391a3a8a2b58289d9"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\altText_disclaimer.svg",
+    "action": "copied",
+    "sha256": "5d19067a6b51e5bcc2d61325033a8450d301535505a97c50f4141f4cd9e2cf05"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\altText_done.svg",
+    "action": "copied",
+    "sha256": "5b40360d098d1a93227a0a5cdb110f6e5ff3a3eb4af97b61e856c49e17141621"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\altText_spinner.svg",
+    "action": "copied",
+    "sha256": "4089182e21627182ed1d4020978b597d984fb8de4cf547e9f4ac2aec9af13179"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\altText_warning.svg",
+    "action": "copied",
+    "sha256": "07264f4de78a45a4177ddefb48837217aa69b51462ef5b35d3fb9f90000c9ead"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\annotation-check.svg",
+    "action": "copied",
+    "sha256": "9a680f1212888ede7dcae6bfc8cafc447babf4ce531271c8d07277b0aedade96"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\annotation-comment.svg",
+    "action": "copied",
+    "sha256": "c58b385b4a0be6de822a3262b8191073d1730f6420368bd9c6d80db7312327ff"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\annotation-help.svg",
+    "action": "copied",
+    "sha256": "74d9bba0814d12f5ae2715189e1747b7edf5ff6d82c4ca75bae86d717319b6eb"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\annotation-insert.svg",
+    "action": "copied",
+    "sha256": "b2153e2c88c62179029ea9876d463216529ecf581b77d52c971a2cdf3d3166c6"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\annotation-key.svg",
+    "action": "copied",
+    "sha256": "5772b8dd158b0f02bb2be689bb680f4903d84e202cb29a3dc0560af53134c6ba"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\annotation-newparagraph.svg",
+    "action": "copied",
+    "sha256": "a583cca122263d94c3eebfefe83c965a1b305b9c84e5aa3c5ba10527941db7db"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\annotation-noicon.svg",
+    "action": "copied",
+    "sha256": "76399e70d311834d11ab2d6239118b36847d79a78d7655b1f839d51c811304cf"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\annotation-note.svg",
+    "action": "copied",
+    "sha256": "11a75c9f233dd3e5e3500edcdd733358394f28395337616e8b0430694bf0dba1"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\annotation-paperclip.svg",
+    "action": "copied",
+    "sha256": "0213c8baed4f8c497881ffed0e49abb309291d51725aaf1a0a757174b4999368"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\annotation-paragraph.svg",
+    "action": "copied",
+    "sha256": "efbcd2a6cfb4581dad74a1c09ad43cf2b8245611e5b19c966317da948f2bcb7c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\annotation-pushpin.svg",
+    "action": "copied",
+    "sha256": "22197186d18445959e5fe5577d8e34440b31d87c811daf47318078310c0c5530"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\cursor-editorFreeHighlight.svg",
+    "action": "copied",
+    "sha256": "90b04428328a67e184fe1b1a1f28cb0d62bf6e298614ca241b6564fb24cb9e7e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\cursor-editorFreeText.svg",
+    "action": "copied",
+    "sha256": "fedb05ee0dd510514ed9edb24b3b4da2707931279a0bf48e2a1deb3a1f4cf581"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\cursor-editorInk.svg",
+    "action": "copied",
+    "sha256": "0ae889debe01269b49b89d8845995281223b8ae289405758631076b763da3efe"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\cursor-editorTextHighlight.svg",
+    "action": "copied",
+    "sha256": "c6252b0edcb68dac87557a027180fcbdbd93466841aa34792530f7cce54cec5d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\editor-toolbar-delete.svg",
+    "action": "copied",
+    "sha256": "f1f47a2cb479a87807f9bd61bd5813c1fe857dbbcb4fb35ae7a77ca39114f920"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\findbarButton-next.svg",
+    "action": "copied",
+    "sha256": "3029879b7e1060d54c4edcfe0c93c8c3b8c1756fb794e5d4add64028b5f99fab"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\findbarButton-previous.svg",
+    "action": "copied",
+    "sha256": "766d12bb08b9f13c753d289f3c029f5ca202eda3a8be52afc9e31697335f4a80"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\gv-toolbarButton-download.svg",
+    "action": "copied",
+    "sha256": "010d9d77a425e80eb666a196f500cdd8b15758af69a19ad7f11279b78c29e3f5"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\loading-icon.gif",
+    "action": "copied",
+    "sha256": "483c4a0396691993a641ec409c44b8b7e1daab0ae7e2b2944c4bc59520bb7655"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\loading.svg",
+    "action": "copied",
+    "sha256": "7d6e14cf6226c74c26e2141180eadc944ef4ce8565e9b6dd2670ec202417a764"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\messageBar_closingButton.svg",
+    "action": "copied",
+    "sha256": "7393c7791916243eca6bbdda8bf137d36600fffc76d7a55d33a77bd4e7778193"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\messageBar_warning.svg",
+    "action": "copied",
+    "sha256": "888a4bf2ad5150028663dde01fe71599336c87ca12697180e51bd8a13b88084f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-documentProperties.svg",
+    "action": "copied",
+    "sha256": "735a4bc556610bc6dedaa40a36ccf444c31032be02ad20df5ac4c66ebaa5bbc3"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-firstPage.svg",
+    "action": "copied",
+    "sha256": "d46a7b0760fbc043a98f9b328f6b4ee56df8de140a2a290f0e2a915ff772e287"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-handTool.svg",
+    "action": "copied",
+    "sha256": "e968339ba921e68d4d83e6ec7a4321f1791c86f4eff552f28cf4c81c6f88155b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-lastPage.svg",
+    "action": "copied",
+    "sha256": "4cc4b92888b776ea3a09d5e86b17d7bb50a8f3e6d09854d4c2e3f050c34dc9f8"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-rotateCcw.svg",
+    "action": "copied",
+    "sha256": "7eb24492df9f42c8ab053cbead5d985b0daaccced649392d1fbfde4931459451"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-rotateCw.svg",
+    "action": "copied",
+    "sha256": "03d2e7bad2fc95895334e43edf34309a64223f32504304034eb1f6b163954898"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-scrollHorizontal.svg",
+    "action": "copied",
+    "sha256": "c61fb184d5311255b627a9943c156bb1f00f835282d832241e01a7d82a22b678"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-scrollPage.svg",
+    "action": "copied",
+    "sha256": "e60ae21987a2e6e5352ac3171363352cac9d2cae36bf828d1729cbfa286e085d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-scrollVertical.svg",
+    "action": "copied",
+    "sha256": "79871e2329cbb4dc2b6df94aae5f3074b3fdebffba46fe7d3ade9aff5726bfb0"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-scrollWrapped.svg",
+    "action": "copied",
+    "sha256": "8734aa2747f6fff9e8fd09f6e9509db43ec1b63935c8f6b8291e9347bc7e2706"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-selectTool.svg",
+    "action": "copied",
+    "sha256": "332e08979379ff2f8a7bfd336e8ca6348546c78ce2a6bf464cd31dc2c64004ac"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-spreadEven.svg",
+    "action": "copied",
+    "sha256": "ac385199d448c0d5ae5d4c06d2c76db0a31bb5db54d0fbd727f3dc889e73271b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-spreadNone.svg",
+    "action": "copied",
+    "sha256": "649934c2f447d7a239d6ffce8f8e0804b50dfe1d9421a1d16e9543c0aee9b03e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\secondaryToolbarButton-spreadOdd.svg",
+    "action": "copied",
+    "sha256": "43b6862d35f86dbe5fec6b16e2cb59ca22c490bdf0787e4590c1ceb494d05244"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-bookmark.svg",
+    "action": "copied",
+    "sha256": "f2a335bc963e95344d26d61157b1511f5f78d705b38579004971d51a3c62401c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-currentOutlineItem.svg",
+    "action": "copied",
+    "sha256": "5f6505f05dbc728301942b37de22d490f09276e6c9a6561b1894afa91f34439c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-download.svg",
+    "action": "copied",
+    "sha256": "afa286c8ea1941eaec589ed6a2103c5a845f3ff76a7423ba985f449465005163"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-editorFreeText.svg",
+    "action": "copied",
+    "sha256": "9ec2202e18ba668ee1753179afead4e1786eac82da2cc82afc5a09584c242c43"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-editorHighlight.svg",
+    "action": "copied",
+    "sha256": "df0aac50621777fb63da60b38c71c5bbbde746c4dd55c30dd141621cb30b7cc4"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-editorInk.svg",
+    "action": "copied",
+    "sha256": "081bf99d3c2390036a2d9c7e9485316bcd049f90a74e982f1eebcfd4d9b178e3"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-editorStamp.svg",
+    "action": "copied",
+    "sha256": "18294793f2399a8a44ee246d63b20cd46cb3cd38a1bb72f00b826e7f756c5f52"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-menuArrow.svg",
+    "action": "copied",
+    "sha256": "2db41f97615a8c912f676a62c88b12e2b8715f4ed188df325737423501aa4a8a"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-openFile.svg",
+    "action": "copied",
+    "sha256": "7acb9e9964dd618bfcb657d8d18db2c55ef8f168c37f3873c06d72c63e1b11ec"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-pageDown.svg",
+    "action": "copied",
+    "sha256": "09a14cbd902aad9fe40f2351db2ac5593ad897aed8810b9c6aeb0e56389ff100"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-pageUp.svg",
+    "action": "copied",
+    "sha256": "bac79138cb730c6bfa63bef02d7e5906aee727bb54df15878823426822badaaa"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-presentationMode.svg",
+    "action": "copied",
+    "sha256": "2a08e4277e39a9faef69520570744650bb017c2e90fe7c15224144d6b4abfbe7"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-print.svg",
+    "action": "copied",
+    "sha256": "267745d6c176afe038630c3f7c0fcda78141fc7634f73898ffc6cbb1262c77ab"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-search.svg",
+    "action": "copied",
+    "sha256": "32889acafd84edeec513db6131252fa97ffff00fee6272d05e35e2d95216e30f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-secondaryToolbarToggle.svg",
+    "action": "copied",
+    "sha256": "ff717321d89309f51bcccc28f347e6a888e73570527845d6560a84f5d70cb3a0"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-sidebarToggle.svg",
+    "action": "copied",
+    "sha256": "88098d3e47fd921122c5263dce50ee67c662c9cb65908be0481891dfe521a6c5"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-viewAttachments.svg",
+    "action": "copied",
+    "sha256": "e07fbf17b3c7ca2cda9c4e54cdd66cb0aa63d368232cbb2c9aed5559720bf96c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-viewLayers.svg",
+    "action": "copied",
+    "sha256": "e0b8a59c272dc9a1d9a07d461363f96c3b3bd3df2db778f8f99743dfffd51d78"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-viewOutline.svg",
+    "action": "copied",
+    "sha256": "eeb6cd0ce94dcfea6bd2aca222da7b1583d74800ea9c94640ff8fa06c13fb044"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-viewThumbnail.svg",
+    "action": "copied",
+    "sha256": "5fa35769db66b33d6408f378e8aa68fa060331f0cc9dd6ad41fb7366082aad34"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-zoomIn.svg",
+    "action": "copied",
+    "sha256": "722dfe315686a5841d0a0d00f34df8f706d2c6e24551d46a5ebe971fe4af62d2"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\toolbarButton-zoomOut.svg",
+    "action": "copied",
+    "sha256": "366a40c3627e67f97164976d5ff38b5484716e834d08fefe252a6ea37feda895"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\treeitem-collapsed.svg",
+    "action": "copied",
+    "sha256": "37c96d0dc2f626c541303a76067184ac09614f2390a8430e973a84e5184e2646"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\images\\treeitem-expanded.svg",
+    "action": "copied",
+    "sha256": "df4a149c4eaed4573620621087f7bab816f049e3e341574654fab598435db086"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\locale.json",
+    "action": "copied",
+    "sha256": "64b5ec22d72dc0a5b72b7684deb64d17b456beba5a3520f73ba2411eba555bbb"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\FoxitDingbats.pfb",
+    "action": "copied",
+    "sha256": "845c752392b6c914fb989c75a08b7792b88f542d2499042ef2889f8c814a16ed"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\FoxitFixed.pfb",
+    "action": "copied",
+    "sha256": "b6c8fe53f134b8b6d4578cd2d544df4cee9624c4efa8d51a560fb40ea296101b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\FoxitFixedBold.pfb",
+    "action": "copied",
+    "sha256": "f1b7159702973f54fc86254ea38bcf3712b2a736eb3a0995751e9f4bb45ad603"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\FoxitFixedBoldItalic.pfb",
+    "action": "copied",
+    "sha256": "8a000945843bd31add06aee63bf9fd41b7578b4f3242a4b7cd46349ad9d24d4d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\FoxitFixedItalic.pfb",
+    "action": "copied",
+    "sha256": "5007faf8320fa1fcc08b8894b356ad976f60b992ba29ee5272578bbdebaf3876"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\FoxitSerif.pfb",
+    "action": "copied",
+    "sha256": "4f57d2b9d884af8f907bf22df6019b52d86cbf6214fdbd02b1ae05472a543f35"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\FoxitSerifBold.pfb",
+    "action": "copied",
+    "sha256": "0bdf4b04e964139818d51eda03d566ba999fc3ba2421b1c6c51f9dc969022e80"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\FoxitSerifBoldItalic.pfb",
+    "action": "copied",
+    "sha256": "a406cac82583bf98175cb62c87ed5e95c45fbb34eece63a10b0a13e793cb2e10"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\FoxitSerifItalic.pfb",
+    "action": "copied",
+    "sha256": "610ae0687198045c4db5d1a6650fd5e92536631706382eb8b72e38df578d0ae9"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\FoxitSymbol.pfb",
+    "action": "copied",
+    "sha256": "47967d055530e7357088a08403115425643ec2cdfd6201ba8af0fbd7116c1539"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\LiberationSans-Bold.ttf",
+    "action": "copied",
+    "sha256": "361c61b82d575c5c35fd9157fda8b0194bcfcd0d88ea8521a4fb5dd53d33dddc"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\LiberationSans-BoldItalic.ttf",
+    "action": "copied",
+    "sha256": "a224075ac17495ad0a3af3bc0a419ac0704a8b3fd1095456201fb9b095fc281d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\LiberationSans-Italic.ttf",
+    "action": "copied",
+    "sha256": "832b4406dbef23628800d3aaad21048534ac84d7e3ad955be83b8172ed8ef512"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\LiberationSans-Regular.ttf",
+    "action": "copied",
+    "sha256": "f8ace1f892b2bd9dc1792ba7f097fa7588f84fed48321480e04de5390828221f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\LICENSE_FOXIT",
+    "action": "copied",
+    "sha256": "b578cdd2345840ada550bd12519533812320d5f1d21cf4c1c7e1b1b0a31c98b7"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\standard_fonts\\LICENSE_LIBERATION",
+    "action": "copied",
+    "sha256": "93fed46019c38bbe566b479d22148e2e8a1e85ada614accb0211c37b2c61c19b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ach\\viewer.ftl",
+    "action": "copied",
+    "sha256": "b86b6df6703dfec0951028641c23098007fc9287f4882d89350b463efd95872a"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\af\\viewer.ftl",
+    "action": "copied",
+    "sha256": "6572b2ed4aaea3a44a9e05d7b9b5f97a110db688a2460ccd9cbacf0ad56714d0"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\an\\viewer.ftl",
+    "action": "copied",
+    "sha256": "8563717ff39b2d3e350e0aa80aabc9899ebcce65468d1b964432ed08389f2362"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ar\\viewer.ftl",
+    "action": "copied",
+    "sha256": "bfea75ad06ee97b5bfe510a50df31454ae0a5d2c1d89b3a7779ce2f69ede9ac7"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ast\\viewer.ftl",
+    "action": "copied",
+    "sha256": "ba91cd5ca894caaac8948657652f252288b5b8e1ebd3872a573e81541b7a4e39"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\az\\viewer.ftl",
+    "action": "copied",
+    "sha256": "cf780a874bd210db8c1e4c04f465a5f178e83cea6443f1f2f4d8691ff9ba9fed"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\be\\viewer.ftl",
+    "action": "copied",
+    "sha256": "35050f70d1e9f9e46e3d9b237e13170de7894dd8de6ef932df6b9bb5d82832ba"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\bg\\viewer.ftl",
+    "action": "copied",
+    "sha256": "bfdc76ec62e8b757b506d5bbfeab6642734e239f80810cca41f31cd46fe2e815"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\bn\\viewer.ftl",
+    "action": "copied",
+    "sha256": "5e297ebad80089806547b6cabe2df126b611ec4c25b39fad839d7315bd9db2f1"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\bo\\viewer.ftl",
+    "action": "copied",
+    "sha256": "d2483c5feb2e9dd0fadaeb1ef3855f18d18e9884e4268f21a9f6a3f99e8b65ec"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\br\\viewer.ftl",
+    "action": "copied",
+    "sha256": "5cec20e8431d0e8661d0cb91c5bdeb8203cea12e35ad910b2069474dd1d51b58"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\brx\\viewer.ftl",
+    "action": "copied",
+    "sha256": "9453cbcf2fdf44a27989bfc61db9f97f20ae240a96aafa33bd7f41b585affba0"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\bs\\viewer.ftl",
+    "action": "copied",
+    "sha256": "b3f1477a43d786cc285d7e24ae83c5957b94182c885b469b20bb56029b379148"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ca\\viewer.ftl",
+    "action": "copied",
+    "sha256": "a58b7b96eb317ee848e34694b675c960fe752e723835f2e7cbf9819c1a5646e4"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\cak\\viewer.ftl",
+    "action": "copied",
+    "sha256": "1b7a0d5abf84d60bab3ddabf4736faf1d79e4066d35f6185137b479f6fab4b91"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ckb\\viewer.ftl",
+    "action": "copied",
+    "sha256": "ad302999ebd8d6c84f98cb604cebb2b7d2eb3c78784a004db6b3ade67700255d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\cs\\viewer.ftl",
+    "action": "copied",
+    "sha256": "e1d4283936282adee29a37d9240c445d19afeeab360e94fd11c7b31d1aa259e8"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\cy\\viewer.ftl",
+    "action": "copied",
+    "sha256": "9183c479e04de6c194b98913d3b1106afed0f5d4488663ffac042a8f1f002b92"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\da\\viewer.ftl",
+    "action": "copied",
+    "sha256": "8aeb3a12dfa7dc7492634ff08cacf35c79aea4a35ea75f368ab5dc88a2e6c303"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\de\\viewer.ftl",
+    "action": "copied",
+    "sha256": "502e9c381b78d01653dddc904c8c901fb37ef00d882e389df4de7fb2b8c8b90b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\dsb\\viewer.ftl",
+    "action": "copied",
+    "sha256": "bb2023b6f776b9564a8d33e56f8001fca96a8873db2bb5f3825b778671719a27"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\el\\viewer.ftl",
+    "action": "copied",
+    "sha256": "124d64b7cf906e9a3fdd72747ee6e29f2861fd94738b32c41d2f63305f6f359e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\en-CA\\viewer.ftl",
+    "action": "copied",
+    "sha256": "1b4089c9d5623e34b7d9eeb89c0b5bebc1e0019c346ac09b29f4634d899bf493"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\en-GB\\viewer.ftl",
+    "action": "copied",
+    "sha256": "198026944b789f050238d2e907428ece7918aec3782594b78ae5fd557d733c72"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\en-US\\viewer.ftl",
+    "action": "copied",
+    "sha256": "ca5c665abcc35e4a3febbef49bfe19c6768c5f1254618129942dd7acbb37a7b4"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\eo\\viewer.ftl",
+    "action": "copied",
+    "sha256": "f79a007ef14f5fb2854bb2df516de3c509601cf3ad5bce086ce19d8dbee63023"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\es-AR\\viewer.ftl",
+    "action": "copied",
+    "sha256": "04f10195340ebf7f88b8f029c61b9a2c4081c9b977a403ce91535faf74cee106"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\es-CL\\viewer.ftl",
+    "action": "copied",
+    "sha256": "8b0a36500a7fcf4d9292cc846ea9506195f77aef47972fd89474271d988a0601"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\es-ES\\viewer.ftl",
+    "action": "copied",
+    "sha256": "4ad6a4b680542fddb627aff458058faf6c7222e9017d13c072ad991e435801af"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\es-MX\\viewer.ftl",
+    "action": "copied",
+    "sha256": "c203f78db11edbe6b3df11c0216a4b51ed9e03af85a268854748890bb607c499"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\et\\viewer.ftl",
+    "action": "copied",
+    "sha256": "8c848950bcda8b71e87e598e4c46e1b88d2c0d3de3cc5eaf90ce732179d1e3ec"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\eu\\viewer.ftl",
+    "action": "copied",
+    "sha256": "9e0f543fc4e111ae1a57ba4d754598426513b0c696a57a250b9f4b0d319eeb82"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\fa\\viewer.ftl",
+    "action": "copied",
+    "sha256": "3db4c0ba9f178b33da8fb5a5f3c6d216d75ae5382b6f60f3671b2ec252b747ae"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ff\\viewer.ftl",
+    "action": "copied",
+    "sha256": "f32605b94027f0f552e50349c95a6c20b778437ddeb2ea3eeb1944605558ada8"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\fi\\viewer.ftl",
+    "action": "copied",
+    "sha256": "ac4a610a5d57cbdc94c955705e554ca4b6d428cdfd54d0fc8232175aa2550431"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\fr\\viewer.ftl",
+    "action": "copied",
+    "sha256": "56a9d135512d096351e6eafe79e9fd3a1f511f3ec2ec4e650391bffef1c6b6b6"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\fur\\viewer.ftl",
+    "action": "copied",
+    "sha256": "de6aeb294e7bfe7b89e7ddd8d0ea4dc9b148223807e83f750557d680494967c3"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\fy-NL\\viewer.ftl",
+    "action": "copied",
+    "sha256": "3e95f73497ff65480e91193d6d227c52bac6e336e3908e00d139a7d2d0ae2f56"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ga-IE\\viewer.ftl",
+    "action": "copied",
+    "sha256": "98a4176268160deeb9610c30ec3177a799d5a5f951741f863a29c1836381e7fb"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\gd\\viewer.ftl",
+    "action": "copied",
+    "sha256": "889a957055951042372417bbd5b5fc5d51bd9f013c24b486efcd31ed26355136"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\gl\\viewer.ftl",
+    "action": "copied",
+    "sha256": "f51e23823e3a5c9c1f7b023ebd32ea0cab128f968491c8e8f4698051d7976201"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\gn\\viewer.ftl",
+    "action": "copied",
+    "sha256": "6a090c7e270454cc7b09a4c1402da58f2317c2a5b729f8fc96d680fd0e376db3"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\gu-IN\\viewer.ftl",
+    "action": "copied",
+    "sha256": "378a8e62fb65ec8aa076bf7686469f976ec7d466e2a119210139c68ad45ab090"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\he\\viewer.ftl",
+    "action": "copied",
+    "sha256": "1b995add409336ecd6898e28cb0e9fb83885900e66b4355617a49879614cb779"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\hi-IN\\viewer.ftl",
+    "action": "copied",
+    "sha256": "f2af681ffe043eece979f6dd5e9a3ab01da0e8d515d299bbfe214b22ed7f8034"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\hr\\viewer.ftl",
+    "action": "copied",
+    "sha256": "9af357b59ffa8f0061387950abde172133f84054b3ee1bb39ff4a50cd5bd863c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\hsb\\viewer.ftl",
+    "action": "copied",
+    "sha256": "34c59fb4757e7a1866365cd91e980ffc01e62000a1c97bcaa9dbbf44617d07a9"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\hu\\viewer.ftl",
+    "action": "copied",
+    "sha256": "7fc95c8f871b3749d26ee1552a31f196a7da37971dc62a1fc2550b602b8c09d0"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\hy-AM\\viewer.ftl",
+    "action": "copied",
+    "sha256": "82616205b5fb54512ed6828b7fc3896569460097ecf46b48da3c208ada20427a"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\hye\\viewer.ftl",
+    "action": "copied",
+    "sha256": "3737717cb6b27725ef81e43360255f349e75935fea7b4efb470ac6beee3587ac"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ia\\viewer.ftl",
+    "action": "copied",
+    "sha256": "b04eff1ef7941f45916da1497504448acc229360422cf74a33b0b021113583cf"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\id\\viewer.ftl",
+    "action": "copied",
+    "sha256": "f617afc91a77dd5a2794717871ea39de2d4a89c47100f88f450f62bdce4dd4c6"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\is\\viewer.ftl",
+    "action": "copied",
+    "sha256": "2bdc040ccfd0d8f4780da0a60b886f778d7073144066b5195a8ce721f150c029"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\it\\viewer.ftl",
+    "action": "copied",
+    "sha256": "5c148697504295594d7870534ac232b3b859714de05d8707cbd28bce4943d39b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ja\\viewer.ftl",
+    "action": "copied",
+    "sha256": "3b85576f12f9a445410bcef68859ca70d12604529fa515cfd914357b954bf8ec"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ka\\viewer.ftl",
+    "action": "copied",
+    "sha256": "b4f5b715fa46888edad88f74f7bebac206fe76791780c7a9c745b60a981e5279"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\kab\\viewer.ftl",
+    "action": "copied",
+    "sha256": "8a3d828dd4d9161dee429c050fd7f8515530b67a25a208ef2a19a2672d854830"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\kk\\viewer.ftl",
+    "action": "copied",
+    "sha256": "25aba779a2cabc7347151f5910577455e66de3f3d732752782a188240cc2e8ea"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\km\\viewer.ftl",
+    "action": "copied",
+    "sha256": "a94f19349b44ce5d87131c561cc8a4ce9c62366cb59f971d5be5149d81f3cfda"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\kn\\viewer.ftl",
+    "action": "copied",
+    "sha256": "7b7789d5dc8ea40aae07b7e5119cbbccb887a662f7db871e46b9f66c188ca68b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ko\\viewer.ftl",
+    "action": "copied",
+    "sha256": "154f33a94c0d5ef7db297998c1fac4d19cf915d462698495408d0fdb9cbe0064"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\lij\\viewer.ftl",
+    "action": "copied",
+    "sha256": "a9ff12cf54308a34a0b59f6f0dcab084a3fec406d8b2fef31520fe3a154e26c6"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\lo\\viewer.ftl",
+    "action": "copied",
+    "sha256": "76f118b588fbbf7b37c3d18af96bc2ffb239bb1c083e7449dcdc0476b7d325c1"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\lt\\viewer.ftl",
+    "action": "copied",
+    "sha256": "32c6d802c436285fa335b73bb286cc09b753c3424415545e367f7a2dcaa58c1f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ltg\\viewer.ftl",
+    "action": "copied",
+    "sha256": "75be2baeafed5f1feb68c5f5462644aca07d60217255c326c722c7f0b8ad420d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\lv\\viewer.ftl",
+    "action": "copied",
+    "sha256": "3336c806f82114e434fbca38163ee1664a2cfa4837a718d651a4c30fee6085b5"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\meh\\viewer.ftl",
+    "action": "copied",
+    "sha256": "ecef4b2daa96d0a1855f7c4c144bd6c0458b902da16d540a3c45e30066f9b412"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\mk\\viewer.ftl",
+    "action": "copied",
+    "sha256": "e83a51ab6c8e96e61269adbd4fe3f50f5ae3e21ee00d1b31108322d023441192"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\mr\\viewer.ftl",
+    "action": "copied",
+    "sha256": "e35043efff24e1f8c3310595fb9ba3e7cfda054425d15c77f1604d5dd031d51c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ms\\viewer.ftl",
+    "action": "copied",
+    "sha256": "f45f51152ad512c3a46a2cf5ee1a8f9fa6062f4ff572da0ebdc357375ee65b47"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\my\\viewer.ftl",
+    "action": "copied",
+    "sha256": "60729e1720633861ee7675615daf973fd769b8f9d3f2d853f9ee9382c7707b32"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\nb-NO\\viewer.ftl",
+    "action": "copied",
+    "sha256": "b35dd071941f5a1fc89662255362e09831e1e12cfafd5df8179e6253b9dc192f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ne-NP\\viewer.ftl",
+    "action": "copied",
+    "sha256": "fcfbcf6edb696c8ee8a75cf9e0a1216b17e50500a0bf50aca733a65fda465a88"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\nl\\viewer.ftl",
+    "action": "copied",
+    "sha256": "2b2955cd2db3cf5238a7d70cbe811ca38456cb37c4e49d6fd2918453c2455569"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\nn-NO\\viewer.ftl",
+    "action": "copied",
+    "sha256": "728cbe2d0d8d50eede485c539306de0d18a6bc0aa2698dd97cd26f227793ff93"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\oc\\viewer.ftl",
+    "action": "copied",
+    "sha256": "152be1e80bb9b1352019d10ae02a9c828c8b7fa61088120723a2623b1df2b477"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\pa-IN\\viewer.ftl",
+    "action": "copied",
+    "sha256": "64768037f120967ec565aa2445076cf61b312658722b3a821e482bdcbc4ce7ee"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\pl\\viewer.ftl",
+    "action": "copied",
+    "sha256": "27d1605e7f167f7dc44f901746d50b2c3aa6533a64822997ea7c5b2740509641"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\pt-BR\\viewer.ftl",
+    "action": "copied",
+    "sha256": "dbfab28a810821c010d84f5f3141505e010a29f48493b07d510972d39c9c9910"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\pt-PT\\viewer.ftl",
+    "action": "copied",
+    "sha256": "fc1f2539d68c5958c82834b03df03d7e7cb6a1913a9bde905dc5e66188d7b276"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\rm\\viewer.ftl",
+    "action": "copied",
+    "sha256": "8faf57ab3ea6e1356bd07b2adc6afde163287b36444695e3abf83d98d2e156df"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ro\\viewer.ftl",
+    "action": "copied",
+    "sha256": "5295c915b94f210c91ed73545c633cd7d08c5f31e657c4c31ef761a4591a9739"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ru\\viewer.ftl",
+    "action": "copied",
+    "sha256": "8e3a0a11ce89fe2fe7ee85d682f358c7eebd1365bf2f12528cc0082d467f1d11"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\sat\\viewer.ftl",
+    "action": "copied",
+    "sha256": "ab6d0157052dc6628e498206bd3cece49d598884a50bf66f569893f3aa8fcffe"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\sc\\viewer.ftl",
+    "action": "copied",
+    "sha256": "836d2101e6892b3d83425b96cda4b266d2b23b95fa373baf666b9e7fcaa435f0"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\scn\\viewer.ftl",
+    "action": "copied",
+    "sha256": "5568dea42a22f422ac7bfca928f35b780a4c1db850bc486cb413f051bb67e45e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\sco\\viewer.ftl",
+    "action": "copied",
+    "sha256": "7d1f96cb07aadf7f72c4816f0d51729523ea324de317d8352e1bba739700901e"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\si\\viewer.ftl",
+    "action": "copied",
+    "sha256": "2632b5eba699a01914c9b4b3bc4bd1834a793b02f090f55a84bad0d68f2b3247"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\sk\\viewer.ftl",
+    "action": "copied",
+    "sha256": "49c97cfe8dd5ab1119e95ed63605202c518c987d07172f41c2cd792b4708fb79"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\skr\\viewer.ftl",
+    "action": "copied",
+    "sha256": "56af8d96eb6440d01b46331c06cebae56a77a674d35d57bac629cdeffb1fe282"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\sl\\viewer.ftl",
+    "action": "copied",
+    "sha256": "d4c94ca1e62f0bafef80871ae67c72d64bc942a15d0d843955e52587a4d8efc2"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\son\\viewer.ftl",
+    "action": "copied",
+    "sha256": "78798daa3f7da88e0c91e59f773b2f1aa0caba68cdb1915fa3d92b137704f75b"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\sq\\viewer.ftl",
+    "action": "copied",
+    "sha256": "79a77d210a90cd3e8434cda26ab0f3b39fa7c8870c445bcb983be45cce35095f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\sr\\viewer.ftl",
+    "action": "copied",
+    "sha256": "5d7fe1d58209729706dc7d4d4e5bd1dfb1c0b177d572be481fba6b8113714f38"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\sv-SE\\viewer.ftl",
+    "action": "copied",
+    "sha256": "7a4f0ba36356786b65daca857da3128034e899179b7a461b3cf9d95997ff8856"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\szl\\viewer.ftl",
+    "action": "copied",
+    "sha256": "cd1d78547f9876116166bfb3fd1561ca515b7a81f0c43883112951861ff08f1f"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ta\\viewer.ftl",
+    "action": "copied",
+    "sha256": "abeb471dba0bc77e1bd9fb3f43ad28e847dcd6df1629573051ada80203bdb2d4"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\te\\viewer.ftl",
+    "action": "copied",
+    "sha256": "7ebad9ae311f688bc76b11388317d16496774181cd524cdc8e7fb37ef1052424"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\tg\\viewer.ftl",
+    "action": "copied",
+    "sha256": "12f44defcf9d725bcea107825bbaeca2628827cfcfee9fe128015a4013e4afec"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\th\\viewer.ftl",
+    "action": "copied",
+    "sha256": "0b85adb5b2b6b298def76e102439441bf88efb5acd3688a0ec867c05a1e74ef4"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\tl\\viewer.ftl",
+    "action": "copied",
+    "sha256": "1e0ac46197ce6a8286c3ba102dd81ca6b8783cdadd1ab770aa688855463ba2da"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\tr\\viewer.ftl",
+    "action": "copied",
+    "sha256": "93a6372d3e8b35b52e8a32e7711169e666313abf47c949894dd327dbe639c41a"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\trs\\viewer.ftl",
+    "action": "copied",
+    "sha256": "218cf2b002ff2f03d603b1f30733375de6d0530877c0ebdbc21f764810cc5818"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\uk\\viewer.ftl",
+    "action": "copied",
+    "sha256": "b6c599712c533770289dedbdfd8e23c8bea0dde446373e1c267f51f43697c75c"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\ur\\viewer.ftl",
+    "action": "copied",
+    "sha256": "02a89ac641cc77474b9708a69d267e891c9dfbc72e6bed5988625aae70fe3a01"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\uz\\viewer.ftl",
+    "action": "copied",
+    "sha256": "4b5bd5e065f5858c420761cb6b50ec325df4e78907fb65fc43ed3485036a0700"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\vi\\viewer.ftl",
+    "action": "copied",
+    "sha256": "75140a9bf995b057823658a3ca9e6d448ce96d6b431e0e986c7d508c81addce7"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\wo\\viewer.ftl",
+    "action": "copied",
+    "sha256": "ce291f20681e291771ddc56479e88bc6c5410939ec32297a0ca85a7b1d072006"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\xh\\viewer.ftl",
+    "action": "copied",
+    "sha256": "ea79111e6bac17e3a37047ca2f7591845acfadc6673eb5dd089f10009d19f5bd"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\zh-CN\\viewer.ftl",
+    "action": "copied",
+    "sha256": "576ff48afd5db9b4265186affa9f68d35d892b6b5394a4c71f8d261620c8393d"
+  },
+  {
+    "path": "vendor\\expert_html\\pdfjs\\web\\locale\\zh-TW\\viewer.ftl",
+    "action": "copied",
+    "sha256": "b1097e76f678c330fc401c098797000de60ff634dabc094147afb443a15c325a"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\\u4f01\u4e1a\u5fae\u4fe1\u622a\u56fe_d232cd12-dd70-4f84-b3e5-ad1f56d36fbe.png",
+    "action": "copied",
+    "sha256": "2ebb58477267f9d62464729b7a41f43372a7905fee5a416585c8b1213745573b"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\\u539f\u7406\u56fe\u8bc4\u5ba1_85\u9879_0916.xlsx",
+    "action": "copied",
+    "sha256": "56129b6ca1c0f1fa55474f3dabf3b606b90416132e78664434a821df87734ca3"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\\u5bf9\u8bdd\u6574\u7406-20260922-23.md",
+    "action": "copied",
+    "sha256": "19a1cb005f17d137a41e6679b6f930ed455a8bb1984156d8e5e853469dbbd0b4"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\0922\u667a\u80fd\u65cb\u94ae\\BOM_\u667a\u80fd\u65cb\u94ae_\u539f\u7406\u56fe\u5019\u9009_R1_2026-09-22.csv",
+    "action": "copied",
+    "sha256": "e2f63aadc650ef24508cdbdb52866e1149ba637334f23612998066b8722863ab"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\0922\u667a\u80fd\u65cb\u94ae\\Netlist_\u667a\u80fd\u65cb\u94ae_\u539f\u7406\u56fe\u5019\u9009_R1_2026-09-22.tel",
+    "action": "copied",
+    "sha256": "df058c5df5899f000fd3b613646fd68b228751dec9dee48a465a2aa930375094"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\0922\u667a\u80fd\u65cb\u94ae\\operating_conditions_defaults.yaml",
+    "action": "copied",
+    "sha256": "a4edd3ee50a31deda758ac8c46ad8b48109f6a880ddac9cbfcab0ff7403242b9"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\0922\u667a\u80fd\u65cb\u94ae\\ProPrj_test_2026-09-17(1).epro2",
+    "action": "copied",
+    "sha256": "b2b15195785453e9510a51a2d325c27a92f6c986450916742378a81c72eec19c"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\0922\u667a\u80fd\u65cb\u94ae\\schDrcLog_2026-09-22.txt",
+    "action": "copied",
+    "sha256": "6bd54a0d66a9017dee0737585f1736b0cf31785e5df4991149e0d5abeed1b34a"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\0922\u667a\u80fd\u65cb\u94ae\\SCH_\u667a\u80fd\u65cb\u94ae_\u539f\u7406\u56fe\u5019\u9009_R1_2026-09-22.pdf",
+    "action": "copied",
+    "sha256": "aae93be67e2d785970fcd36bb044825a1b37c7f4f316d6fff36f894ee2595bec"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\0922\u667a\u80fd\u65cb\u94ae\\\u8bbe\u8ba1\u4efb\u52a1\u4e66-EPS23+FOC\u7684\u53ef\u53d8\u624b\u611f\u65e0\u5237\u7535\u673a\u667a\u80fd\u6309\u94ae.docx",
+    "action": "copied",
+    "sha256": "0554078fef00630735e496286f5b31f8ab242b70a34a74c079cd14f676202d1a"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\V2.1\\0918\u5168\u91cf-P11-A01-\u4e09\u6279\u95ee\u9898\u5f52\u7eb3.md",
+    "action": "copied",
+    "sha256": "89c3c70b0b699750c4a31a391ca319ef7c10395d14bc1f2ed065c6d2d781c857"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\V2.1\\0918\u5168\u91cf-P11-A01-\u524d5\u7535\u963b\u590d\u6838.md",
+    "action": "copied",
+    "sha256": "107a3b662a41f95e340e5114453a7adef88213b4236f2a0c87925214835b98bd"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\V2.1\\0918\u5168\u91cf-P11-A01-\u524d5\u7535\u963b\u8fc7\u7a0b\u7f3a\u9677.md",
+    "action": "copied",
+    "sha256": "315dac6c17dc1a142c27aa0f14ae72a9565127eced30b5d4e7d0f97e76f060ec"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\V2.1\\0918\u5168\u91cf-P11-A01-\u7b2c\u4e09\u6279\u7535\u963b\u590d\u6838.md",
+    "action": "copied",
+    "sha256": "37d986d06b9a82ddbe683367f68b70b251118cbe9ee7449aacba14838432ddbb"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\V2.1\\0918\u5168\u91cf-P11-A01-\u7b2c\u4e8c\u6279\u7535\u963b\u590d\u6838.md",
+    "action": "copied",
+    "sha256": "2e10b22d44c0d99c958096db56090abcff0e17405b1074efc7053534bbef9071"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\V2.1\\0918\u5168\u91cf-R4-\u62a5\u544a\u95ee\u9898\u5f52\u6863.md",
+    "action": "copied",
+    "sha256": "5452099b4dd39cecf18a80330fbb2357b9dd7ad6a914471973ce299e4b87dacc"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\V2.1\\0918\u5168\u91cf-R4\u529f\u8017\u4e0e\u62a5\u544a\u504f\u5dee.md",
+    "action": "copied",
+    "sha256": "e96a30fcf6db2540570e2cf27a89c2c0ac2d59f76e0a7290ab7ba1e0b73e9855"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\V2.1\\0918\u5168\u91cf-\u5168\u91cf\u8bc4\u5ba1\u6838\u5bf9.md",
+    "action": "copied",
+    "sha256": "82877b008716b38c0bde2b2ed3056401b0c80a8060ed9c76251d62d6c16b1df3"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\V2.1\\P11-Agent\u63a8\u7406\u95f8-\u8ba1\u5212\u8bc4\u5ba1.md",
+    "action": "copied",
+    "sha256": "f132049938fcb845ba9b9c617c94e93bb10c153c328bc2c4a05623e8d65481d7"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\V2.1\\\u65b9\u6848.md",
+    "action": "copied",
+    "sha256": "69a98a0999e1f62b7087b8326089158d1199b350149ad8e8dd839e046641ba8e"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\V2.1\\\u68c0\u6d4b\u5168\u6d41\u7a0b-v2.1.png",
+    "action": "copied",
+    "sha256": "c19cca7a2d30b36156079d6466e4a1138183f38755d9fbbd5e8edbd6109d795b"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\V2.1\\\u8fd0\u884c\u8bf4\u660e.md",
+    "action": "copied",
+    "sha256": "e01e68bc230b7628407d8a892768f52953b6f100074ce0b68869e878b8cf1fb7"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\\u5609\u7acb\u521b\u5de5\u7a0b\u8f6cjson\\jlc-project-json-reference-20260917.zip",
+    "action": "copied",
+    "sha256": "a0c2944367196bc5076d3a5c35fdab5f38801757e98a545dd43644a8dfa7f17b"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\\u5609\u7acb\u521b\u5de5\u7a0b\u8f6cjson\\README.md",
+    "action": "copied",
+    "sha256": "d551af089d1715ba9a51185628a795cd180ceb9ece4e0636d5352b31e4fcfed8"
+  },
+  {
+    "path": "archive\\schematic-review\\docs\\\u5609\u7acb\u521b\u5de5\u7a0b\u8f6cjson\\\u4f01\u4e1a\u5fae\u4fe1\u622a\u56fe_192b8bfd-1e9b-44f0-bfe1-0cff20d57dee.png",
+    "action": "copied",
+    "sha256": "312391cccfaf8dae940ac59f01b83d65db9d9f9f2d8ca55104591914382aa71e"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\config.yaml",
+    "action": "copied",
+    "sha256": "7f64d2448e1c83ffa6f2f3398b742fb5f2d4d3ea47b2c540a9076484977026b4"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\changes\\p11-solve-and-gates\\.openspec.yaml",
+    "action": "copied",
+    "sha256": "d04b6ad7c1b1e5eb9e8ec8cfdae94bc49d29216b59b73cea7a3cc1de9d508463"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\changes\\p11-solve-and-gates\\design.md",
+    "action": "copied",
+    "sha256": "9453bcdb8c48af7ad237f7c810c2a5830a0aa858e0a22f1b058e0854a68a817c"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\changes\\p11-solve-and-gates\\proposal.md",
+    "action": "copied",
+    "sha256": "9d76ce9ddf5bccbbebb72ffa02d4ae512a0b05df887e4539ec50b9a3a30cd020"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\changes\\p11-solve-and-gates\\tasks.md",
+    "action": "copied",
+    "sha256": "230816c87f1a1a93ab6814f2154e1983af464073c24dbbe824dbf24e45e2a400"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\changes\\pin-behavior-dc\\.openspec.yaml",
+    "action": "copied",
+    "sha256": "58269d7db72cdbd907f1e3d553954adec105b48d45868fe89fca01036e3dbe35"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\changes\\pin-behavior-dc\\design.md",
+    "action": "copied",
+    "sha256": "9b4bc412061fa60aaf25cced045eb2d967b86dfcb07b15743ae47b2ec0c10027"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\changes\\pin-behavior-dc\\proposal.md",
+    "action": "copied",
+    "sha256": "7a72645f7cc7c10818ca59430dc5347186e9a8143950cf2b507923662f189608"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\changes\\pin-behavior-dc\\tasks.md",
+    "action": "copied",
+    "sha256": "24544f0574b0b6accb61f6217b4f11891a27c46b4239af6fbec5bfc55ee055cd"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\changes\\p11-solve-and-gates\\specs\\connection-card\\spec.md",
+    "action": "copied",
+    "sha256": "62b2f497a95e3331b346ec0bb4c3a4142a63fd785c90fec8dfb3a100da535a98"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\changes\\p11-solve-and-gates\\specs\\dc-solve\\spec.md",
+    "action": "copied",
+    "sha256": "4b095d6b78503948e53b72eb110ec7e626684af4864e5ccfd57ea416e305e6d4"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\changes\\p11-solve-and-gates\\specs\\delivery-gate\\spec.md",
+    "action": "copied",
+    "sha256": "f9291c42cb704ab3aee1ce726ee761c36b777f49219f4013e27a45c762784fa0"
+  },
+  {
+    "path": "archive\\schematic-review\\openspec\\changes\\p11-solve-and-gates\\specs\\stimulus-card\\spec.md",
+    "action": "copied",
+    "sha256": "0c495a4cc09b16dcb66af4295778432c6271d0f75aea4b7f472d337ed2914428"
+  },
+  {
+    "path": "archive\\schematic-review\\scripts\\export_jlc_datasheet_urls.py",
+    "action": "copied",
+    "sha256": "bc80df1d52dec6b9e5f70113ea26b78f00e7cf895e717cdf6edd90408b76e740"
+  },
+  {
+    "path": "archive\\schematic-review\\scripts\\export_object_cards_xlsx.py",
+    "action": "copied",
+    "sha256": "efcd4e9c575c4e51298402ba8fee24e87ca4283c7e1f892c2325da155e08b171"
+  },
+  {
+    "path": "archive\\schematic-review\\scripts\\import_xlsx_detail_15.py",
+    "action": "copied",
+    "sha256": "431f5d61dc6371e4d745b3c3579ead7fb5dd02acd2c54047ef74b900a4c5b897"
+  },
+  {
+    "path": "archive\\schematic-review\\scripts\\serve_report.py",
+    "action": "copied",
+    "sha256": "6d959d753782f72a1213c1f40ac116773be5fdb916b3c89c302d449e4a1e186e"
+  },
+  {
+    "path": "archive\\schematic-review\\scripts\\_fetch_miss_ic.py",
+    "action": "copied",
+    "sha256": "ed5801e70732f5c2be7aa9b7a7d654f611dc5ba1c836ea904e064644808c9a2b"
+  },
+  {
+    "path": "archive\\schematic-review\\scripts\\_probe_epro2.py",
+    "action": "copied",
+    "sha256": "00d4ac03b42ca33a0afccf80103b9b824e97b3b06f2677f8cb0431cf93aca7ed"
+  },
+  {
+    "path": "archive\\schematic-review\\scripts\\_setup_board_0918.py",
+    "action": "copied",
+    "sha256": "77640bbfdc78217e7ef8758111b760e6b6e4ce313df2c3021323a4ecef8a251f"
+  },
+  {
+    "path": "archive\\schematic-review\\scripts\\_smoke_intent.py",
+    "action": "copied",
+    "sha256": "8c2f45e9c5434c243804238cbde772f79eda480734dea4724295b5b348dd0312"
+  },
+  {
+    "path": "archive\\schematic-review\\scripts\\_smoke_object_cards.py",
+    "action": "copied",
+    "sha256": "32debaf4d6c9db65a313d4c97611605ef29dd134b21a289f12f832109cf163f3"
+  },
+  {
+    "path": "archive\\schematic-review\\skills\\agent-review\\SKILL.md",
+    "action": "copied",
+    "sha256": "cbcb87cdcbe3eb16bccf123db376b4d755afc5722a077c1501d7a77078138d19"
+  },
+  {
+    "path": "archive\\schematic-review\\skills\\schematic-review-v2.1\\SKILL.md",
+    "action": "copied",
+    "sha256": "67a55cff4d623bbc37158edbf2719f8f5449b61adac2d11f8260c1eff087813d"
+  },
+  {
+    "path": "archive\\schematic-review\\ppt\\222.pptx",
+    "action": "copied",
+    "sha256": "54cacff2b97a8837f82e21d6cb2fd411c7ac14853e6744284a8ba53a574709d7"
+  },
+  {
+    "path": "archive\\schematic-review\\ppt\\CAD\u7535\u5b50\u5b66\u79d1\u8d4b\u80fd--Al\u667a\u80fd\u5ba1\u56fe\u9879\u76ee.pptx",
+    "action": "copied",
+    "sha256": "54cacff2b97a8837f82e21d6cb2fd411c7ac14853e6744284a8ba53a574709d7"
+  },
+  {
+    "path": "archive\\schematic-review\\ppt\\\u7535\u6c14\u7c7b\u6b63\u786e\u7387\u504f\u4f4e\u7684\u539f\u56e0\u4e0e\u6539\u8fdb\u8def\u5f84.pptx",
+    "action": "copied",
+    "sha256": "4eccd4f2e5f48e0d9409372e55c6f0cac15e354258bc976d80201312fe388bb8"
+  },
+  {
+    "path": "archive\\schematic-review\\ppt\\_preview\\slide3.png",
+    "action": "copied",
+    "sha256": "a740ce7e2ee97d6c488745b05c2302ea8585c27d4c7e7383a27efd39e33c57ac"
+  },
+  {
+    "path": "archive\\schematic-review\\ppt\\_preview\\slide9.png",
+    "action": "copied",
+    "sha256": "67c4b5b1fe93a34ce6222051e27163d354153b43c0a8389df78fb26bc8a9b7c6"
+  }
+]

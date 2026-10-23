@@ -1,0 +1,1223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "统一深审契约 review.v1 试点",
+  "$comment": "运行契约：Schema约束结构，控制器核对不可变任务头，语义与工程复核分别执行。模型不生成 _meta。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "review.v1",
+      "readOnly": true
+    },
+    "target": {
+      "$ref": "#/$defs/target",
+      "readOnly": true
+    },
+    "criterion": {
+      "$ref": "#/$defs/criterion",
+      "readOnly": true
+    },
+    "scope": {
+      "$ref": "#/$defs/scope"
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/input"
+      }
+    },
+    "premises": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/premise"
+      }
+    },
+    "reasoning_steps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 180
+      },
+      "maxItems": 3
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    },
+    "extreme": {
+      "$ref": "#/$defs/extreme"
+    },
+    "decision": {
+      "$ref": "#/$defs/decision"
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/gap"
+      }
+    },
+    "display": {
+      "$ref": "#/$defs/display"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/action"
+      }
+    },
+    "analysis_contract": {
+      "const": "analysis.v1"
+    },
+    "analysis_steps": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text",
+          "premise_refs"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "premise_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "target",
+    "criterion",
+    "scope",
+    "inputs",
+    "premises",
+    "scenarios",
+    "extreme",
+    "decision",
+    "gaps",
+    "display",
+    "evidence",
+    "actions"
+  ],
+  "$defs": {
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rule_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "object_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "object_type": {
+          "enum": [
+            "component",
+            "net",
+            "pair",
+            "board"
+          ]
+        }
+      },
+      "required": [
+        "rule_id",
+        "object_id",
+        "object_type"
+      ]
+    },
+    "criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "metric_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "aggregation": {
+          "enum": [
+            "maximum",
+            "minimum"
+          ]
+        },
+        "operator": {
+          "enum": [
+            "le",
+            "ge"
+          ]
+        },
+        "limit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "evidence_refs": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "value",
+            "evidence_refs"
+          ]
+        }
+      },
+      "required": [
+        "title",
+        "metric_key",
+        "unit",
+        "aggregation",
+        "operator",
+        "limit"
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "string",
+          "minLength": 1
+        },
+        "analyzed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "coverage": {
+          "enum": [
+            "complete",
+            "partial",
+            "not_applicable"
+          ]
+        },
+        "exclusions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "regime": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence_refs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "regime",
+              "reason",
+              "evidence_refs"
+            ]
+          }
+        }
+      },
+      "required": [
+        "required",
+        "analyzed",
+        "coverage",
+        "exclusions"
+      ]
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "material_fact",
+            "model_parameter",
+            "unknown"
+          ]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "value",
+        "unit",
+        "kind",
+        "evidence_refs"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "unknown"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "premise": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "status": {
+          "enum": [
+            "supported",
+            "model_assumption",
+            "unresolved"
+          ]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "status",
+        "evidence_refs"
+      ]
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nature": {
+          "enum": [
+            "nominal_model",
+            "exact",
+            "lower_bound",
+            "upper_bound",
+            "unknown"
+          ]
+        },
+        "calculation_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "key",
+        "value",
+        "unit",
+        "nature",
+        "calculation_ref"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "nature": {
+                "const": "unknown"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "calculation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expression": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "step_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "expression",
+        "value",
+        "unit",
+        "input_refs",
+        "step_refs",
+        "evidence_refs"
+      ]
+    },
+    "branch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 2
+        },
+        "direction_status": {
+          "enum": [
+            "known",
+            "unknown"
+          ]
+        },
+        "current_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "direction_status",
+        "current_ref",
+        "note"
+      ]
+    },
+    "body": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "from": {
+          "type": "string",
+          "minLength": 1
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "ref",
+        "from",
+        "to",
+        "note"
+      ]
+    },
+    "marker": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "on": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "voltage",
+            "span",
+            "note"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "on",
+        "kind",
+        "label",
+        "value_ref",
+        "note"
+      ]
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "pdf_page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "branches": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/branch"
+                },
+                "minItems": 1
+              },
+              "through_body": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/body"
+                }
+              },
+              "markers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/marker"
+                }
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "label": {
+                "type": "string"
+              },
+              "route_summary": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "pdf_page",
+              "branches",
+              "through_body",
+              "markers",
+              "notes"
+            ]
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "pages"
+      ]
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "kind": {
+          "enum": [
+            "operating_case",
+            "model_boundary"
+          ]
+        },
+        "applicability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "status": {
+              "enum": [
+                "supported",
+                "conditional",
+                "unmapped",
+                "excluded"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidence_refs": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "status",
+            "reason",
+            "evidence_refs"
+          ]
+        },
+        "premise_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/metric"
+          }
+        },
+        "calculations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/calculation"
+          }
+        },
+        "comparison_note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "route": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/route"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "route_summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "description": "模型依据材料生成的一句话工况通路说明，包含供电、关键通路和器件或接口状态；不得重复判定与极值比较，不由展示层补写。"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "kind",
+        "applicability",
+        "premise_refs",
+        "metrics",
+        "calculations",
+        "comparison_note",
+        "route",
+        "route_summary"
+      ]
+    },
+    "extreme": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "primary_scenario_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "primary_status": {
+          "enum": [
+            "confirmed",
+            "conditional",
+            "unavailable"
+          ]
+        },
+        "global_value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ranking_complete": {
+          "type": "boolean"
+        },
+        "selection_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "comparisons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "scenario_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "role": {
+                "enum": [
+                  "primary",
+                  "comparison",
+                  "decision_boundary",
+                  "excluded",
+                  "unranked"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "required": [
+              "scenario_ref",
+              "role",
+              "reason"
+            ]
+          }
+        }
+      },
+      "required": [
+        "primary_scenario_ref",
+        "primary_status",
+        "global_value",
+        "ranking_complete",
+        "selection_reason",
+        "comparisons"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ranking_complete": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "global_value": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "verdict": {
+          "enum": [
+            "pass",
+            "fail",
+            "pending",
+            "not_applicable"
+          ]
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "basis": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "supported_case",
+                "supported_model_boundary",
+                "proven_bound",
+                "envelope_bound",
+                "insufficient",
+                "not_applicable"
+              ]
+            },
+            "scenario_refs": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "metric_key": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidence_refs": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "applicability": {
+              "type": "string",
+              "minLength": 1
+            },
+            "coverage_argument": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "scenario_refs",
+            "metric_key",
+            "evidence_refs",
+            "applicability",
+            "coverage_argument"
+          ]
+        }
+      },
+      "required": [
+        "verdict",
+        "explanation",
+        "basis"
+      ]
+    },
+    "gap": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "issue": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effect": {
+          "enum": [
+            "extreme_only",
+            "precision_only",
+            "decision_changing"
+          ]
+        },
+        "scenario_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "countercase": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "evidence_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "uniqueItems": true
+                },
+                "decision_effect": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "description",
+                "evidence_refs",
+                "decision_effect"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "issue",
+        "effect",
+        "scenario_refs",
+        "evidence_refs",
+        "countercase",
+        "reason"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "effect": {
+                "const": "decision_changing"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "countercase": {
+                "type": "object",
+                "properties": {
+                  "evidence_refs": {
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "display": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "input_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "maxItems": 4
+        },
+        "premise_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "maxItems": 3
+        }
+      },
+      "required": [
+        "input_refs",
+        "premise_refs"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "kind": {
+          "enum": [
+            "task",
+            "bom",
+            "schematic",
+            "netlist",
+            "datasheet",
+            "analysis",
+            "rule",
+            "facts"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claim": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qualifiers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "path",
+        "locator",
+        "claim",
+        "qualifiers"
+      ]
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "scenario_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "text",
+        "scenario_refs",
+        "evidence_refs"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "reasoning_steps"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "analysis_steps"
+            ]
+          },
+          {
+            "required": [
+              "analysis_contract"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "required": [
+        "analysis_contract",
+        "analysis_steps"
+      ],
+      "not": {
+        "required": [
+          "reasoning_steps"
+        ]
+      }
+    }
+  ]
+}

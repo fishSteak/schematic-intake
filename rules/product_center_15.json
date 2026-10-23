@@ -1,0 +1,647 @@
+{
+  "version": "2.1.4",
+  "template": "product_center",
+  "source_xlsx": "docs/原理图评审_85项_0916.xlsx",
+  "source_sheet": "85项检查清单",
+  "process_source": "intent_steps_15",
+  "xlsx_detail": "rules/xlsx_detail_15.json",
+  "intent_steps": "rules/intent_steps_15.json",
+  "agent_rule_ids": "rules/agent_rule_ids.json",
+  "datasheet_pipeline": "s2 AnySearch/url_hints 下载 → s3 pintable → G2-rc/G2-L/G2-ic/G3/G4",
+  "rule_ids": [
+    "P42-A01",
+    "P42-A04",
+    "P05-A01",
+    "P05-A06",
+    "P04-A01",
+    "P04-A03",
+    "P11-A01",
+    "P11-A02",
+    "P11-A03",
+    "P11-A04",
+    "P11-A05",
+    "P11-A06",
+    "P11-A07",
+    "P12-A01",
+    "P12-A02",
+    "P12-A03",
+    "P12-A04",
+    "P12-A05",
+    "P12-A06",
+    "P12-A07",
+    "P12-A08",
+    "P21-A01",
+    "P14-A02",
+    "P14-A05",
+    "P14-A06",
+    "P16-A01",
+    "P16-A05",
+    "P07-A05",
+    "P18-A02",
+    "P19-A03"
+  ],
+  "needs_dc_modes": [
+    "P11-A01",
+    "P11-A03"
+  ],
+  "notes": {
+    "P16-A01": "手册优先否则0.1µF；coverage=power_pin；proximity→转PCB；禁止容值窗口当通过",
+    "P16-A05": "无模拟电源/磁珠则不适用；有对象但无噪声预算或配方则待确认；禁止看见磁珠升绿",
+    "P14-A05": "按连接器列端口；威胁等级和浪涌额定未抽出则待确认；齐纳 Vz 不算浪涌能量",
+    "P19-A03": "无复位网则不适用；有网则待确认直到手册复位阈值抽出；禁止 0.69·Rp·C 升绿",
+    "P21-A01": "只列两颗及以上 IC 的信号网；VOH/VOL 与 VIH/VIL 未抽出则待确认；禁止 0.7×VCC",
+    "P11-A01": "本子项只比P_max≤0.5×P_rated；温度/降额归父项不判；须产出object_cards按颗写block_class",
+    "P11-A02": "只比高压回路 V_max≤0.5×V_rated；非高压回路整颗不适用；缺额定耐压不得升绿",
+    "P11-A04": "开关电源输出不得使用未经批准的普通钽电容；无开关电源输出则不适用；批准须有书面依据",
+    "P11-A05": "高温场景陶瓷电容用 X7R/X5R 或项目批准介质，不用 Y5V；无高温要求或非陶瓷则不适用",
+    "P11-A06": "Isat≥1.5×最大工作电流；禁止用 Irms 冒充 Isat；缺负载电流则待确认",
+    "P11-A07": "会审两道门：Isat≥1.5×I_sat_cmp 与 M=Tmax−Tamb−ΔT>10℃；电流分口径",
+    "P42": "不可从列表关掉",
+    "P12-A02": "与 P21-A01 共享 IO 阈值证据；缺阈值→待确认，禁止 0.7×VCC 冒充",
+    "P12-A03": "工作温度覆盖项目环境；缺任务书Tamb则不适用；含二极管；不得用存储温度代替工作温度",
+    "P12-A04": "VDS_peak≤0.70×VDS_rated；缺瞬态峰值不得升绿",
+    "P12-A05": "持续 Ids≤0.70×ID；脉冲另查 SOA；勿与 VDS 字段混淆",
+    "P12-A06": "VRWM/钳位与后级 abs max；浪涌与 ESD 分列",
+    "P12-A07": "电流/插拔寿命/防护分列；缺任务书整机需求则不适用；不自补 70%/1000 次门槛",
+    "P12-A08": "对外连接器须有防反插结构或受控防呆引脚定义；板内非对外连接器不适用；不得凭外壳外形口头升绿"
+  },
+  "grouping": {
+    "default": "by_category_skill",
+    "evidence": "逐项独立落盘：evidence/<rule_id>.json + verdicts.json.results[]；Agent 只写本组 rule_id，禁止改其他项判定词"
+  },
+  "agent_groups_by_category": [
+    {
+      "agent_id": "G1-drawing",
+      "xlsx_category": "图纸规范与工程文件检查",
+      "rule_ids": [
+        "P04-A01",
+        "P04-A03",
+        "P05-A01",
+        "P05-A06"
+      ],
+      "skill": "图面/网表标注与网络名",
+      "shared_inputs": [
+        "sch_index.json",
+        "design_graph.json",
+        "board_kg.json"
+      ]
+    },
+    {
+      "agent_id": "G1b-erc",
+      "xlsx_category": "图纸规范与工程文件检查",
+      "rule_ids": [
+        "P07-A05"
+      ],
+      "skill": "电源域/差分/隔离拓扑，不与 P04/P05 同技能",
+      "shared_inputs": [
+        "design_graph.json",
+        "board_kg.json"
+      ],
+      "split_reason": "xlsx 大类同属图纸规范，检查对象是未受控短接，单独成组"
+    },
+    {
+      "agent_id": "G2-rc",
+      "xlsx_category": "器件选型与物料可靠性",
+      "rule_ids": [
+        "P11-A01",
+        "P11-A02",
+        "P11-A03",
+        "P11-A04",
+        "P11-A05"
+      ],
+      "skill": "电阻功耗与电容耐压降额",
+      "shared_inputs": [
+        "board_kg.json",
+        "cache/mpn/*/pintable.json",
+        "datasheet"
+      ],
+      "split_reason": "G2 原四项挤一组，电阻/电容与电感读点、IC 供电分开"
+    },
+    {
+      "agent_id": "G2-L",
+      "xlsx_category": "器件选型与物料可靠性",
+      "rule_ids": [
+        "P11-A06",
+        "P11-A07"
+      ],
+      "skill": "电感 Isat 与温升曲线读点",
+      "shared_inputs": [
+        "board_kg.json",
+        "cache/mpn/*/pintable.json",
+        "datasheet"
+      ],
+      "split_reason": "温升曲线读点单独成组，避免被电阻/电容/IC 供电挤掉"
+    },
+    {
+      "agent_id": "G2-ic",
+      "xlsx_category": "器件选型与物料可靠性",
+      "rule_ids": [
+        "P12-A01",
+        "P21-A01",
+        "P12-A02",
+        "P12-A03",
+        "P12-A04",
+        "P12-A05",
+        "P12-A06",
+        "P12-A07",
+        "P12-A08"
+      ],
+      "skill": "IC 供电/电平、温度等级、MOS/TVS/连接器选型",
+      "shared_inputs": [
+        "board_kg.json",
+        "cache/mpn/*/pintable.json",
+        "datasheet"
+      ],
+      "split_reason": "IC 供电与无源降额不是同一技能"
+    },
+    {
+      "agent_id": "G3-pi",
+      "xlsx_category": "电源系统PI专项检查",
+      "rule_ids": [
+        "P14-A02",
+        "P14-A05",
+        "P14-A06",
+        "P16-A01",
+        "P16-A05"
+      ],
+      "skill": "入口保护、浪涌、去耦与模拟电源隔离",
+      "shared_inputs": [
+        "design_graph.json",
+        "board_kg.json",
+        "datasheet"
+      ]
+    },
+    {
+      "agent_id": "G4-clock",
+      "xlsx_category": "时钟、复位、时序电路",
+      "rule_ids": [
+        "P18-A02",
+        "P19-A03"
+      ],
+      "skill": "晶体 CL 与复位上拉/下拉",
+      "shared_inputs": [
+        "board_kg.json",
+        "datasheet"
+      ]
+    },
+    {
+      "agent_id": "G5-bom",
+      "xlsx_category": "最终闭环输出检查",
+      "rule_ids": [
+        "P42-A01",
+        "P42-A04"
+      ],
+      "skill": "位号唯一与 BOM/网表/图面三源一致",
+      "shared_inputs": [
+        "board_kg.json",
+        "materials.json"
+      ]
+    }
+  ],
+  "agent_groups_by_pcode": [
+    {
+      "agent_id": "P04",
+      "rule_ids": [
+        "P04-A01",
+        "P04-A03"
+      ]
+    },
+    {
+      "agent_id": "P05",
+      "rule_ids": [
+        "P05-A01",
+        "P05-A06"
+      ]
+    },
+    {
+      "agent_id": "P07",
+      "rule_ids": [
+        "P07-A05"
+      ]
+    },
+    {
+      "agent_id": "P11",
+      "rule_ids": [
+        "P11-A01",
+        "P11-A03",
+        "P11-A07"
+      ]
+    },
+    {
+      "agent_id": "P12",
+      "rule_ids": [
+        "P12-A01",
+        "P12-A02",
+        "P12-A03",
+        "P12-A04",
+        "P12-A05",
+        "P12-A06",
+        "P12-A07"
+      ]
+    },
+    {
+      "agent_id": "P14",
+      "rule_ids": [
+        "P14-A02",
+        "P14-A05",
+        "P14-A06"
+      ]
+    },
+    {
+      "agent_id": "P16",
+      "rule_ids": [
+        "P16-A01",
+        "P16-A05"
+      ]
+    },
+    {
+      "agent_id": "P18",
+      "rule_ids": [
+        "P18-A02"
+      ]
+    },
+    {
+      "agent_id": "P19",
+      "rule_ids": [
+        "P19-A03"
+      ]
+    },
+    {
+      "agent_id": "P21",
+      "rule_ids": [
+        "P21-A01"
+      ]
+    },
+    {
+      "agent_id": "P42",
+      "rule_ids": [
+        "P42-A01",
+        "P42-A04"
+      ]
+    }
+  ],
+  "agent_groups_one_per_item": [
+    {
+      "agent_id": "P04-A01",
+      "rule_ids": [
+        "P04-A01"
+      ]
+    },
+    {
+      "agent_id": "P04-A03",
+      "rule_ids": [
+        "P04-A03"
+      ]
+    },
+    {
+      "agent_id": "P05-A01",
+      "rule_ids": [
+        "P05-A01"
+      ]
+    },
+    {
+      "agent_id": "P05-A06",
+      "rule_ids": [
+        "P05-A06"
+      ]
+    },
+    {
+      "agent_id": "P07-A05",
+      "rule_ids": [
+        "P07-A05"
+      ]
+    },
+    {
+      "agent_id": "P11-A01",
+      "rule_ids": [
+        "P11-A01"
+      ]
+    },
+    {
+      "agent_id": "P11-A03",
+      "rule_ids": [
+        "P11-A03"
+      ]
+    },
+    {
+      "agent_id": "P11-A07",
+      "rule_ids": [
+        "P11-A07"
+      ]
+    },
+    {
+      "agent_id": "P12-A01",
+      "rule_ids": [
+        "P12-A01"
+      ]
+    },
+    {
+      "agent_id": "P12-A02",
+      "rule_ids": [
+        "P12-A02"
+      ]
+    },
+    {
+      "agent_id": "P12-A03",
+      "rule_ids": [
+        "P12-A03"
+      ]
+    },
+    {
+      "agent_id": "P12-A04",
+      "rule_ids": [
+        "P12-A04"
+      ]
+    },
+    {
+      "agent_id": "P12-A05",
+      "rule_ids": [
+        "P12-A05"
+      ]
+    },
+    {
+      "agent_id": "P12-A06",
+      "rule_ids": [
+        "P12-A06"
+      ]
+    },
+    {
+      "agent_id": "P12-A07",
+      "rule_ids": [
+        "P12-A07"
+      ]
+    },
+    {
+      "agent_id": "P14-A02",
+      "rule_ids": [
+        "P14-A02"
+      ]
+    },
+    {
+      "agent_id": "P14-A05",
+      "rule_ids": [
+        "P14-A05"
+      ]
+    },
+    {
+      "agent_id": "P14-A06",
+      "rule_ids": [
+        "P14-A06"
+      ]
+    },
+    {
+      "agent_id": "P16-A01",
+      "rule_ids": [
+        "P16-A01"
+      ]
+    },
+    {
+      "agent_id": "P16-A05",
+      "rule_ids": [
+        "P16-A05"
+      ]
+    },
+    {
+      "agent_id": "P18-A02",
+      "rule_ids": [
+        "P18-A02"
+      ]
+    },
+    {
+      "agent_id": "P19-A03",
+      "rule_ids": [
+        "P19-A03"
+      ]
+    },
+    {
+      "agent_id": "P21-A01",
+      "rule_ids": [
+        "P21-A01"
+      ]
+    },
+    {
+      "agent_id": "P42-A01",
+      "rule_ids": [
+        "P42-A01"
+      ]
+    },
+    {
+      "agent_id": "P42-A04",
+      "rule_ids": [
+        "P42-A04"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "rule_id": "P04-A01",
+      "xlsx_category": "图纸规范与工程文件检查",
+      "pcode": "P04",
+      "name": "网络名仅使用英文字母、数字和下划线",
+      "severity": "中"
+    },
+    {
+      "rule_id": "P04-A03",
+      "xlsx_category": "图纸规范与工程文件检查",
+      "pcode": "P04",
+      "name": "不同逻辑网络不得误用同名标号；同一逻辑网络跨页名称必须一致",
+      "severity": "中"
+    },
+    {
+      "rule_id": "P05-A01",
+      "xlsx_category": "图纸规范与工程文件检查",
+      "pcode": "P05",
+      "name": "每个装配电阻的阻值字段完整且可解析",
+      "severity": "中"
+    },
+    {
+      "rule_id": "P05-A06",
+      "xlsx_category": "图纸规范与工程文件检查",
+      "pcode": "P05",
+      "name": "每个装配电容的容值字段完整且可解析",
+      "severity": "中"
+    },
+    {
+      "rule_id": "P07-A05",
+      "xlsx_category": "图纸规范与工程文件检查",
+      "pcode": "P07",
+      "name": "不同电源域、差分对正负端、隔离两侧或互斥输出不得被导线或同名网络直接相连",
+      "severity": "高"
+    },
+    {
+      "rule_id": "P11-A01",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P11",
+      "name": "电阻最大稳态耗散功率≤额定功率×50%",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P11-A02",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P11",
+      "name": "高压回路电阻最大工作电压≤额定耐压×50%",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P11-A03",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P11",
+      "name": "电容最大工作电压≤额定耐压×50%",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P11-A04",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P11",
+      "name": "开关电源输出不得使用未经批准的普通钽电容",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P11-A05",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P11",
+      "name": "高温场景陶瓷电容使用X7R/X5R或项目批准介质，不使用Y5V",
+      "severity": "中"
+    },
+    {
+      "rule_id": "P11-A06",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P11",
+      "name": "电感饱和电流≥1.5×最大工作电流",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P11-A07",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P11",
+      "name": "电感温升不超过项目或数据手册限值",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P12-A01",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P12",
+      "name": "IC实际供电范围位于推荐工作范围内且不超过绝对最大值",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P12-A02",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P12",
+      "name": "发送端VOH/VOL与接收端VIH/VIL在全工况下兼容",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P12-A03",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P12",
+      "name": "有源器件温度等级覆盖项目最低/最高环境温度",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P12-A04",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P12",
+      "name": "MOS管最大Vds≤额定Vds×70%",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P12-A05",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P12",
+      "name": "MOS管最大Ids≤额定Ids×70%",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P12-A06",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P12",
+      "name": "TVS反向工作电压高于正常信号上限，最大钳位电压低于后级绝对最大耐压",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P12-A07",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P12",
+      "name": "连接器额定电流、插拔寿命和防护等级覆盖整机需求",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P12-A08",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P12",
+      "name": "对外连接器具有防反插结构或受控防呆引脚定义",
+      "severity": "中"
+    },
+    {
+      "rule_id": "P14-A02",
+      "xlsx_category": "电源系统PI专项检查",
+      "pcode": "P14",
+      "name": "存在反接风险的输入具有反接保护或批准豁免",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P14-A06",
+      "xlsx_category": "电源系统PI专项检查",
+      "pcode": "P14",
+      "name": "外部可插拔供电接口具有负载开关、限流和软启动",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P16-A01",
+      "xlsx_category": "电源系统PI专项检查",
+      "pcode": "P16",
+      "name": "每个IC电源引脚具有0.1μF或数据手册指定的高频去耦电容",
+      "severity": "高"
+    },
+    {
+      "rule_id": "P14-A05",
+      "xlsx_category": "电源系统PI专项检查",
+      "pcode": "P14",
+      "name": "浪涌保护器件的工作电压、钳位电压和能量能力匹配端口威胁等级",
+      "severity": "高"
+    },
+    {
+      "rule_id": "P16-A05",
+      "xlsx_category": "电源系统PI专项检查",
+      "pcode": "P16",
+      "name": "模拟电源根据噪声预算使用RC或磁珠隔离",
+      "severity": "高"
+    },
+    {
+      "rule_id": "P18-A02",
+      "xlsx_category": "时钟、复位、时序电路",
+      "pcode": "P18",
+      "name": "晶体负载电容按CL公式及寄生电容计算",
+      "severity": "高"
+    },
+    {
+      "rule_id": "P19-A03",
+      "xlsx_category": "时钟、复位、时序电路",
+      "pcode": "P19",
+      "name": "复位信号上拉/下拉电压和默认状态满足器件要求",
+      "severity": "高"
+    },
+    {
+      "rule_id": "P21-A01",
+      "xlsx_category": "器件选型与物料可靠性",
+      "pcode": "P21",
+      "name": "发送端输出电平与接收端VIH/VIL阈值兼容",
+      "severity": "高"
+    },
+    {
+      "rule_id": "P42-A01",
+      "xlsx_category": "最终闭环输出检查",
+      "pcode": "P42",
+      "name": "原理图位号集合不存在重复位号",
+      "severity": "严重"
+    },
+    {
+      "rule_id": "P42-A04",
+      "xlsx_category": "最终闭环输出检查",
+      "pcode": "P42",
+      "name": "同位号的MPN/型号和Value在原理图、BOM与变体文件中一致",
+      "severity": "严重"
+    }
+  ]
+}

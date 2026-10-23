@@ -1,0 +1,31 @@
+{
+  "r39_min_ohm": 3810.807,
+  "r39_max_ohm": 3990.2069999999994,
+  "r21_min_ohm": 9771.3,
+  "coupling_budget_w": 0.00736851800681588,
+  "r39_voltage_limit_v": 13.803635390722256,
+  "rows": [
+    {
+      "ron_differential_ohm": 500,
+      "conductance_s": 0.0008908275275505117,
+      "coefficient_s": 0.008645074064473478,
+      "delta_v_rms": 0.9232210868042,
+      "r39_power_bound_w": 0.04049966901278824,
+      "r39_power_bound_at_vf2_5_w": 0.04728207551451042,
+      "additional_active_power_to_fail_bound_w": 0.03850860786953281,
+      "reference_voltage_to_fail_bound_v": 12.880414303918057
+    },
+    {
+      "ron_differential_ohm": 2000,
+      "conductance_s": 0.0006677565566598951,
+      "coefficient_s": 0.005024767686386019,
+      "delta_v_rms": 1.210966365529912,
+      "r39_power_bound_w": 0.04239749374492928,
+      "r39_power_bound_at_vf2_5_w": 0.049330915650331424,
+      "additional_active_power_to_fail_bound_w": 0.019296597633437516,
+      "reference_voltage_to_fail_bound_v": 12.592669025192343
+    }
+  ],
+  "differential_ron_to_fail_bound_ohm": 8158.574354521695,
+  "scope": "Conditional incremental-passive normal periodic model; not manufacturer full-state certification."
+}

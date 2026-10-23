@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "two_turn_rules": ["P11-A05", "P12-A03", "P12-A08"],
+  "note": "Only categorical material/structure/temperature checks omit the separate self-check turn. P11-A04 retains self-check after the paired C5 pilot exposed a topology applicability regression. Electrical stress, thermal and IO checks retain three turns."
+}

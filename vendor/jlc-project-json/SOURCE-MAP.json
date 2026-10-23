@@ -1,0 +1,32 @@
+[
+  {
+    "file": "src/native-readonly-archive.mjs",
+    "source": "mechanical-review-8980/src/native-readonly-archive.mjs",
+    "sourceSha256": "b10a309f36e54d2fdc16a63b12477a21b202b5a45402ec903a46baae3657f45c",
+    "change": "原样复制"
+  },
+  {
+    "file": "src/schematic-connectivity.mjs",
+    "source": "mechanical-review-8980/src/schematic-connectivity.mjs",
+    "sourceSha256": "62ee3d314c85ec14264d6e39f6899cfa87c9ac8f64e412aa474b1c24c70c467c",
+    "change": "原样复制"
+  },
+  {
+    "file": "src/page-fields.mjs",
+    "source": "mechanical-review-8980/src/schematic-field-rules.mjs",
+    "sourceSha256": "99e1f6dce9841eb9e32ea8377fb2bd57c6236006aa324388793c747ddb7a1a13",
+    "change": "仅抽取readPageFields，不携带审查执行器"
+  },
+  {
+    "file": "src/schematic-model.mjs",
+    "source": "mechanical-review-8980/src/schematic-check-engine.mjs",
+    "sourceSha256": "8a2bab2d98617c9c71f5d736ab5ecd0bb864e01c0f58e750d51ac24598d98496",
+    "change": "抽取readSchematicModel及必要工具，移除85项审查依赖"
+  },
+  {
+    "file": "src/eprj-reader.mjs",
+    "source": "mechanical-review-8980/src/review85-native-eprj.mjs",
+    "sourceSha256": "8dbd67629c1d3c8040704eaac1b1d093bee0b7535c24c1b9ce1efea0d61dafd8",
+    "change": "仅调整模型解析模块导入路径"
+  }
+]

@@ -1,0 +1,971 @@
+{
+  "schema_version": "review.v1",
+  "target": {
+    "rule_id": "P11-A01",
+    "object_id": "R4",
+    "object_type": "component"
+  },
+  "criterion": {
+    "title": "最大稳态耗散不超过额定功率的50%",
+    "metric_key": "power",
+    "unit": "W",
+    "aggregation": "maximum",
+    "operator": "le",
+    "limit": {
+      "value": 0.05,
+      "evidence_refs": [
+        "e_workbench",
+        "e_rule"
+      ]
+    }
+  },
+  "scope": {
+    "required": "任务书供电与接口要求下的最大稳态耗散；不能把尚未求解的长期周期状态自动豁免。",
+    "analyzed": "24V标称直流模型，接口低端与Q4下拉候选、板内较轻边界；长期动态及参数保证范围未闭合。",
+    "coverage": "partial",
+    "exclusions": [
+      {
+        "regime": "故障与单次启动瞬态",
+        "reason": "不与本次正常最大稳态数字混为一组；适用的其他规则另审。",
+        "evidence_refs": [
+          "e_analysis",
+          "e_rule"
+        ]
+      }
+    ]
+  },
+  "inputs": [
+    {
+      "id": "i_r4",
+      "label": "R4阻值",
+      "value": 120,
+      "unit": "ohm",
+      "kind": "material_fact",
+      "evidence_refs": [
+        "e_workbench"
+      ]
+    },
+    {
+      "id": "i_r52",
+      "label": "R52阻值",
+      "value": 120,
+      "unit": "ohm",
+      "kind": "material_fact",
+      "evidence_refs": [
+        "e_netlist"
+      ]
+    },
+    {
+      "id": "i_r47",
+      "label": "R47阻值",
+      "value": 120,
+      "unit": "ohm",
+      "kind": "material_fact",
+      "evidence_refs": [
+        "e_netlist"
+      ]
+    },
+    {
+      "id": "i_r46",
+      "label": "R46阻值",
+      "value": 120,
+      "unit": "ohm",
+      "kind": "material_fact",
+      "evidence_refs": [
+        "e_netlist"
+      ]
+    },
+    {
+      "id": "i_rated",
+      "label": "R4额定功率",
+      "value": 0.1,
+      "unit": "W",
+      "kind": "material_fact",
+      "evidence_refs": [
+        "e_workbench"
+      ]
+    },
+    {
+      "id": "i_ratio",
+      "label": "功率降额比例",
+      "value": 0.5,
+      "unit": "1",
+      "kind": "material_fact",
+      "evidence_refs": [
+        "e_rule"
+      ]
+    },
+    {
+      "id": "i_supply",
+      "label": "供电标称电压",
+      "value": 24,
+      "unit": "V",
+      "kind": "material_fact",
+      "evidence_refs": [
+        "e_task"
+      ]
+    },
+    {
+      "id": "i_vf",
+      "label": "正向压降工程模型",
+      "value": 0.7,
+      "unit": "V",
+      "kind": "model_parameter",
+      "evidence_refs": [
+        "e_vf"
+      ]
+    },
+    {
+      "id": "i_vz",
+      "label": "稳压标称模型",
+      "value": 11,
+      "unit": "V",
+      "kind": "model_parameter",
+      "evidence_refs": [
+        "e_zener"
+      ]
+    },
+    {
+      "id": "i_interface_low",
+      "label": "接口低端候选电位",
+      "value": 0,
+      "unit": "V",
+      "kind": "model_parameter",
+      "evidence_refs": [
+        "e_task",
+        "e_analysis"
+      ]
+    },
+    {
+      "id": "i_q4_low",
+      "label": "Q4下拉候选电位",
+      "value": 0.3,
+      "unit": "V",
+      "kind": "model_parameter",
+      "evidence_refs": [
+        "e_q4",
+        "e_analysis"
+      ]
+    }
+  ],
+  "premises": [
+    {
+      "id": "p_series",
+      "text": "四只120Ω串阻中点无分流，串联总阻值480Ω。",
+      "status": "supported",
+      "evidence_refs": [
+        "e_netlist",
+        "e_pdf"
+      ]
+    },
+    {
+      "id": "p_vf",
+      "text": "本次数值使用0.7V正向工程模型，不作为全温保证。",
+      "status": "model_assumption",
+      "evidence_refs": [
+        "e_vf"
+      ]
+    },
+    {
+      "id": "p_external",
+      "text": "主候选要求接口持续维持0V并吸收约48.54mA，外部能力待证。",
+      "status": "unresolved",
+      "evidence_refs": [
+        "e_task",
+        "e_analysis"
+      ]
+    },
+    {
+      "id": "p_internal",
+      "text": "较轻边界采用11V稳压标称模型并保留板内接地负载；撤去额外下拉仅用于放宽比较，非宣称范围外计算点实际可达。",
+      "status": "model_assumption",
+      "evidence_refs": [
+        "e_netlist",
+        "e_zener",
+        "e_analysis"
+      ]
+    },
+    {
+      "id": "p_q4",
+      "text": "Q4候选要求在实际基流与持续控制下把SPDL拉到0.3V，尚未证实。",
+      "status": "unresolved",
+      "evidence_refs": [
+        "e_q4",
+        "e_analysis"
+      ]
+    }
+  ],
+  "reasoning_steps": [
+    "R4 与其余串联电阻共享链电流，D8、D9 分别接入后级并联支路，不能叠加为串联压降。",
+    "SPDL 被外部拉低或 Q4 导通时会压低馈电节点，使 R4 的跨压和耗散增加，比较时需保持器件状态相容。",
+    "D10 钳位和后级负载共同决定 R4 的较轻参考边界，其覆盖论证与外部吸流候选的成立条件分开核对。"
+  ],
+  "scenarios": [
+    {
+      "id": "s_internal_boundary",
+      "title": "板内较轻模型边界",
+      "kind": "model_boundary",
+      "applicability": {
+        "status": "supported",
+        "reason": "沿用当前标称模型边界及覆盖论证；不是将范围外放宽点冒充可达稳态。",
+        "evidence_refs": [
+          "e_analysis",
+          "e_netlist"
+        ]
+      },
+      "premise_refs": [
+        "p_series",
+        "p_vf",
+        "p_internal"
+      ],
+      "metrics": [
+        {
+          "key": "current",
+          "value": 0.025625,
+          "unit": "A",
+          "nature": "nominal_model",
+          "calculation_ref": "c_internal_current"
+        },
+        {
+          "key": "voltage_span",
+          "value": 3.075,
+          "unit": "V",
+          "nature": "nominal_model",
+          "calculation_ref": "c_internal_span"
+        },
+        {
+          "key": "power",
+          "value": 0.078796875,
+          "unit": "W",
+          "nature": "nominal_model",
+          "calculation_ref": "c_internal_power"
+        }
+      ],
+      "calculations": [
+        {
+          "id": "c_internal_total",
+          "label": "串联总阻值",
+          "expression": "120Ω + 120Ω + 120Ω + 120Ω = 480Ω",
+          "value": 480,
+          "unit": "ohm",
+          "input_refs": [
+            "i_r4",
+            "i_r52",
+            "i_r47",
+            "i_r46"
+          ],
+          "step_refs": [],
+          "evidence_refs": [
+            "e_netlist"
+          ]
+        },
+        {
+          "id": "c_internal_feed",
+          "label": "串阻末端模型电位",
+          "expression": "DS_ORI ≈ 11V；N_DS_FEED ≈ 11V + 0.7V = 11.7V",
+          "value": 11.7,
+          "unit": "V",
+          "input_refs": [
+            "i_vz",
+            "i_vf"
+          ],
+          "step_refs": [],
+          "evidence_refs": [
+            "e_analysis",
+            "e_vf"
+          ]
+        },
+        {
+          "id": "c_internal_current",
+          "label": "R4电流",
+          "expression": "(24V − 11.7V) / 480Ω = 25.625000mA",
+          "value": 0.025625,
+          "unit": "A",
+          "input_refs": [
+            "i_supply"
+          ],
+          "step_refs": [
+            "c_internal_total",
+            "c_internal_feed"
+          ],
+          "evidence_refs": [
+            "e_analysis"
+          ]
+        },
+        {
+          "id": "c_internal_span",
+          "label": "R4两端电压差",
+          "expression": "V(R4) 两端电压差 = 25.625000mA × 120Ω = 3.075V",
+          "value": 3.075,
+          "unit": "V",
+          "input_refs": [
+            "i_r4"
+          ],
+          "step_refs": [
+            "c_internal_current"
+          ],
+          "evidence_refs": [
+            "e_analysis"
+          ]
+        },
+        {
+          "id": "c_internal_power",
+          "label": "R4耗散功率",
+          "expression": "(25.625000mA)² × 120Ω = 0.078796875000W",
+          "value": 0.078796875,
+          "unit": "W",
+          "input_refs": [
+            "i_r4"
+          ],
+          "step_refs": [
+            "c_internal_current"
+          ],
+          "evidence_refs": [
+            "e_analysis"
+          ]
+        }
+      ],
+      "comparison_note": "不是最坏候选；其用途是提供独立正常设计超限依据。",
+      "route": null,
+      "route_summary": "板内较轻模型边界。"
+    },
+    {
+      "id": "s_interface_low",
+      "title": "接口持续维持0V的条件极值候选",
+      "kind": "operating_case",
+      "applicability": {
+        "status": "conditional",
+        "reason": "接口电压端点已知，持续吸流能力未证实。",
+        "evidence_refs": [
+          "e_analysis",
+          "e_netlist"
+        ]
+      },
+      "premise_refs": [
+        "p_series",
+        "p_vf",
+        "p_external"
+      ],
+      "metrics": [
+        {
+          "key": "current",
+          "value": 0.04854166666666667,
+          "unit": "A",
+          "nature": "nominal_model",
+          "calculation_ref": "c_interface_current"
+        },
+        {
+          "key": "voltage_span",
+          "value": 5.825,
+          "unit": "V",
+          "nature": "nominal_model",
+          "calculation_ref": "c_interface_span"
+        },
+        {
+          "key": "power",
+          "value": 0.2827552083333334,
+          "unit": "W",
+          "nature": "nominal_model",
+          "calculation_ref": "c_interface_power"
+        }
+      ],
+      "calculations": [
+        {
+          "id": "c_interface_total",
+          "label": "串联总阻值",
+          "expression": "120Ω + 120Ω + 120Ω + 120Ω = 480Ω",
+          "value": 480,
+          "unit": "ohm",
+          "input_refs": [
+            "i_r4",
+            "i_r52",
+            "i_r47",
+            "i_r46"
+          ],
+          "step_refs": [],
+          "evidence_refs": [
+            "e_netlist"
+          ]
+        },
+        {
+          "id": "c_interface_feed",
+          "label": "串阻末端模型电位",
+          "expression": "N_DS_FEED ≈ SPDL + 0.7V = 0.7V",
+          "value": 0.7,
+          "unit": "V",
+          "input_refs": [
+            "i_interface_low",
+            "i_vf"
+          ],
+          "step_refs": [],
+          "evidence_refs": [
+            "e_analysis",
+            "e_vf"
+          ]
+        },
+        {
+          "id": "c_interface_current",
+          "label": "R4电流",
+          "expression": "(24V − 0.7V) / 480Ω = 48.541667mA",
+          "value": 0.04854166666666667,
+          "unit": "A",
+          "input_refs": [
+            "i_supply"
+          ],
+          "step_refs": [
+            "c_interface_total",
+            "c_interface_feed"
+          ],
+          "evidence_refs": [
+            "e_analysis"
+          ]
+        },
+        {
+          "id": "c_interface_span",
+          "label": "R4两端电压差",
+          "expression": "V(R4) 两端电压差 = 48.541667mA × 120Ω = 5.825V",
+          "value": 5.825,
+          "unit": "V",
+          "input_refs": [
+            "i_r4"
+          ],
+          "step_refs": [
+            "c_interface_current"
+          ],
+          "evidence_refs": [
+            "e_analysis"
+          ]
+        },
+        {
+          "id": "c_interface_power",
+          "label": "R4耗散功率",
+          "expression": "(48.541667mA)² × 120Ω = 0.282755208333W",
+          "value": 0.2827552083333334,
+          "unit": "W",
+          "input_refs": [
+            "i_r4"
+          ],
+          "step_refs": [
+            "c_interface_current"
+          ],
+          "evidence_refs": [
+            "e_analysis"
+          ]
+        }
+      ],
+      "comparison_note": "固定24V、480Ω和0.7V模型时，SPDL越低，N_DS_FEED越低、R4耗散越大；0V端点0.282755W高于Q4的0.3V候选0.275521W。",
+      "route": {
+        "pages": [
+          {
+            "pdf_page": 9,
+            "branches": [
+              {
+                "id": "b_0",
+                "path": [
+                  "+24V",
+                  "R4.2",
+                  "R4.1",
+                  "N_R52_R4",
+                  "R52.2",
+                  "R52.1",
+                  "N_R47_R52",
+                  "R47.2",
+                  "R47.1",
+                  "N_R46_R47",
+                  "R46.1",
+                  "R46.2",
+                  "N_DS_FEED"
+                ],
+                "direction_status": "known",
+                "current_ref": "c_interface_current",
+                "note": "串联总电流。"
+              },
+              {
+                "id": "b_1",
+                "path": [
+                  "N_DS_FEED",
+                  "D8.3",
+                  "D8.2",
+                  "SPDL"
+                ],
+                "direction_status": "known",
+                "current_ref": null,
+                "note": "同向并联分支，分流比例未知，不猜均分。"
+              },
+              {
+                "id": "b_2",
+                "path": [
+                  "N_DS_FEED",
+                  "D9.1",
+                  "D9.3",
+                  "SPDL"
+                ],
+                "direction_status": "known",
+                "current_ref": null,
+                "note": "同向并联分支，分流比例未知，不猜均分。"
+              }
+            ],
+            "through_body": [
+              {
+                "ref": "R4",
+                "from": "2",
+                "to": "1",
+                "note": "串联电流48.542mA。"
+              },
+              {
+                "ref": "R52",
+                "from": "2",
+                "to": "1",
+                "note": "串联120Ω。"
+              },
+              {
+                "ref": "R47",
+                "from": "2",
+                "to": "1",
+                "note": "串联120Ω。"
+              },
+              {
+                "ref": "R46",
+                "from": "1",
+                "to": "2",
+                "note": "串联120Ω。"
+              },
+              {
+                "ref": "D8",
+                "from": "3",
+                "to": "2",
+                "note": "共阳封装中向SPDL的一路正向导通，与D9分流，比例未定。"
+              },
+              {
+                "ref": "D9",
+                "from": "1",
+                "to": "3",
+                "note": "阳极至共阴脚正向导通；另一阳极脚2的接地钳位截止。"
+              }
+            ],
+            "markers": [
+              {
+                "on": "+24V",
+                "kind": "voltage",
+                "label": "供电",
+                "value_ref": "i_supply",
+                "note": ""
+              },
+              {
+                "on": "R4.1",
+                "kind": "span",
+                "label": "V(R4) 两端电压差",
+                "value_ref": "c_interface_span",
+                "note": ""
+              },
+              {
+                "on": "N_DS_FEED",
+                "kind": "voltage",
+                "label": "N_DS_FEED",
+                "value_ref": "c_interface_feed",
+                "note": ""
+              },
+              {
+                "on": "SPDL",
+                "kind": "voltage",
+                "label": "SPDL",
+                "value_ref": "i_interface_low",
+                "note": "外部持续吸流回路未定位，禁止补画外部回地线。"
+              },
+              {
+                "on": "Q4",
+                "kind": "note",
+                "label": "Q4关闭",
+                "value_ref": null,
+                "note": "主候选由外部吸流，控制线不高亮。"
+              },
+              {
+                "on": "D10",
+                "kind": "note",
+                "label": "D10退出稳压",
+                "value_ref": null,
+                "note": "此候选不高亮稳压与接地负载支路。"
+              }
+            ],
+            "notes": [
+              "24V标称供电、四只120Ω串联、接口持续维持0V、二极管0.7V工程模型。",
+              "主图仅展示条件排名最重候选；判否独立依据为板内正常模型0.078797W，不以此图证明接口实际能力。",
+              "同名SPDL仅表示逻辑连接，外部源、吸流器及回流未定位，不跨空白补画铜线；未导通支路保留原图但不高亮。"
+            ]
+          }
+        ]
+      },
+      "route_summary": "接口持续维持0V的条件极值候选。"
+    },
+    {
+      "id": "s_switch_pull_down",
+      "title": "Q4下拉到0.3V的条件候选",
+      "kind": "operating_case",
+      "applicability": {
+        "status": "conditional",
+        "reason": "下拉连接明确，基流、集电极电位及持续性未闭合。",
+        "evidence_refs": [
+          "e_analysis",
+          "e_netlist"
+        ]
+      },
+      "premise_refs": [
+        "p_series",
+        "p_vf",
+        "p_q4"
+      ],
+      "metrics": [
+        {
+          "key": "current",
+          "value": 0.04791666666666667,
+          "unit": "A",
+          "nature": "nominal_model",
+          "calculation_ref": "c_q4_current"
+        },
+        {
+          "key": "voltage_span",
+          "value": 5.75,
+          "unit": "V",
+          "nature": "nominal_model",
+          "calculation_ref": "c_q4_span"
+        },
+        {
+          "key": "power",
+          "value": 0.2755208333333334,
+          "unit": "W",
+          "nature": "nominal_model",
+          "calculation_ref": "c_q4_power"
+        }
+      ],
+      "calculations": [
+        {
+          "id": "c_q4_total",
+          "label": "串联总阻值",
+          "expression": "120Ω + 120Ω + 120Ω + 120Ω = 480Ω",
+          "value": 480,
+          "unit": "ohm",
+          "input_refs": [
+            "i_r4",
+            "i_r52",
+            "i_r47",
+            "i_r46"
+          ],
+          "step_refs": [],
+          "evidence_refs": [
+            "e_netlist"
+          ]
+        },
+        {
+          "id": "c_q4_feed",
+          "label": "串阻末端模型电位",
+          "expression": "SPDL ≈ 0.3V；N_DS_FEED ≈ 0.3V + 0.7V = 1.0V",
+          "value": 1.0,
+          "unit": "V",
+          "input_refs": [
+            "i_q4_low",
+            "i_vf"
+          ],
+          "step_refs": [],
+          "evidence_refs": [
+            "e_analysis",
+            "e_vf"
+          ]
+        },
+        {
+          "id": "c_q4_current",
+          "label": "R4电流",
+          "expression": "(24V − 1V) / 480Ω = 47.916667mA",
+          "value": 0.04791666666666667,
+          "unit": "A",
+          "input_refs": [
+            "i_supply"
+          ],
+          "step_refs": [
+            "c_q4_total",
+            "c_q4_feed"
+          ],
+          "evidence_refs": [
+            "e_analysis"
+          ]
+        },
+        {
+          "id": "c_q4_span",
+          "label": "R4两端电压差",
+          "expression": "V(R4) 两端电压差 = 47.916667mA × 120Ω = 5.75V",
+          "value": 5.75,
+          "unit": "V",
+          "input_refs": [
+            "i_r4"
+          ],
+          "step_refs": [
+            "c_q4_current"
+          ],
+          "evidence_refs": [
+            "e_analysis"
+          ]
+        },
+        {
+          "id": "c_q4_power",
+          "label": "R4耗散功率",
+          "expression": "(47.916667mA)² × 120Ω = 0.275520833333W",
+          "value": 0.2755208333333334,
+          "unit": "W",
+          "input_refs": [
+            "i_r4"
+          ],
+          "step_refs": [
+            "c_q4_current"
+          ],
+          "evidence_refs": [
+            "e_analysis"
+          ]
+        }
+      ],
+      "comparison_note": "相同24V、480Ω及0.7V模型下，SPDL=0.3V比接口0V高，故耗散0.275521W低于0.282755W；部分导通或较高集电极电位更轻，不能同时叠加外部理想10V与Q4理想0.3V。",
+      "route": null,
+      "route_summary": "Q4下拉到0.3V的条件候选。"
+    }
+  ],
+  "extreme": {
+    "primary_scenario_ref": "s_interface_low",
+    "primary_status": "conditional",
+    "global_value": null,
+    "ranking_complete": false,
+    "selection_reason": "固定24V、480Ω与0.7V模型，SPDL越低，串阻电流和R4功耗越大；0V候选高于0.3V下拉候选。",
+    "comparisons": [
+      {
+        "scenario_ref": "s_internal_boundary",
+        "role": "decision_boundary",
+        "reason": "0.078797W为较轻正常设计模型边界，支撑工程判否；并非已确认可达最坏点，故不填confirmed索引。"
+      },
+      {
+        "scenario_ref": "s_interface_low",
+        "role": "primary",
+        "reason": "固定模型中接口0V给0.282755W，为条件候选最高；10V同路径为0.092130W，中间电位按单调性不更重。"
+      },
+      {
+        "scenario_ref": "s_switch_pull_down",
+        "role": "comparison",
+        "reason": "Q4下拉0.3V候选0.275521W次之；若Q4实际更接近0V，可逼近接口0V候选，但驱动与持续性未闭合。"
+      }
+    ]
+  },
+  "decision": {
+    "verdict": "fail",
+    "explanation": "当前适用模型边界已超限，最大功耗不符合要求；主图展示更重的条件候选，不把候选值当作已确认全局最大值。",
+    "basis": {
+      "kind": "supported_model_boundary",
+      "scenario_refs": [
+        "s_internal_boundary"
+      ],
+      "metric_key": "power",
+      "evidence_refs": [
+        "e_analysis",
+        "e_netlist",
+        "e_workbench",
+        "e_zener",
+        "e_vf"
+      ],
+      "applicability": "电源、器件型号及板内钳位功能均有材料来源；该较轻模型的负载分流和稳压剩余电流已核对，正常设计核算不依赖任意外部强制电位或未经证实的Q4饱和能力。数值为标称工程结果，不是全温实物保证下界。",
+      "coverage_argument": "正常直流模型较轻边界已超过限额，相容的接口吸流或Q4下拉增强只使N_DS_FEED降低、R4耗散增加。满足限额需N_DS_FEED至少14.202V，相当于0.7V模型下DS_ORI达到13.502V；现有材料没有支持这种反向正常情形。未知更重候选和全温精度不撤销该独立依据；不外推为任意高速周期下界。"
+    }
+  },
+  "gaps": [
+    {
+      "id": "g_0",
+      "issue": "CN1吸流能力及源阻抗缺失",
+      "effect": "extreme_only",
+      "scenario_refs": [
+        "s_interface_low"
+      ],
+      "evidence_refs": [
+        "e_analysis"
+      ],
+      "countercase": null,
+      "reason": "决定0V条件候选能否达到，不改变较轻板内正常模型已超限。"
+    },
+    {
+      "id": "g_1",
+      "issue": "U6实际输出、Q4高电流工作区及占空比缺失",
+      "effect": "extreme_only",
+      "scenario_refs": [
+        "s_switch_pull_down"
+      ],
+      "evidence_refs": [
+        "e_analysis"
+      ],
+      "countercase": null,
+      "reason": "影响下拉候选与精确最大值；正常直流下增强吸流只会加重，共同模型边界不依赖指定控制电平永远保持。"
+    },
+    {
+      "id": "g_2",
+      "issue": "D10/D8/D9缓存厂商与BOM不一致及非测试点曲线缺失",
+      "effect": "precision_only",
+      "scenario_refs": [
+        "s_internal_boundary",
+        "s_interface_low",
+        "s_switch_pull_down"
+      ],
+      "evidence_refs": [
+        "e_analysis"
+      ],
+      "countercase": null,
+      "reason": "同型号标称功能可用于正常设计核算，不能视为BOM全温保证；现有材料不支持正常稳压升至13.5V或供电二极管压降约3.2V来恢复降额。22Ω仅为测试点动态阻抗，局部线性试算未作全域保证。"
+    },
+    {
+      "id": "g_3",
+      "issue": "轨压容差与环境温度未给",
+      "effect": "precision_only",
+      "scenario_refs": [
+        "s_internal_boundary",
+        "s_interface_low",
+        "s_switch_pull_down"
+      ],
+      "evidence_refs": [
+        "e_analysis"
+      ],
+      "countercase": null,
+      "reason": "按任务书24V及工作台0.1W核算，不假设电源塌陷消除超限；高温降额只使限额更严，保证范围需补材料。"
+    },
+    {
+      "id": "g_4",
+      "issue": "C18容量及启动、周期转换波形缺失",
+      "effect": "extreme_only",
+      "scenario_refs": [
+        "s_internal_boundary",
+        "s_interface_low",
+        "s_switch_pull_down"
+      ],
+      "evidence_refs": [
+        "e_analysis"
+      ],
+      "countercase": null,
+      "reason": "影响完整周期耗散和动态最大值，不能把准静态边界外推为高速瞬时下界；健康电容不改变直流平衡，亦无材料限定仅允许高速周期而禁止直流工作，因此不撤销独立正常设计超限。"
+    }
+  ],
+  "display": {
+    "input_refs": [
+      "i_r4",
+      "i_rated",
+      "i_supply",
+      "i_vf"
+    ],
+    "premise_refs": [
+      "p_series",
+      "p_vf",
+      "p_external"
+    ]
+  },
+  "evidence": [
+    {
+      "id": "e_rule",
+      "kind": "rule",
+      "path": "agent_review/prompts/judge/P11-A01.md",
+      "locator": "判据",
+      "claim": "最大稳态耗散不超过额定功率的50%。",
+      "qualifiers": [
+        "正式接入时以不可变规则配置取代提示词路径作为规则源。"
+      ]
+    },
+    {
+      "id": "e_workbench",
+      "kind": "facts",
+      "path": "review_out/agent_jobs/P11-A01/R4.context.json",
+      "locator": "identity / mpn_excerpt.params",
+      "claim": "R4阻值120Ω，厚声0603WAF1200T5E，额定0.1W、70℃。",
+      "qualifiers": []
+    },
+    {
+      "id": "e_task",
+      "kind": "task",
+      "path": "review_out/design_task.json",
+      "locator": "rails / interfaces",
+      "claim": "24V标称供电，SPDL为0～10V输入，未给外部持续吸流能力。",
+      "qualifiers": [
+        "输入合法电压范围不证明外部吸流钉位能力。"
+      ]
+    },
+    {
+      "id": "e_netlist",
+      "kind": "netlist",
+      "path": "review_out/board_kg.json",
+      "locator": "components / nets：R4、R52、R47、R46、D8、D9、D10、Q4、U5及相关负载",
+      "claim": "供电串阻和各并联支路连接、器件脚网及120Ω串阻值。",
+      "qualifiers": []
+    },
+    {
+      "id": "e_pdf",
+      "kind": "schematic",
+      "path": "review_out/sch/schematic.pdf",
+      "locator": "第9、4、5、8页",
+      "claim": "串阻、钳位、接口与Q4通路，以及跨页接地负载和控制来源。",
+      "qualifiers": []
+    },
+    {
+      "id": "e_zener",
+      "kind": "datasheet",
+      "path": "cache/mpn/1N5241B/datasheet.pdf",
+      "locator": "第2页",
+      "claim": "同型号11V标称及测试条件。",
+      "qualifiers": [
+        "缓存onsemi与BOM先科不同，仅支撑现行标称模型，不作为BOM厂家全温保证。"
+      ]
+    },
+    {
+      "id": "e_vf",
+      "kind": "facts",
+      "path": "review_out/board_kg.json",
+      "locator": "components.D8.pintable.params.vf_model_v / components.D9.pintable.params.vf_model_v",
+      "claim": "现行0.7V二极管正向工程模型。",
+      "qualifiers": [
+        "不作为所有电流与温度下的保证压降。"
+      ]
+    },
+    {
+      "id": "e_q4",
+      "kind": "datasheet",
+      "path": "cache/mpn/2SC1623_L6_/datasheet.pdf",
+      "locator": "第1页",
+      "claim": "Q4的0.3V测试有集电极与基极电流条件。",
+      "qualifiers": [
+        "不直接保证本板约48mA工作点和实际基流下达到0.3V。"
+      ]
+    },
+    {
+      "id": "e_analysis",
+      "kind": "analysis",
+      "path": "review_out/agent_jobs/P11-A01/R4.analysis.md",
+      "locator": "正常设计模型、平衡及共同边界 / 最坏通路比较 / 第二轮自检",
+      "claim": "当前三项核算、较轻模型边界适用论证、支路平衡与未解边界。",
+      "qualifiers": [
+        "引用分析不替代原始材料，边界覆盖仍需工程复核。"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "text": "按实际覆盖工况调整串阻功率规格、阻值或灌拉方案，保持功能要求并复核降额；不能只按较轻边界给出最终额定选型。",
+      "scenario_refs": [
+        "s_internal_boundary",
+        "s_interface_low",
+        "s_switch_pull_down"
+      ],
+      "evidence_refs": [
+        "e_analysis",
+        "e_rule"
+      ]
+    },
+    {
+      "text": "补充接口持续吸流能力、Q4实际基流与控制波形、BOM厂家二极管曲线，闭合最重候选及最大值。",
+      "scenario_refs": [
+        "s_interface_low",
+        "s_switch_pull_down"
+      ],
+      "evidence_refs": [
+        "e_task",
+        "e_q4",
+        "e_analysis"
+      ]
+    }
+  ]
+}

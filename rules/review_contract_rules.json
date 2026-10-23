@@ -1,0 +1,11 @@
+{
+  "P11-A01": {
+    "title": "最大稳态耗散不超过额定功率的50%",
+    "metric_key": "power",
+    "unit": "W",
+    "aggregation": "maximum",
+    "operator": "le",
+    "rated_key": "p_rated_w",
+    "derating_ratio": 0.5
+  }
+}

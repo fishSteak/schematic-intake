@@ -1,0 +1,310 @@
+{
+  "version": 1,
+  "run_key": "selection-delivery-20261022-003719",
+  "rule_ids": [
+    "P11-A01",
+    "P11-A02",
+    "P11-A03",
+    "P11-A04",
+    "P11-A05",
+    "P11-A06",
+    "P11-A07",
+    "P12-A01",
+    "P12-A02",
+    "P12-A03",
+    "P12-A04",
+    "P12-A05",
+    "P12-A06",
+    "P12-A07",
+    "P12-A08",
+    "P21-A01"
+  ],
+  "by_rule": {
+    "P11-A01": [
+      "R38",
+      "R4",
+      "R16",
+      "R30",
+      "R10",
+      "R23",
+      "R39"
+    ],
+    "P11-A02": [
+      "R4",
+      "R16",
+      "R30",
+      "R38",
+      "R23"
+    ],
+    "P11-A03": [
+      "C17",
+      "C9",
+      "C5",
+      "C2",
+      "C4",
+      "C11",
+      "C18"
+    ],
+    "P11-A04": [
+      "C1",
+      "C2",
+      "C4",
+      "C11",
+      "C18"
+    ],
+    "P11-A05": [
+      "C1",
+      "C7",
+      "C11",
+      "C15",
+      "C18"
+    ],
+    "P11-A06": [],
+    "P11-A07": [],
+    "P12-A01": [
+      "U1",
+      "U2",
+      "U3",
+      "U4",
+      "U5",
+      "U6",
+      "U7"
+    ],
+    "P12-A02": [
+      "L1",
+      "SIG_ORI",
+      "DS_ORI"
+    ],
+    "P12-A03": [
+      "U1",
+      "U2",
+      "U5",
+      "U7",
+      "Q4",
+      "D10",
+      "LED1"
+    ],
+    "P12-A04": [],
+    "P12-A05": [],
+    "P12-A06": [],
+    "P12-A07": [
+      "CN1",
+      "CN2",
+      "H1"
+    ],
+    "P12-A08": [
+      "CN1",
+      "CN2",
+      "H1"
+    ],
+    "P21-A01": [
+      "L1",
+      "SIG_ORI",
+      "DS_ORI"
+    ]
+  },
+  "raw_material_hash": "8aa5cd0d1e5ab8cff132a92de09f6af8b0bc53133484195dbfa738a689ef031d",
+  "raw_source_hashes": {
+    "material_inputs\\bom.csv": "3fd00a21559a0bffc4b409a164ebdffdfe5f6f0c9411fd2fc88b4342f1d20495",
+    "material_inputs\\design_task_book.yaml": "bea4543cee8fe432335bd27d9d3e27b4a62036aadafc50d9b48fb7d950a03985",
+    "material_inputs\\design_task_book_docx.docx": "7fe4fd082b7bb003d419bf7d3bca59fa14a7cb43720d41357e92ba056b513009",
+    "material_inputs\\drc.txt": "26d48287142cccfe761e50648df4bb981b8c5b356c1bd61e1d3b9b763148f1df",
+    "material_inputs\\eprj2.eprj2": "694ba50583a0146748cdc6f7b3f14f59c2d3c1d03ebc4effd880682c91f88b5c",
+    "material_inputs\\netlist.tel": "be1117503cf25235a81b3d3b81d973c01bc4d07f1050ca0b553682a67dcb4731",
+    "material_inputs\\operating_conditions.yaml": "a4edd3ee50a31deda758ac8c46ad8b48109f6a880ddac9cbfcab0ff7403242b9",
+    "material_inputs\\rules.json": "82b677f9608f1d3dda9b9c7f63cf4c4d1bd48f0215dab637b1f7d7bcb39261f0",
+    "material_inputs\\schematic_pdf.pdf": "dae32d790a379156e89b04292aa7b49dab47d7dde2de415672454806b3a7b8b2"
+  },
+  "independent_documents": {
+    "P11-A01::R38": [
+      "review_out/independent_reviews/R38-P11-A01.md",
+      "review_out/independent_reviews/C9-C11-bound-audit.md",
+      "review_out/independent_reviews/R38-clamp-peak-audit.md",
+      "review_out/independent_reviews/sensor-input-bound-audit.md",
+      "review_out/independent_reviews/D9-source-audit.md",
+      "review_out/independent_reviews/sources/ANBON-MMBD4148CC-official.pdf",
+      "review_out/independent_reviews/sources/c11_impulse_area.py",
+      "review_out/independent_reviews/sources/C11-area-results.json",
+      "review_out/independent_reviews/sources/TI-LM392-N.pdf",
+      "review_out/independent_reviews/R38-fullport-energy-audit.md",
+      "review_out/independent_reviews/R38-decision-closure.md"
+    ],
+    "P11-A03::C17": [
+      "review_out/independent_reviews/C17-P11-A03.md",
+      "review_out/independent_reviews/sources/YONGYUTAI-MMBD4148-family.pdf",
+      "review_out/independent_reviews/sensor-input-bound-audit.md",
+      "review_out/independent_reviews/D9-source-audit.md",
+      "review_out/independent_reviews/sources/ANBON-MMBD4148CC-official.pdf"
+    ],
+    "P12-A02::L1": [
+      "review_out/independent_reviews/L1-level-compatibility.md",
+      "review_out/independent_reviews/sources/TI-LM392-N.pdf"
+    ],
+    "P21-A01::L1": [
+      "review_out/independent_reviews/L1-level-compatibility.md",
+      "review_out/independent_reviews/sources/TI-LM392-N.pdf"
+    ],
+    "P11-A03::C9": [
+      "review_out/independent_reviews/C9-P11-A03.md",
+      "review_out/independent_reviews/sources/YONGYUTAI-MMBD4148-family.pdf",
+      "review_out/independent_reviews/C9-C11-bound-audit.md",
+      "review_out/independent_reviews/sensor-input-bound-audit.md",
+      "review_out/independent_reviews/D9-source-audit.md",
+      "review_out/independent_reviews/sources/ANBON-MMBD4148CC-official.pdf",
+      "review_out/independent_reviews/sources/c11_impulse_area.py",
+      "review_out/independent_reviews/sources/C11-area-results.json",
+      "review_out/independent_reviews/sources/TI-LM392-N.pdf",
+      "review_out/independent_reviews/C9-decision-scope-audit.md"
+    ],
+    "P11-A03::C5": [
+      "review_out/independent_reviews/C5-P11-A03.md",
+      "review_out/independent_reviews/sources/YONGYUTAI-MMBD4148-family.pdf",
+      "review_out/independent_reviews/sensor-input-bound-audit.md",
+      "review_out/independent_reviews/D9-source-audit.md",
+      "review_out/independent_reviews/sources/ANBON-MMBD4148CC-official.pdf"
+    ],
+    "P11-A01::R4": [
+      "review_out/independent_reviews/D9-source-audit.md",
+      "review_out/independent_reviews/sources/ANBON-MMBD4148CC-official.pdf",
+      "review_out/independent_reviews/sources/YONGYUTAI-MMBD4148-family.pdf",
+      "review_out/independent_reviews/sensor-input-bound-audit.md"
+    ],
+    "P11-A01::R10": [
+      "review_out/independent_reviews/R10-P11-A01.md",
+      "review_out/independent_reviews/sources/Doeshare-S9015-official.pdf",
+      "review_out/independent_reviews/R10-D4-pin-source-audit.md",
+      "review_out/independent_reviews/sources/D4-eprj-pin-mapping.json",
+      "review_out/independent_reviews/R10-decision-closure.md"
+    ],
+    "P11-A01::R39": [
+      "review_out/independent_reviews/sensor-input-bound-audit.md",
+      "review_out/independent_reviews/D9-source-audit.md",
+      "review_out/independent_reviews/sources/ANBON-MMBD4148CC-official.pdf",
+      "review_out/independent_reviews/R39-decision-closure.md",
+      "review_out/independent_reviews/sources/r39_incremental_budget.py",
+      "review_out/independent_reviews/sources/R39-incremental-budget.json"
+    ],
+    "P11-A03::C11": [
+      "review_out/independent_reviews/C9-C11-bound-audit.md",
+      "cache/mpn/CSA0603C0G2R2C500JT/datasheet_hre.pdf",
+      "review_out/independent_reviews/sensor-input-bound-audit.md",
+      "review_out/independent_reviews/D9-source-audit.md",
+      "review_out/independent_reviews/sources/ANBON-MMBD4148CC-official.pdf",
+      "review_out/independent_reviews/sources/c11_impulse_area.py",
+      "review_out/independent_reviews/sources/C11-area-results.json",
+      "review_out/independent_reviews/sources/TI-LM392-N.pdf"
+    ],
+    "P11-A03::C18": [
+      "review_out/independent_reviews/sensor-input-bound-audit.md",
+      "review_out/independent_reviews/D9-source-audit.md",
+      "review_out/independent_reviews/sources/ANBON-MMBD4148CC-official.pdf",
+      "review_out/independent_reviews/sources/YONGYUTAI-MMBD4148-family.pdf"
+    ],
+    "P12-A01::U1": [
+      "review_out/independent_reviews/ic-supply-scope-audit.md",
+      "review_out/independent_reviews/ic-supply-source-audit.md"
+    ],
+    "P12-A01::U3": [
+      "review_out/independent_reviews/ic-supply-scope-audit.md",
+      "review_out/independent_reviews/ic-supply-source-audit.md"
+    ],
+    "P12-A01::U4": [
+      "review_out/independent_reviews/ic-supply-scope-audit.md",
+      "review_out/independent_reviews/ic-supply-source-audit.md"
+    ],
+    "P11-A05::C11": [
+      "review_out/independent_reviews/capacitor-dielectric-audit.md",
+      "cache/mpn/CSA0603C0G2R2C500JT/datasheet_hre.pdf",
+      "review_out/page_evidence/P11-A05/C11/datasheet_hre-51e0cdaa62b7-p4.png",
+      "review_out/page_evidence/P11-A05/C11/datasheet_hre-51e0cdaa62b7-p5.png",
+      "review_out/page_evidence/P11-A05/C11/datasheet_hre-51e0cdaa62b7-p7.png",
+      "review_out/page_evidence/P11-A05/C11/datasheet_hre-51e0cdaa62b7-pages.json"
+    ],
+    "P11-A05::C15": [
+      "review_out/independent_reviews/capacitor-dielectric-audit.md",
+      "review_out/research_assets/P11-A05/C15/KyoceraAVX_SurfaceMount_ordercode_2026-10-22.pdf"
+    ],
+    "P12-A03::U1": [
+      "review_out/independent_reviews/U1-temperature-thermal-audit.md",
+      "review_out/independent_reviews/temperature-boundary-audit.md",
+      "review_out/independent_reviews/sources/TI-LM392-N.pdf",
+      "review_out/independent_reviews/sources/U1-table18-page12.png",
+      "review_out/independent_reviews/U1-U6-periodic-load-audit.md"
+    ],
+    "P12-A03::Q4": [
+      "review_out/independent_reviews/Q4-D10-temperature-audit.md",
+      "cache/mpn/2SC1623_L6_/datasheet.pdf",
+      "review_out/independent_reviews/sources/Q4-temperature-page1.png",
+      "review_out/independent_reviews/sources/Q4-temperature-page2.png"
+    ],
+    "P12-A03::D10": [
+      "review_out/independent_reviews/Q4-D10-temperature-audit.md",
+      "review_out/independent_reviews/sources/ST-1N5241B-C118660.pdf",
+      "review_out/independent_reviews/sources/D10-temperature-page1.png",
+      "review_out/independent_reviews/sources/D10-temperature-page2.png",
+      "review_out/independent_reviews/sources/D10-temperature-page3.png"
+    ],
+    "P11-A05::C1": [
+      "review_out/independent_reviews/capacitor-dielectric-audit.md"
+    ],
+    "P11-A05::C7": [
+      "review_out/independent_reviews/capacitor-dielectric-audit.md"
+    ],
+    "P11-A05::C18": [
+      "review_out/independent_reviews/capacitor-dielectric-audit.md"
+    ]
+  },
+  "independent_primary_sources": [
+    "review_out/independent_reviews/sources/ST-1N5241B-C118660.pdf"
+  ],
+  "priority_pairs": [
+    "P11-A01::R38",
+    "P11-A03::C17",
+    "P12-A02::L1",
+    "P21-A01::L1",
+    "P11-A03::C9",
+    "P11-A03::C5"
+  ],
+  "no_object_audits": {
+    "P11-A06": {
+      "summary": "原始BOM与网表实体无电感/扼流圈等磁性器件；L1～L5是状态信号网络名，故无电感饱和电流检查对象。",
+      "analysis": "review_out/independent_reviews/no-object-audit.md",
+      "sources": [
+        "material_inputs/netlist.tel",
+        "material_inputs/bom.csv"
+      ]
+    },
+    "P11-A07": {
+      "summary": "整板没有装配电感，L1～L5不属于元件位号，故无电感温升检查对象。",
+      "analysis": "review_out/independent_reviews/no-object-audit.md",
+      "sources": [
+        "material_inputs/netlist.tel",
+        "material_inputs/bom.csv"
+      ]
+    },
+    "P12-A04": {
+      "summary": "Q1/Q2/Q4为Hottech 2SC1623 NPN BJT、Q3为Doeshare S9015 PNP BJT，均非MOSFET，故无Vds降额对象。",
+      "analysis": "review_out/independent_reviews/no-object-audit.md",
+      "sources": [
+        "material_inputs/netlist.tel",
+        "material_inputs/bom.csv"
+      ]
+    },
+    "P12-A05": {
+      "summary": "全部Q器件均为基极/集电极/发射极双极型晶体管，没有MOSFET漏极电流Ids检查对象。",
+      "analysis": "review_out/independent_reviews/no-object-audit.md",
+      "sources": [
+        "material_inputs/netlist.tel",
+        "material_inputs/bom.csv"
+      ]
+    },
+    "P12-A06": {
+      "summary": "D2～D9是普通开关二极管，D10为先科1N5241B稳压二极管而非TVS，故无TVS的VRWM/浪涌钳位兼容检查对象。",
+      "analysis": "review_out/independent_reviews/no-object-audit.md",
+      "sources": [
+        "material_inputs/netlist.tel",
+        "material_inputs/bom.csv"
+      ]
+    }
+  }
+}

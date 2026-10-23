@@ -1,0 +1,75 @@
+{
+  "version": "material-sources.v1",
+  "sources": [
+    {
+      "mpn": "1N5241B",
+      "manufacturer": "ST(先科)",
+      "path": "review_out/independent_reviews/sources/ST-1N5241B-C118660.pdf",
+      "source_url": "https://datasheet.lcsc.com/datasheet/pdf/9e8536a761704ad690e6331f4bcc4067.pdf",
+      "sha256": "31e7ca5738ce26b3cd9e7e2a3fd549798b4b3b093102d93face521bdf9ae35aa",
+      "verification_record": "review_out/independent_reviews/C17-P11-A03.md",
+      "verification_sha256": "39027edf85d946561c8683a27e6f1711ee3cefe5f95ea95e619387de6bc1797a",
+      "registered_at": "2026-10-21T17:45:54.095419+00:00"
+    },
+    {
+      "mpn": "LM392MX/NOPB",
+      "manufacturer": "TI(德州仪器)",
+      "path": "review_out/independent_reviews/sources/TI-LM392-N.pdf",
+      "source_url": "https://www.ti.com/lit/ds/symlink/lm392-n.pdf",
+      "sha256": "7d8f0540c280a14694a38929cbca54603d4a3230b807f844861538e6482eaf18",
+      "verification_record": "review_out/independent_reviews/L1-level-compatibility.md",
+      "verification_sha256": "e52de87f40dba71b5905dd651a46c1ceae4a7f76c64e955af342be6b73ac7acb",
+      "registered_at": "2026-10-21T17:45:54.107765+00:00"
+    },
+    {
+      "mpn": "MMBD4148CC",
+      "manufacturer": "AnBon(安邦)",
+      "path": "review_out/independent_reviews/sources/ANBON-MMBD4148CC-official.pdf",
+      "source_url": "https://www.anbonsemi.com/web_files/jp/?func=datasheet&tb=product&file_id=138239&fs=MMBD4148CC.pdf",
+      "sha256": "abded07abb67e976684554e1272c74a18f7022b08d40489cae934593f70da3ec",
+      "verification_record": "review_out/independent_reviews/D9-source-audit.md",
+      "verification_sha256": "7210c5719984fb5c57dc23c0628044acdca5d097c128310e1d9edd4bb17900ba",
+      "registered_at": "2026-10-21T18:25:31.353345+00:00"
+    },
+    {
+      "mpn": "MMBD4148CA",
+      "manufacturer": "YONGYUTAI(永裕泰)",
+      "path": "review_out/independent_reviews/sources/YONGYUTAI-MMBD4148-family.pdf",
+      "source_url": "https://datasheet.lcsc.com/datasheet/pdf/90c1c4471d5e31fe93b1c1105474449d.pdf?productCode=C2904838",
+      "sha256": "05cebb62135768dc27b51c67805e2588e1917d629f7625349cb97b837cf68ff2",
+      "verification_record": "review_out/independent_reviews/C17-P11-A03.md",
+      "verification_sha256": "39027edf85d946561c8683a27e6f1711ee3cefe5f95ea95e619387de6bc1797a",
+      "registered_at": "2026-10-21T18:25:31.369783+00:00"
+    },
+    {
+      "mpn": "2SC1623（L6）",
+      "manufacturer": "Hottech(合科泰)",
+      "path": "cache/mpn/2SC1623_L6_/datasheet.pdf",
+      "source_url": "",
+      "sha256": "c06c375a068dd5f1a9cafc88f1264e0cfb8e0388049664fdb53487d1e26908c8",
+      "verification_record": "review_out/independent_reviews/Q4-D10-temperature-audit.md",
+      "verification_sha256": "4efa460a2d1e6ef6183defe971043f6992c6de2148ab81d92805b575c5de49a7",
+      "registered_at": "2026-10-21T18:36:01.678270+00:00"
+    },
+    {
+      "mpn": "CSA0603C0G2R2C500JT",
+      "manufacturer": "HRE(芯声)",
+      "path": "cache/mpn/CSA0603C0G2R2C500JT/datasheet_hre.pdf",
+      "source_url": "",
+      "sha256": "51e0cdaa62b7f338824abaf4720bb3a917104189cf296e0482901a2ad6c3ee7d",
+      "verification_record": "review_out/independent_reviews/capacitor-dielectric-audit.md",
+      "verification_sha256": "d9a23a4b5b42a883a166c6729075d66f5ad09d1f6933eb6ae5fb298cd6170422",
+      "registered_at": "2026-10-21T18:46:40.363236+00:00"
+    },
+    {
+      "mpn": "04023A101KAT2A",
+      "manufacturer": "Kyocera AVX",
+      "path": "review_out/research_assets/P11-A05/C15/KyoceraAVX_SurfaceMount_ordercode_2026-10-22.pdf",
+      "source_url": "https://catalogs.kyocera-avx.com/SurfaceMount.pdf",
+      "sha256": "472c66ca70b79ea4faa4ab15bc792c1057a8fd0cf4467042d08e52845f5670c3",
+      "verification_record": "review_out/independent_reviews/capacitor-dielectric-audit.md",
+      "verification_sha256": "d9a23a4b5b42a883a166c6729075d66f5ad09d1f6933eb6ae5fb298cd6170422",
+      "registered_at": "2026-10-21T18:46:40.421874+00:00"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "README.md": "d551af089d1715ba9a51185628a795cd180ceb9ece4e0636d5352b31e4fcfed8",
+  "SOURCE-MAP.json": "70725ec7c0793b23e9f676a54954a89d31111f92b2711cbebf0ef4b32d92ce36",
+  "VERIFICATION.md": "850c71c4a4ac6330503cb46b45702e504223e17cc0f3da519243292d3adf6445",
+  "cli.mjs": "dae6f4dbd1cab5892f545517e8e6cabdf16733f767b86349bfc37bfa0bf9b17f",
+  "package-lock.json": "efa8075fc7bb9ae60bd98d145b4c93eb4fdb8ce66ca827d9067d04bd353974f7",
+  "package.json": "c96b5693a12801e36e9e50e4d5a5f4d70ee7918670733a94f64328ec02347667",
+  "src/eprj-reader.mjs": "07653a79917662b3199acc30c5d058d387ec274679e6ab8350209b6e92fb0a9e",
+  "src/index.mjs": "b24f3e96ae7adebf928fdc94c6d86eee589c997cc25c7d5eed715f73a7a978df",
+  "src/native-readonly-archive.mjs": "b10a309f36e54d2fdc16a63b12477a21b202b5a45402ec903a46baae3657f45c",
+  "src/page-fields.mjs": "2294600c7627691207d4b9be2493a6cb9f9e335ebc01d71908b60e41e34509bc",
+  "src/schematic-connectivity.mjs": "62ee3d314c85ec14264d6e39f6899cfa87c9ac8f64e412aa474b1c24c70c467c",
+  "src/schematic-model.mjs": "70c91cb2557cb9dc7b7a5e591ea3d5313bae2684c7228368c41a9c61e26bd1f4",
+  "test/reader.test.mjs": "cc1fc87f8a993f6005c5385483353386327e80fc1c2de3987c5fc830315e0aae"
+}

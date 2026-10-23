@@ -1,0 +1,60 @@
+rails:
+- net: +24V
+  v: 24.0
+  source: taskbook_2026-10-09
+  note: 原理图网名标称
+- net: +12V
+  v: 12.0
+  source: taskbook_2026-10-09
+  note: 原理图网名标称
+- net: VCC24V
+  v: 24.0
+  source: taskbook_2026-10-09
+  note: 与供电入口同系，标称 24 V
+currents: []
+t_amb_c: null
+exemptions: []
+interfaces:
+- CN1.SPDL：板输入，传感器模拟量 0～10 V
+- CN2.SIG：板输出，额定 0～10 V，正常外接高阻/开路，稳态电流 0
+- CN2.DS：板输出，额定 0～10 V，正常外接高阻/开路，稳态电流 0
+- CN2：pin1=GND pin2=OUT pin3=SIG pin4=DS pin5=VCC；VCC 与 CN1 同网
+interface_specs:
+- connector: CN1
+  net: SPDL
+  pin: '1'
+  direction: board_input
+  v_min_v: 0.0
+  v_max_v: 10.0
+  external: sensor_analog
+  note: 传感器模拟量 0～10 V
+- connector: CN2
+  net: SIG
+  pin: '3'
+  direction: board_output
+  v_min_v: 0.0
+  v_max_v: 10.0
+  series_ohm: 2000
+  series_ref: R18
+  external: high_z_open
+  i_dc_a: 0.0
+  fault_external: short_to_gnd
+  fault_participates: false
+  note: U4 跟随缓冲经 R18；正常开路稳态电流 0；对地短路仅故障边界
+- connector: CN2
+  net: DS
+  pin: '4'
+  direction: board_output
+  v_min_v: 0.0
+  v_max_v: 10.0
+  series_ohm: 2000
+  series_ref: R19
+  external: high_z_open
+  i_dc_a: 0.0
+  fault_external: short_to_gnd
+  fault_participates: false
+  note: U4 跟随缓冲经 R19；正常开路稳态电流 0；对地短路仅故障边界
+charset_exceptions: []
+source_file: K:\my-project\claude-code-p\0918全量材料\原版拆分重建项目_电子设计任务书_v0.1.docx
+parsed_from: taskbook_signed_2026-10-09
+note: 2026-10-09 按任务书与网表确认：SIG/DS 板输出 0～10 V 正常高阻开路；SPDL 板输入 0～10 V；+24V/+12V 按网名标称。可插拔与插入带电未填。

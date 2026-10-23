@@ -1,0 +1,6 @@
+{
+  "urls": {
+    "LM393DR": "https://www.ti.com/lit/ds/symlink/lm393.pdf",
+    "__note": "已知直链可跳过搜索；键为 MPN，值为 http(s) PDF 地址"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "object": "R4",
+  "rule_id": "P11-A01",
+  "title": "R4 · 传感器把SPDL保持在接口低端点",
+  "verdict": "否",
+  "callout": "R4：最大功耗不符合要求，限额 50.00 mW。条件极值候选 282.76 mW。",
+  "pages": [
+    {
+      "pdf_page": 9,
+      "page_name": "P08_SENSOR",
+      "step": 1,
+      "label": "P08_SENSOR：SPDL低端点条件工况",
+      "phase": "P08_SENSOR：SPDL低端点条件工况",
+      "takeaway": "若传感器可连续吸流将SPDL钉在低端点，+24V经R4/R52/R47/R46后由D8与D9并联流向SPDL，DS_ORI储能最终释放。",
+      "crop_box": [
+        115.85000610351562,
+        93.06220245361328,
+        848.8800048828125,
+        460.03997802734375
+      ],
+      "crop_mode": "whole_circuit",
+      "panel": "step1_p9.png",
+      "markers": [
+        "任务书供电标称 = 24 V",
+        "电阻串负载端电位 = 0.7 V",
+        "传感器保持接口低端点 = 0 V",
+        "DS_ORI最终低电位 = 0 V",
+        "V(R4) 两端电压差 = 5.825 V",
+        "R4电流 = 48.54 mA",
+        "R4耗散 = 282.76 mW",
+        "R4 功耗 ≈ 282.76 mW"
+      ],
+      "routing_complete": true,
+      "routing_issues": [],
+      "arrows_enabled": true,
+      "copper_segments": 8,
+      "body_bridges": 6,
+      "ambiguous_direction_edges": 0
+    }
+  ],
+  "flow": "flow.png"
+}

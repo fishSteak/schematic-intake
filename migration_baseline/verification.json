@@ -1,0 +1,15 @@
+{
+  "solve_prog.test_behavior": "passed",
+  "solve_prog.test_fixture": "passed",
+  "agent_review.run": "passed",
+  "agent_review.serve": "passed",
+  "local_html_builder": "passed",
+  "checkers_baseline": "identical",
+  "cases_baseline": "identical",
+  "stress_baseline": "identical",
+  "assist_baseline": "identical",
+  "stage_machine_offline_P05-A01": "passed",
+  "http/": "passed",
+  "http/report_data.json": "passed",
+  "http/verdicts.json": "passed"
+}

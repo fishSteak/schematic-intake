@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "basis_ref",
+    "kind",
+    "state_index",
+    "title",
+    "route_summary",
+    "proof_status",
+    "assumption_refs",
+    "scope",
+    "proof_checks",
+    "figure"
+  ],
+  "properties": {
+    "version": {
+      "const": "basis-main.v1"
+    },
+    "basis_ref": {
+      "const": "/decision_basis"
+    },
+    "kind": {
+      "enum": [
+        "operating_case",
+        "cross_case_bound",
+        "incomplete_proof"
+      ]
+    },
+    "state_index": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "route_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proof_status": {
+      "enum": [
+        "verified",
+        "incomplete"
+      ]
+    },
+    "assumption_refs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "scope": {
+      "type": "object",
+      "required": [
+        "included",
+        "excluded"
+      ],
+      "properties": {
+        "included": {
+          "type": "string",
+          "minLength": 1
+        },
+        "excluded": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "proof_checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "claim",
+          "status",
+          "reason",
+          "evidence_refs"
+        ],
+        "properties": {
+          "claim": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "supported",
+              "unresolved",
+              "refuted"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "figure": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "pages"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "operating_path",
+                "cross_case_relations"
+              ]
+            },
+            "pages": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "pdf_page",
+                  "label",
+                  "route_summary",
+                  "paths",
+                  "markers"
+                ],
+                "properties": {
+                  "pdf_page": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "route_summary": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "relation_role": {
+                    "enum": [
+                      "source",
+                      "storage",
+                      "dissipation",
+                      "return",
+                      "combined"
+                    ]
+                  },
+                  "paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "minItems": 2,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "markers": {
+                    "type": "array"
+                  },
+                  "through_body": {
+                    "type": "array"
+                  },
+                  "notes": {
+                    "type": [
+                      "array",
+                      "string"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

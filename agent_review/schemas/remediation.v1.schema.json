@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "target",
+    "review_source_hash",
+    "summary",
+    "specific_action",
+    "reference_spec",
+    "acceptance_criteria"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "remediation.v1"
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rule_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "object_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "object_type": {
+          "enum": [
+            "component",
+            "net",
+            "pair",
+            "board"
+          ]
+        }
+      },
+      "required": [
+        "rule_id",
+        "object_id",
+        "object_type"
+      ]
+    },
+    "review_source_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 260
+    },
+    "specific_action": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 220
+    },
+    "acceptance_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 220
+    },
+    "reference_spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "keep_input_refs",
+        "basis_scenario_ref",
+        "minimum_rating_w",
+        "proposed_rating_w",
+        "qualification"
+      ],
+      "properties": {
+        "keep_input_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "basis_scenario_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minimum_rating_w": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "proposed_rating_w": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "qualification": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 220
+        }
+      }
+    }
+  }
+}

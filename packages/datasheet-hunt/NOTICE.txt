@@ -1,0 +1,9 @@
+datasheet-hunt bundles third-party software:
+
+- AnySearch skill (vendor/anysearch/)
+  Copyright holders: see vendor/anysearch/NOTICE and LICENSE
+  License: Apache License 2.0
+  Upstream: https://github.com/anysearch-ai/anysearch-skill
+
+API keys are NOT shipped. Recipients must create vendor/anysearch/.env
+from .env.example (or use anonymous access with lower quotas).

@@ -1,0 +1,25 @@
+__pycache__/
+*.py[cod]
+node_modules/
+.venv/
+solve_prog/out/
+
+# IDE / 本地计划
+.idea/
+.planning/
+
+# 本地环境配置与备份；示例配置仍可提交
+.env
+.env.*
+!.env.example
+*.bak
+/docs/_slide11_dump.txt
+
+# PDF.js 调试映射不参与运行；保留 JS、字体、示例 PDF 与许可文件
+/vendor/expert_html/pdfjs/**/*.map
+
+# 板级运行产物；仅保留独立回归验证依赖的 board_kg.json
+# 板配置和 materials/ 原始输入仍受版本控制，其他产物不提交
+boards/*/review_out/*
+!boards/*/review_out/board_kg.json
+boards/*/history/

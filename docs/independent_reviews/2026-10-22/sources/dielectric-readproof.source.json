@@ -1,0 +1,22 @@
+[
+  {
+    "source_path": "boards/0918全量/cache/mpn/CSA0603C0G2R2C500JT/datasheet_hre.pdf",
+    "source_sha256": "51e0cdaa62b7f338824abaf4720bb3a917104189cf296e0482901a2ad6c3ee7d",
+    "extract": "HRE-MLCC-family-readproof.pdf",
+    "original_pdf_pages": [
+      4,
+      5,
+      7
+    ]
+  },
+  {
+    "source_path": "boards/0918全量/review_out/research_assets/P11-A05/C15/KyoceraAVX_SurfaceMount_ordercode_2026-10-22.pdf",
+    "source_sha256": "472c66ca70b79ea4faa4ab15bc792c1057a8fd0cf4467042d08e52845f5670c3",
+    "extract": "KYOCERA-AVX-C0G-readproof.pdf",
+    "original_pdf_pages": [
+      4,
+      6,
+      7
+    ]
+  }
+]

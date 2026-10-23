@@ -1,0 +1,217 @@
+{
+  "version": "1.2",
+  "description": "EvidencePack.object_cards[]：公共四格（现象/计算/卡点/结论）+ 按检查项分类扩展列。summary 禁止只回声原因码。",
+  "block_classes": {
+    "miss_datasheet": "手册缺失或额定值抽不出",
+    "extract_fail": "有 PDF 但额定栏未抽到",
+    "miss_stress": "取证阶梯走完仍无 V/I",
+    "topology_open": "拓扑开路，不是料的问题",
+    "miss_taskbook": "工况/任务书未签字",
+    "source_conflict": "多源打架",
+    "device_irregular": "器件/标注不规范",
+    "not_in_scope": "本项无此对象字段",
+    "rule_gap": "程序规则不足以闭合（缺引脚功能对照等）"
+  },
+  "common_fields": [
+    "object",
+    "location",
+    "identity",
+    "datasheet",
+    "verdict_zh",
+    "block_class",
+    "phenomenon",
+    "calc",
+    "stuck",
+    "conclusion",
+    "summary",
+    "analysis_contract",
+    "analysis_steps",
+    "key_assumptions"
+  ],
+  "four_grid": {
+    "phenomenon": "现象：对象身份与两端/相关网已观察到的事实",
+    "calc": "计算过程：已写出的公式或已走完的步骤；未列方程则写明",
+    "stuck": "卡点：停在哪一网/脚/字段/函数；未卡住写「无」",
+    "conclusion": "结论：是/否/待确认 + 原因码可读说明"
+  },
+  "card_classes": {
+    "stress_calc": {
+      "rule_ids": [
+        "P11-A01",
+        "P11-A02",
+        "P11-A03",
+        "P11-A04",
+        "P11-A05",
+        "P11-A06",
+        "P11-A07",
+        "P12-A01",
+        "P12-A03",
+        "P12-A04",
+        "P12-A05",
+        "P12-A06",
+        "P12-A07",
+        "P12-A08"
+      ],
+      "extra_fields": [
+        "nets",
+        "before",
+        "after",
+        "formula",
+        "limit",
+        "computed",
+        "stress_kind",
+        "states",
+        "recipe_id",
+        "assumptions"
+      ],
+      "stress_kind_enum": [
+        "operating_point",
+        "p_max_envelope",
+        "series_clamp",
+        "resistive_divider",
+        "shunt_to_gnd",
+        "series_switch",
+        "led_limit",
+        "rc_timing",
+        "rail_rc",
+        "opamp_rail",
+        "base_bias",
+        "series_socket",
+        "closed_rails",
+        "follower",
+        "base_drive",
+        "dc_idle"
+      ],
+      "states_shape": {
+        "name": "string",
+        "v_across": "number",
+        "p_w": "number",
+        "note": "string"
+      }
+    },
+    "annotation": {
+      "rule_ids": [
+        "P05-A01",
+        "P05-A06",
+        "P42-A04"
+      ],
+      "extra_fields": [
+        "field_pdf",
+        "field_bom",
+        "field_tel",
+        "missing_fields"
+      ]
+    },
+    "identity": {
+      "rule_ids": [
+        "P42-A01"
+      ],
+      "extra_fields": [
+        "conflict_pages",
+        "instances"
+      ]
+    },
+    "net_label": {
+      "rule_ids": [
+        "P04-A01",
+        "P04-A03"
+      ],
+      "extra_fields": [
+        "net_name",
+        "appear_pages",
+        "charset_or_alias_issue"
+      ]
+    },
+    "path_topo": {
+      "rule_ids": [
+        "P07-A05",
+        "P14-A02",
+        "P14-A05",
+        "P14-A06",
+        "P16-A01",
+        "P16-A05",
+        "P19-A03",
+        "P21-A01"
+      ],
+      "extra_fields": [
+        "path_refs",
+        "path_pages",
+        "protection_or_decoupling"
+      ]
+    },
+    "formula": {
+      "rule_ids": [
+        "P18-A02"
+      ],
+      "extra_fields": [
+        "c1",
+        "c2",
+        "cl",
+        "formula_text"
+      ]
+    }
+  },
+  "location_shape": {
+    "pdf_page": "int|null",
+    "page_name": "string",
+    "module_title": "string",
+    "note": "string"
+  },
+  "identity_shape": {
+    "mpn": "string",
+    "value_pdf": "string",
+    "value_bom": "string",
+    "footprint": "string"
+  },
+  "datasheet_shape": {
+    "url": "string",
+    "local_path": "string",
+    "extracted": "object",
+    "extract_note": "string"
+  },
+  "facts_patch": {
+    "description": "Agent 兜底唯一可写回 BoardKG 的结构化补丁；无 source 一律丢弃",
+    "required": [
+      "ref_or_net",
+      "field",
+      "value",
+      "source"
+    ],
+    "source_kinds": [
+      "datasheet_page",
+      "netlist_pin",
+      "taskbook_line",
+      "bom_row"
+    ]
+  },
+  "critic_reason": {
+    "description": "L4 批评员只打已闭合卡；同一 JSON 契约适用于全部检查项",
+    "actions": [
+      "skip",
+      "challenge",
+      "facts_patch",
+      "new_recipe_candidate"
+    ],
+    "required_common": [
+      "object",
+      "action"
+    ],
+    "challenge_required": [
+      "mismatch.solver_assumed",
+      "mismatch.netlist_shows",
+      "pins",
+      "source"
+    ],
+    "forbid": [
+      "产品是/否",
+      "口头改电压",
+      "无配方升绿"
+    ]
+  },
+  "analysis_contract": {
+    "version": "analysis.v1",
+    "analysis_steps": "1–3 items {text, assumption_refs}; single business analysis combining conditions and causal reasoning",
+    "key_assumptions": "{id,text,status,evidence_refs}; retained for validation and audit, not a second prose block",
+    "legacy_fields": "reasoning_steps/assumptions are historical read compatibility only"
+  }
+}

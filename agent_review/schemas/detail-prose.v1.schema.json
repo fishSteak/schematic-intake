@@ -1,0 +1,82 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "records"
+  ],
+  "properties": {
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "source_hash",
+          "route_summary",
+          "note",
+          "status",
+          "primary_ref",
+          "reasoning_steps",
+          "citations"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "source_hash": {
+            "type": "string"
+          },
+          "route_summary": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "source_insufficient",
+              "source_conflict"
+            ]
+          },
+          "primary_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reasoning_steps": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "string"
+            }
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "source",
+                "quote"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "source": {
+                  "enum": [
+                    "card",
+                    "analysis"
+                  ]
+                },
+                "quote": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,2 @@
+# 自闭环依赖：AnySearch Python CLI
+-r vendor/anysearch/requirements.txt

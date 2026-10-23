@@ -1,0 +1,29 @@
+{
+  "id": "r14_p11a01_0918",
+  "note": "板级防退步夹具（Agent 运行时不可见）。对照 docs/R14-P11-A01业务复核分析报告.md。换板即卸本文件，勿写入 Prompt。",
+  "board": "boards/0918全量",
+  "rule_id": "P11-A01",
+  "object": "R14",
+  "expect": {
+    "verdict_zh": "是",
+    "P_limit_W": 0.05,
+    "P_max_W": {
+      "min": 0.0005,
+      "max": 0.0012,
+      "note": "量级须为亚 mW～约 1 mW，远小于 50 mW"
+    },
+    "require_state_P_approx": [
+      {
+        "approx": 0.00064,
+        "tol_rel": 0.25,
+        "note": "密封 VCC24V=24 V、开漏近地时应出现 ≈0.64 mW 量级"
+      }
+    ]
+  },
+  "pits": [
+    {
+      "id": "led_1mA_as_long_steady",
+      "note": "开漏截止+LED 不得以约 1 mA 口算且未标非长期/站不住（业务复核已知坑）"
+    }
+  ]
+}

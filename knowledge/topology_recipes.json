@@ -1,0 +1,386 @@
+{
+
+  "version": "1.1",
+
+  "note": "程序可判定的拓扑闭合配方；写入网 rail.status=closed 时必须带 source。电源网名含显式电压按业务规则闭合（netname_voltage）。",
+
+  "recipes": [
+
+    {
+
+      "id": "netname_voltage",
+
+      "description": "业务已确认：电源网名含电压（VCC24V/+24V/VDD3.3V…）即按该电压闭合，无需工况/任务书签字",
+
+      "match": {
+
+        "net_pattern": "^(\\+\\d+(?:\\.\\d+)?V|(?:VCC|VDD|VIN|VBAT)\\d+(?:\\.\\d+)?V)$"
+
+      },
+
+      "action": {
+
+        "close_net": true,
+
+        "voltage_from": "netname_capture",
+
+        "source_kind": "netname_voltage"
+
+      }
+
+    },
+
+    {
+
+      "id": "l78xx_output",
+
+      "description": "L78Lxx / L78xx 稳压器输出脚闭合到标称电压",
+
+      "match": {
+
+        "component_type": "ic",
+
+        "mpn_pattern": "^L78L?(\\d{2})"
+
+      },
+
+      "action": {
+
+        "close_net_from_pin": "output_or_vout",
+
+        "voltage_from": "mpn_capture_group_1",
+
+        "source_kind": "regulator"
+
+      }
+
+    },
+
+    {
+
+      "id": "zener_shunt_clamp",
+
+      "description": "稳压二极管并接：A接GND/轨、K接信号网 → 信号网上界=Vz_max",
+
+      "match": {
+
+        "component_type": "diode",
+
+        "tags_any": ["稳压二极管", "zener"],
+
+        "or_mpn_pattern": "^1N52\\d{2}B?"
+
+      },
+
+      "action": {
+
+        "close_cathode_net": true,
+
+        "voltage_from": "vz_max_v",
+
+        "source_kind": "zener_clamp"
+
+      }
+
+    },
+
+    {
+
+      "id": "analog_switch_always_on",
+
+      "description": "模拟开关控制脚接到已闭合轨且≥VIH → 开关当直流短路，负载侧电压=对侧网",
+
+      "match": {
+
+        "component_type": "ic",
+
+        "mpn_pattern": "^CD4066"
+
+      },
+
+      "action": {
+
+        "propagate_closed_voltage_across_on_switch": true,
+
+        "source_kind": "always_on_switch"
+
+      }
+
+    },
+
+    {
+
+      "id": "oc_pull_down_states",
+
+      "description": "比较器开漏/OC输出网（LM393/339等）：枚举截止(开路)与导通(网强制≈0)两态，纯R网各态求解后电阻取跨压max得P_max；同一网多OC脚算1bit",
+
+      "match": {
+
+        "component_type": "ic",
+
+        "mpn_pattern": "^(LM393|LM2903|LM339|LM2901|LM392)"
+
+      },
+
+      "action": {
+
+        "enumerate_oc_net_states": true,
+
+        "on_force_v": 0,
+
+        "merge": "max_v_across",
+
+        "stress_kind": "p_max_envelope",
+
+        "source_kind": "oc_multistate",
+
+        "impl": "kernel/resistor_network.compute_resistor_stresses"
+
+      }
+
+    },
+    {
+      "id": "opamp_voltage_follower",
+      "description": "运放同通道 OUT 与 IN− 同网：V(OUT)=V(IN+)。IN+ 已闭合才写入 known；未闭合不登记 CMOS 0/VDD。",
+      "match": {
+        "component_type": "ic",
+        "mpn_pattern": "^(LM358|LM2904|LM324|LM2902)",
+        "channel_out_equals_in_minus": true
+      },
+      "action": {
+        "copy_inplus_to_out_net": true,
+        "forbid_cmos_envelope": true,
+        "source_kind": "opamp_follower",
+        "impl": "kernel/resistor_network._apply_follower_knowns"
+      }
+    },
+    {
+      "id": "opamp_rail_envelope",
+      "description": "运放输出脚但非跟随器：允许 0/VDD 作 P_max 包络（同相放大/比较器顶轨）。",
+      "match": {
+        "component_type": "ic",
+        "mpn_pattern": "^(LM358|LM2904|LM324|LM2902)",
+        "channel_out_equals_in_minus": false
+      },
+      "action": {
+        "enumerate_0_vdd": true,
+        "source_kind": "opamp_rail"
+      }
+    },
+    {
+      "id": "cmos_push_pull",
+      "description": "真 CMOS/施密特推挽输出（MC14584/HC14 等，非运放跟随器）：闭合 VDD 时 0/VDD 包络。",
+      "match": {
+        "component_type": "ic",
+        "mpn_pattern": "^(MC14584|CD40106|74HC14|74HCT14|74HC04|74HCT04|CD4069)"
+      },
+      "action": {
+        "enumerate_0_vdd": true,
+        "source_kind": "cmos_push_pull"
+      }
+    },
+    {
+      "id": "net_label_count",
+      "description": "图上同名网标次数：1 处按漏标标出；2 处及以上通过。电路连通不因此改判。",
+      "match": {
+        "user_net_label": true
+      },
+      "action": {
+        "count_visible_labels": true,
+        "source_kind": "jlc_geometry_or_tel"
+      }
+    },
+    {
+      "id": "pin_behavior_states",
+      "description": "任意电阻的直流连通块：未上电、开关通断、端口开路或短路、二极管与稳压管区段。同一套节点方程，角点写进计算过程。",
+      "match": {
+        "pin_behavior": true
+      },
+      "action": {
+        "enumerate_pin_behaviors": true,
+        "source_kind": "pin_behavior",
+        "impl": "kernel/behavior_bridge.solve_seeds"
+      }
+    },
+    {
+      "id": "series_clamp_states",
+      "description": "串联电阻进钳位节点：未上电、稳压管区间、开关管导通、通路上的端口对地。同一串共用情况。端口对地不单独立否。正向压降或饱和压降未抽出则该态待确认。",
+      "match": {
+        "series_into_clamp": true
+      },
+      "action": {
+        "enumerate_clamp_node_states": true,
+        "source_kind": "series_clamp",
+        "impl": "kernel/situations.apply_series_clamp"
+      }
+    },
+    {
+      "id": "divider_states",
+      "description": "纯电阻分压岛：两端已闭合轨（含地），中间只走电阻/电容/比较器高阻。岛内开漏按该网截止/导通两态并列，不把扇出上的开漏算进来。",
+      "match": {
+        "resistive_divider": true
+      },
+      "action": {
+        "enumerate_divider_states": true,
+        "source_kind": "resistive_divider",
+        "impl": "kernel/situations.analyze_all_resistors"
+      }
+    },
+    {
+      "id": "shunt_to_gnd_states",
+      "description": "一端接地的电阻：活网上的开关导通、稳压钳位上界、通路上的端口对地并列。驱动只保留改变跨压的器件。正向压降只沿导通方向作上界。",
+      "match": {
+        "shunt_to_gnd": true
+      },
+      "action": {
+        "enumerate_shunt_states": true,
+        "source_kind": "shunt_to_gnd",
+        "impl": "kernel/situations.analyze_all_resistors"
+      }
+    },
+    {
+      "id": "series_switch_states",
+      "description": "电源经串联电阻进开关 CE，对侧有对地负载或端口：截止、导通只计板上电阻、导通且端口对地。端口对地不单独立否。",
+      "match": {
+        "series_into_switch": true
+      },
+      "action": {
+        "enumerate_switch_port_states": true,
+        "source_kind": "series_switch",
+        "impl": "kernel/situations.analyze_all_resistors"
+      }
+    },
+    {
+      "id": "led_limit_states",
+      "description": "发光管与限流电阻：驱动截止电流为 0；导通时正向压降按 0 与手册值分别计算。两侧落在限额两边则待确认，不用 20 mA 典型值把超限算成通过。",
+      "match": {
+        "led_current_limit": true
+      },
+      "action": {
+        "enumerate_led_on_off": true,
+        "source_kind": "led_limit",
+        "impl": "kernel/situations.analyze_all_resistors"
+      }
+    },
+    {
+      "id": "rc_timing_states",
+      "description": "施密特或 CMOS 的阻容转向网络：直流稳态电流为 0。没有频率和占空比时，周期平均功耗不编数，该态待确认。",
+      "match": {
+        "rc_timing": true
+      },
+      "action": {
+        "dc_idle_and_unrated_pulse": true,
+        "source_kind": "rc_timing",
+        "impl": "kernel/situations.analyze_all_resistors"
+      }
+    },
+    {
+      "id": "rail_rc_states",
+      "description": "电源经电阻和转向二极管接到 CMOS 延时节点：前级高为电流 0，前级低按压降 0 作上界。上界未超过限额则通过。",
+      "match": {
+        "rail_to_rc_delay": true
+      },
+      "action": {
+        "enumerate_cmos_high_low": true,
+        "source_kind": "rail_rc",
+        "impl": "kernel/situations.analyze_all_resistors"
+      }
+    },
+    {
+      "id": "series_socket_open_gnd",
+      "description": "电阻一端已闭合板内电位、另一端只到连接器：枚举开路(P=0)与对地(|Vboard|)，取 P_max。",
+      "match": {
+        "series_to_connector": true
+      },
+      "action": {
+        "enumerate_open_and_to_gnd": true,
+        "source_kind": "series_socket"
+      }
+    },
+    {
+      "id": "pure_r_nodal",
+      "description": "纯电阻网 + 已闭合轨/GND 节点方程。跨压=|Va−Vb|。",
+      "match": {
+        "closed_rails_and_resistors": true
+      },
+      "action": {
+        "nodal_solve": true,
+        "source_kind": "divider_solve",
+        "impl": "kernel/resistor_network.compute_resistor_stresses"
+      }
+    },
+    {
+      "id": "switch_ce_envelope",
+      "description": "BJT/MOS CE 可切换：截止/导通两态，电阻取跨压 max。",
+      "match": {
+        "component_type": "transistor"
+      },
+      "action": {
+        "enumerate_ce_off_on": true,
+        "source_kind": "switch_ce"
+      }
+    },
+    {
+      "id": "rail_pull_to_zero",
+      "description": "轨到软网可被拉到 0 的包络（如延时上拉）。",
+      "match": {
+        "rail_to_soft_net": true
+      },
+      "action": {
+        "envelope_other_end_zero": true,
+        "source_kind": "rail_pull_to_zero"
+      }
+    },
+    {
+      "id": "switch_base_drive_envelope",
+      "description": "电阻接到 BJT/MOS 基极或栅极：软网可到 0，另一端取闭合轨/CMOS VDD/一跳电阻二极管上界，跨压包络算 P_max。不准把三极管当电阻并入纯 R 网。",
+      "match": {
+        "resistor_on_switch_base": true
+      },
+      "action": {
+        "envelope_base_to_drive": true,
+        "source_kind": "base_drive",
+        "impl": "kernel/resistor_network._base_drive_envelope_cases"
+      }
+    }
+
+  ],
+
+  "not_closed": [
+
+    "connector_only_net_no_dc_path",
+
+    "analog_switch_vdd_as_signal_clamp",
+
+    "unsigned_short_or_open_assumption",
+
+    "bare_VCC_VDD_without_numeric_voltage",
+
+    "single_ended_rail_as_resistor_drop",
+
+    "signal_net_without_encoded_voltage"
+
+  ],
+
+  "p11_a01_voltage_across": {
+
+    "rule": "跨压=|Va−Vb|；两脚对地电位都已知才算工作点；单脚闭合轨不得当跨压",
+
+    "solver": "kernel/resistor_network.py pure-R + GND + closed rails；C直流开路；比较器输入高阻",
+
+    "oc_multistate": "OC/数字可拉地网须多态枚举；P_max=V_env²/R，V_env=max(各态跨压)；k>3时全OFF+逐网ON+全ON",
+
+    "follower": "同通道 OUT–IN− 同网抄 IN+；未闭合则待确认；禁止 VDD 冒充跟随器输出",
+
+    "recipe_or_pending": "是/否必须挂 recipe_id；无配方或 match 不成立不得出数字结论",
+
+    "envelope": "zener_clamp / always_on_switch / OC多态取大 / 数字输入可拉至0 → stress_kind=p_max_envelope",
+
+    "netname_voltage": "VCC24V/+24V 等电源网名含电压 → closed（业务规则，免工况签字）",
+
+    "forbid": "nets.b 默认填GND；信号网名猜电压；位号/板名硬编码"
+
+  }
+
+}
+

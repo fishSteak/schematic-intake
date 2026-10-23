@@ -1,0 +1,11 @@
+{
+  "name": "board-review-v21-sdk",
+  "version": "2.1.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {},
+  "description": "Schematic review with local Codex CLI transport"
+}

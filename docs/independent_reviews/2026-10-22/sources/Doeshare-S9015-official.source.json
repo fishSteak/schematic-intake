@@ -1,0 +1,13 @@
+{
+  "retrieved": "2026-10-22",
+  "manufacturer": "Doeshare",
+  "part": "S9015",
+  "package": "SOT-23",
+  "BOM_supplier_code": "C2931724",
+  "identity_status": "exact manufacturer model and package; LCSC code direct retrieval unavailable",
+  "product_catalog": "https://www.doeshare.net/en/product/transistor/gpt/",
+  "download_entry": "https://www.doeshare.net/index.php/page-63-261.html?download=1",
+  "pdf_url": "https://www.doeshare.net/upfiles/file/THYRISTOR/SOT-23/S9015%20SOT-23.pdf",
+  "sha256": "2d084036014c91815cbb558a2829bfd2eaab0dcd53cb3b201eef57bc0c90e18b",
+  "bytes": 660985
+}
