@@ -18,9 +18,11 @@ TOOL={'type':'function','function':{'name':'read_source','description':'Read ori
 IMAGE='data:image/png;base64,iVBORw0KGgo='
 
 
-def message(text='{"answer":"verified"}', ident='msg-1'):
-    return {'type':'message','id':ident,'role':'assistant','status':'completed',
-            'content':[{'type':'output_text','text':text,'annotations':[]}]}
+def message(text='{"answer":"verified"}', ident='msg-1', *, phase=None):
+    item={'type':'message','id':ident,'role':'assistant','status':'completed',
+          'content':[{'type':'output_text','text':text,'annotations':[]}]}
+    if phase is not None:item['phase']=phase
+    return item
 
 
 def response(output=None, *, status='completed', usage=True):
@@ -87,6 +89,104 @@ class ResponsesProtocolTests(unittest.TestCase):
         body=self.requests[0]
         self.assertEqual(body['text']['format'],{'type':'json_object'})
         self.assertIn('additionalProperties',body['input'][0]['content'])
+
+    def test_final_phase_selection_and_complete_checkpoint_replay_in_both_transports(self):
+        outputs=[{'type':'reasoning','id':'rs-final','summary':[],'encrypted_content':'opaque'},
+                 message('I will check the sources before answering.',ident='msg-comment',phase='commentary'),
+                 message('{"answer":"unphased must not override final"}',ident='msg-unphased'),
+                 message(phase='final_answer')]
+        for streaming in (False,True):
+            with self.subTest(streaming=streaming):
+                raw=response(outputs)
+                def handler(request):
+                    if streaming:
+                        body=''.join(event('response.output_item.done',output_index=i,item=item)
+                                     for i,item in enumerate(outputs))
+                        return httpx.Response(200,text=body+event('response.completed',response=raw))
+                    return httpx.Response(200,json=raw)
+                client=self.client(handler,stream=streaming)
+                result=client.complete([{'role':'user','content':'Review.'}],schema=SCHEMA)
+                self.assertEqual(result.content,'{"answer":"verified"}')
+                self.assertEqual(result.output_items,outputs)
+                saved=json.loads(json.dumps([{'role':'user','content':'Review.'},result.message()]))
+                saved.append({'role':'user','content':'Independently check this analysis.'})
+                client.complete(saved,schema=SCHEMA)
+                self.assertEqual(self.requests[-1]['input'][1:-1],outputs)
+                self.assertNotIn('phase',self.requests[-1]['input'][-1])
+                self.assertEqual(client.request_count,2)
+
+    def test_commentary_tool_roundtrip_keeps_native_intermediate_message(self):
+        call={'type':'function_call','id':'fc-1','call_id':'call-1','name':'read_source',
+              'arguments':'{"path":"source.pdf"}','status':'completed'}
+        intermediate=[message('Reading the source now.',phase='commentary'),call]
+        final=[message('Checks are complete.',ident='msg-progress',phase='commentary'),
+               message(ident='msg-final',phase='final_answer')]
+        client=self.client(lambda request:httpx.Response(200,json=response(
+            intermediate if len(self.requests)==1 else final)))
+        executed=[]
+        value,metadata=run_tools([{'role':'user','content':'Review.'}],[TOOL],
+            {'read_source':lambda path:executed.append(path) or ToolResult({'path':path})},schema=SCHEMA,client=client)
+        self.assertEqual(executed,['source.pdf']);self.assertEqual(value,{'answer':'verified'})
+        self.assertEqual(client.completions[0].content,'')
+        self.assertEqual(self.requests[1]['input'][1:3],intermediate)
+        self.assertEqual(self.requests[1]['input'][3]['type'],'function_call_output')
+        self.assertEqual(metadata['messages'][-1]['_response_output'],final)
+
+    def test_commentary_without_final_cannot_complete_even_when_it_is_valid_json(self):
+        variants=[[message(phase='commentary')],
+                  [message(phase='commentary'),message(ident='unphased')],
+                  [message(phase='commentary'),message('',ident='empty-final',phase='final_answer')]]
+        for outputs in variants:
+            for streaming in (False,True):
+                with self.subTest(outputs=outputs,streaming=streaming):
+                    raw=response(outputs)
+                    client=self.client(lambda request:httpx.Response(200,
+                        text=event('response.completed',response=raw)) if streaming else httpx.Response(200,json=raw),
+                        stream=streaming)
+                    # A missing final is rejected even without a JSON schema.
+                    with self.assertRaisesRegex(OutputValidationError,'no final answer'):
+                        client.complete([{'role':'user','content':'Review.'}])
+                    self.assertEqual(client.metadata()['usage']['total_tokens'],50)
+                    self.assertEqual(client.request_count,1)
+                    self.assertEqual(client.completions[0].output_items,outputs)
+
+    def test_invalid_final_never_falls_back_to_commentary_json_or_scrapes_a_fragment(self):
+        variants=['PRIVATE_MODEL_TEXT {"answer":"verified"}',
+                  '{"answer":"verified"}\n{"answer":"other"}',
+                  '{\n  "answer": "PRIVATE_MODEL_TEXT",\n}']
+        for final_text in variants:
+            with self.subTest(final_text=final_text):
+                outputs=[message(phase='commentary'),message(final_text,ident='final',phase='final_answer')]
+                client=self.client(lambda request:httpx.Response(200,json=response(outputs)))
+                with self.assertRaises(OutputValidationError) as raised:
+                    client.complete([{'role':'user','content':'Review.'}],schema=SCHEMA)
+                self.assertRegex(str(raised.exception),r'\(line \d+, column \d+, offset \d+\)')
+                self.assertNotIn('PRIVATE_MODEL_TEXT',str(raised.exception))
+                self.assertNotIn('answer',str(raised.exception))
+                self.assertEqual(client.completions[0].content,final_text)
+                self.assertEqual(client.completions[0].output_items,outputs)
+                self.assertEqual(client.request_count,1)
+
+    def test_phase_less_messages_preserve_existing_concatenation(self):
+        outputs=[message('{"answer":',ident='part-1'),message('"verified"}',ident='part-2')]
+        outputs[1]['phase']=None
+        client=self.client(lambda request:httpx.Response(200,json=response(outputs)))
+        result=client.complete([{'role':'user','content':'Review.'}],schema=SCHEMA)
+        self.assertEqual(result.content,'{"answer":"verified"}')
+        self.assertEqual(result.output_items,outputs)
+
+    def test_final_selection_never_hides_refusal_or_incomplete_status(self):
+        refused=message('Intermediate.',phase='commentary')
+        refused['content'].append({'type':'refusal','refusal':'PRIVATE_REFUSAL'})
+        variants=[response([refused,message(phase='final_answer')]),
+                  response([message(phase='final_answer')],status='incomplete')]
+        for raw in variants:
+            with self.subTest(status=raw['status']):
+                client=self.client(lambda request:httpx.Response(200,json=raw))
+                with self.assertRaises(OutputValidationError) as raised:
+                    client.complete([{'role':'user','content':'Review.'}],schema=SCHEMA)
+                self.assertNotIn('PRIVATE_REFUSAL',str(raised.exception))
+                self.assertEqual(client.metadata()['usage']['total_tokens'],50)
 
     def test_tool_roundtrip_and_saved_conversation_replay_every_output_next_phase(self):
         reasoning={'type':'reasoning','id':'rs-1','summary':[], 'encrypted_content':'opaque-encrypted-reasoning'}
@@ -162,7 +262,8 @@ class ResponsesProtocolTests(unittest.TestCase):
         call={'type':'function_call','id':'fc-1','call_id':'c-1','name':'read_source','arguments':'{"path":"a"}'}
         variants=[response([{**call,'status':status}]) for status in ('failed','cancelled','in_progress','unknown')]
         variants += [response([call,call]),response([{**call,'arguments':{}}]),
-                     {**response(),'status':[]},response([{'type':'message','role':'assistant','content':None}])]
+                     {**response(),'status':[]},response([{'type':'message','role':'assistant','content':None}]),
+                     response([message(phase='unknown')]),response([message(phase=[])])]
         for raw in variants:
             with self.subTest(raw=raw):
                 executed=[]

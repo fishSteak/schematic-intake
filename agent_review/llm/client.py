@@ -76,6 +76,12 @@ def parse_json(content: str, schema: dict[str, Any] | None = None) -> Any:
         text = text[4:-4]
     try:
         value = json.loads(text, parse_constant=lambda _: (_ for _ in ()).throw(ValueError("Non-finite JSON number")))
+    except json.JSONDecodeError as error:
+        # Report only coordinates, never the source text or decoder context.
+        raise OutputValidationError(
+            "Model response is not a complete JSON document "
+            f"(line {error.lineno}, column {error.colno}, offset {error.pos})"
+        ) from None
     except (ValueError, TypeError):
         raise OutputValidationError("Model response is not a complete JSON document") from None
     if schema is not None:
@@ -336,6 +342,8 @@ class LLMClient:
                                 "usage": result.usage, "finish_reason": result.finish_reason})
                 if result.finish_reason in {"length", "content_filter", "incomplete"}:
                     raise OutputValidationError("Model response was truncated or filtered")
+                if result.finish_reason == "missing_final":
+                    raise OutputValidationError("Responses API returned no final answer after intermediate commentary")
                 if schema is not None and not result.tool_calls:
                     parse_json(result.content, schema)
                 check_cancelled(cancelled)
@@ -428,7 +436,7 @@ class LLMClient:
             raise ProtocolError('Responses API did not return a completed response')
         outputs=raw.get('output')
         if not isinstance(outputs,list):raise ProtocolError('Responses API output items are missing')
-        texts=[];calls=[];ids=set();refused=False
+        texts=[];final_texts=[];calls=[];ids=set();refused=False;has_phase=False
         for item in outputs:
             if not isinstance(item,dict) or not isinstance(item.get('type'),str):
                 raise ProtocolError('Invalid Responses output item')
@@ -445,14 +453,24 @@ class LLMClient:
             elif item['type']=='message':
                 if item.get('role')!='assistant' or not isinstance(item.get('content'),list):
                     raise ProtocolError('Invalid Responses assistant message')
+                phase=item.get('phase')
+                if phase is not None and phase not in ('commentary','final_answer'):
+                    raise ProtocolError('Invalid Responses assistant message phase')
+                has_phase=has_phase or phase is not None
                 for part in item['content']:
                     if not isinstance(part,dict):raise ProtocolError('Invalid Responses message content')
                     if part.get('type')=='output_text':
                         if not isinstance(part.get('text'),str):raise ProtocolError('Invalid Responses output text')
                         texts.append(part['text'])
+                        if phase=='final_answer':final_texts.append(part['text'])
                     elif part.get('type')=='refusal':refused=True
-        content=''.join(texts)
-        if not content.strip() and not calls and not refused and status=='completed':
+        # Commentary is an intermediate message, including when it happens to
+        # contain JSON. Only an explicit final_answer supplies the final text in
+        # phased output; compatible providers without phases keep prior behavior.
+        # The complete original sequence below remains untouched for replay.
+        content=''.join(final_texts if has_phase else texts)
+        missing_final=has_phase and not content.strip()
+        if not content.strip() and not calls and not refused and status=='completed' and not missing_final:
             raise ProtocolError('Responses API returned no model output')
         usage=copy.deepcopy(raw.get('usage'))
         if usage is not None:
@@ -462,7 +480,8 @@ class LLMClient:
                 if source in usage:usage[target]=usage[source]
         if any(raw.get(key) is not None and not isinstance(raw[key],str) for key in ('id','model')):
             raise ProtocolError('Invalid response identity metadata')
-        finish='incomplete' if status=='incomplete' else 'content_filter' if refused else 'tool_calls' if calls else 'stop'
+        finish=('incomplete' if status=='incomplete' else 'content_filter' if refused else
+                'tool_calls' if calls else 'missing_final' if missing_final else 'stop')
         return Completion(content=content,tool_calls=calls,usage=usage,response_id=raw.get('id'),
                           model=raw.get('model'),finish_reason=finish,output_items=copy.deepcopy(outputs))
 

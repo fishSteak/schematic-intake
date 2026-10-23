@@ -176,6 +176,9 @@ def run_research(board,enumeration,*,followup=False,force=False):
                 failure=failure_category(exc)
                 run={'status':'error','error':client.redact(str(exc)),'metadata':client.metadata(),**failure};atomic_json(result_path,run)
                 if not failure['repairable']:raise
+                # The next semantic attempt needs the safe validation reason,
+                # not the rejected response body or an empty repeat request.
+                errors=[run['error']]
             if run.get('status')!='completed':
                 print('RESEARCH_RETRY',attempt+1,run.get('error'),flush=True);continue
             try:
