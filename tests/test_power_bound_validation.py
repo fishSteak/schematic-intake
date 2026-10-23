@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from agent_review.llm_tools import MaterialTools
-from agent_review.validate_job import validate_judge_card, validate_power_decision, validate_worst_case
+from agent_review.validate_job import validate_judge_card, validate_power_decision, validate_worst_case, _power_bound_formulas
 
 
 def example():
@@ -68,6 +68,114 @@ class PowerBoundValidationTests(unittest.TestCase):
             with self.subTest(expression=expression):
                 self.assertEqual(self.errors_for_formula(expression, power=power), [])
         self.assertEqual(self.errors_for_formula("耗散≥10²/50000=0.002W", kind="lower_bound"), [])
+
+    def test_dimensioned_substitution_conservative_rounding_and_unit_comparison(self):
+        card = example()
+        card["states"][0].update(P=.012543, formula_lines=[
+            {"expr": "P = [V(RX) 两端电压差]² / RX ≤ (24 V)² / 45925.11 Ω = 0.012542158309473837 W ≤ 0.012543 W", "src": "source"},
+            {"expr": "P ≤ 0.012543 W = 12.543 mW < 0.050 W", "src": "source"},
+        ])
+        card["decision_basis"]["value_w"] = .012543
+        self.assertEqual(validate_judge_card(card, rule_id="P11-A01", obj="RX"), [])
+        second = ["P = 平均[V(SENSOR)² / RX] ≤ (10 V)² / 45925.11 Ω = 0.0021774580398392076 W ≤ 0.002178 W",
+                  "P ≤ 0.002178 W = 2.178 mW < 0.050 W"]
+        self.assertTrue(_power_bound_formulas(second, .002178, "upper_bound"))
+        self.assertTrue(_power_bound_formulas([
+            "P ≥ (24 V)² / 45925.11 Ω = 0.012542158309473837 W ≥ 0.012542 W",
+            "P ≥ 0.012542 W = 12.542 mW > 0.010 W"], .012542, "lower_bound"))
+
+    def test_strict_comparison_limit_is_not_the_formal_bound(self):
+        formula = "P ≤ (24 V)² / 45925.11 Ω = 0.012542158309473837 W ≤ 0.012543 W = 12.543 mW < 0.050 W"
+        self.assertTrue(_power_bound_formulas([formula], .012543, "upper_bound"))
+        self.assertFalse(_power_bound_formulas([formula], .05, "upper_bound"))
+        self.assertFalse(_power_bound_formulas([formula], .01254, "upper_bound"))
+
+    def test_only_conservative_rounding_is_accepted(self):
+        cases = [
+            ("P≤2²/200=0.02W≤0.01999W", .01999, "upper_bound"),
+            ("P≥2²/200=0.02W≥0.02001W", .02001, "lower_bound"),
+            ("P≤2²/200=0.02W≥0.02001W", .02001, "upper_bound"),
+            ("P≥2²/200=0.02W≤0.01999W", .01999, "lower_bound"),
+            # Equality tolerance must not permit a silently nonconservative state.
+            ("P≤2²/200=0.01999999W", .01999999, "upper_bound"),
+            ("P≥2²/200=0.02000001W", .02000001, "lower_bound"),
+        ]
+        for formula, value, kind in cases:
+            with self.subTest(formula=formula):
+                self.assertFalse(_power_bound_formulas([formula], value, kind))
+
+    def test_quantity_units_are_checked_without_erasing_dimensions(self):
+        valid = [
+            ("P≤(24mV)²/(1kΩ)=5.76e-7W", 5.76e-7),
+            ("P≤(10mA)²*200Ω=20mW", .02),
+            ("P≤(1V+1V)*10mA=0.02W", .02),
+            ("P≤(24V)²/(1MΩ)=0.000576W", .000576),
+            # Unit-free arithmetic retains the explicit right-hand output unit.
+            ("P≤(10²/50000)*1000=2mW", .002),
+        ]
+        for formula, value in valid:
+            with self.subTest(formula=formula):
+                self.assertTrue(_power_bound_formulas([formula], value, "upper_bound"))
+        invalid = [
+            "P≤(24mV)²/(1kΩ)=0.576W", "P≤(24A)²/45925.11Ω=0.012542158309473837W",
+            "P≤(2V)/(4V)=0.5W", "P≤(1V+1A)*1A=2W",
+            "P≤(2unknown)²/200=0.02W", "P≤(2V)²/200A=0.02W",
+            "P≤(2V)²/200=0.02W", "P≤2²/(200Ω)=0.02W",
+        ]
+        for formula in invalid:
+            with self.subTest(formula=formula):
+                self.assertFalse(_power_bound_formulas([formula], .02, "upper_bound"))
+
+    def test_auxiliary_unit_conversion_needs_an_independent_numeric_proof(self):
+        proof = "P≤2²/200=0.02W"
+        self.assertTrue(_power_bound_formulas([proof, "P≤0.02W=20mW<0.05W"], .02, "upper_bound"))
+        for lines in (["P≤0.02W=20mW<0.05W"], ["P_upper=0.02W", "P_limit=0.05W"], ["P_limit=0.05W"]):
+            with self.subTest(lines=lines):
+                self.assertFalse(_power_bound_formulas(lines, .02, "upper_bound"))
+        bad_conversions = ["P≤0.02W=20W<50W", "P≤0.02W=20uW<0.05W",
+                           "P≤0.02W<20mW", "P≤0.02W>20mW", "P≤0.02W=20mW<0.01W",
+                           "P≤0.02A=20mA"]
+        for line in bad_conversions:
+            with self.subTest(line=line):
+                self.assertFalse(_power_bound_formulas([proof, line], .02, "upper_bound"))
+        self.assertTrue(_power_bound_formulas([proof, "0.02 W = 20 mW"], .02, "upper_bound"))
+        self.assertFalse(_power_bound_formulas([proof, "0.02 W = 20 W"], .02, "upper_bound"))
+        self.assertFalse(_power_bound_formulas([proof, "0.02 W = 20.0001 mW"], .02, "upper_bound"))
+        self.assertFalse(_power_bound_formulas(["0.02 W = 20 mW"], .02, "upper_bound"))
+
+    def test_float_unit_scaling_cannot_fabricate_strict_order(self):
+        proof = "P≤1*0.000017=0.000017W"
+        for comparison in ("P≤0.000017W<0.017000mW", "P≤0.017000mW>0.000017W",
+                           "0.000017W<0.017000mW", "0.017000mW>0.000017W"):
+            with self.subTest(comparison=comparison):
+                self.assertFalse(_power_bound_formulas([proof, comparison], .000017, "upper_bound"))
+
+    def test_dimensioned_wrong_proof_cannot_be_masked_by_another_proof(self):
+        for wrong in ("P≤(2V)²/(200Ω)=0.03W", "P≤(2A)²/(200Ω)=0.02W",
+                      "P≤(2V)²/(200Ω)=0.02W≤0.019W"):
+            self.assertFalse(_power_bound_formulas([wrong, "P≤2²/200=0.02W", "P_limit=0.1W"], .02, "upper_bound"))
+
+    def test_quantity_parser_keeps_numeric_size_and_syntax_limits(self):
+        invalid = ["P≤(1e309V)²/200Ω=0.02W", "P≤(2V)**101/200Ω=0.02W",
+                   "P≤(2V)**(1e308*1e308)/200Ω=0.02W", "P≤(2V)**0.5/200Ω=0.02W",
+                   "P≤__import__('os').getcwd()=0.02W", "P≤q0+(2V)=0.02W",
+                   "P≤(2V)[0]/200Ω=0.02W", "P≤" + "-(" * 40 + "2V" + ")" * 40 + "**2/200Ω=0.02W",
+                   "P≤" + "1+" * 200 + "1=0.02W"]
+        for formula in invalid:
+            with self.subTest(formula=formula[:60]):
+                self.assertFalse(_power_bound_formulas([formula], .02, "upper_bound"))
+        for token in ("NaN", "inf", "Infinity", "-INF", "∞"):
+            with self.subTest(mixed_nonfinite=token):
+                self.assertFalse(_power_bound_formulas(["P≤2*2=4W", "P≤" + token + " W"], 4, "upper_bound"))
+
+    def test_decidable_numeric_prefixes_cannot_be_skipped_as_symbolic(self):
+        for prefix in ("1/0", "2*2", "2W", "1e309", "(2A)²/200Ω", "2unknown"):
+            formula = "P≤" + prefix + "≤10²/50000=0.002W"
+            with self.subTest(prefix=prefix):
+                self.assertFalse(_power_bound_formulas([formula], .002, "upper_bound"))
+        self.assertTrue(_power_bound_formulas(["P≤1/1000≤10²/50000=0.002W"], .002, "upper_bound"))
+        self.assertTrue(_power_bound_formulas(["P≤平均[端压²]/50000≤10²/50000=0.002W"], .002, "upper_bound"))
+        self.assertFalse(_power_bound_formulas(["P≤2*2≤平均[端压²]/50000≤10²/50000=0.002W"], .002, "upper_bound"))
 
     def test_unverified_or_inconsistent_substitution_is_rejected(self):
         expressions = [

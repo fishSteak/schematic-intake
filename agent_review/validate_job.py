@@ -13,87 +13,200 @@ from agent_review.analysis_contract import VERSION as ANALYSIS_VERSION, validate
 
 VERDICTS = frozenset({"是", "否", "待确认", "不适用"})
 
-_POWER_BOUND = re.compile(
-    r"(?:\bP(?:_[A-Za-z0-9]+|\s*[（(][^）)\n]{1,60}[）)])?|功耗|耗散(?:功率)?)"
-    r"\s*(?:上界|下界)?\s*(≤|<=|≦|≥|>=|≧|<|>)"
-)
+_POWER_LABEL = r"(?:\bP(?:_(?!limit\b|rated\b)[A-Za-z0-9]+|\s*[（(][^）)\n]{1,60}[）)])?|功耗|耗散(?:功率)?)\s*(?:上界|下界)?\s*"
+_POWER_BOUND = re.compile(_POWER_LABEL + r"(≤|<=|≦|≥|>=|≧|<|>)")
+_POWER_FORMULA = re.compile(_POWER_LABEL + r"(<=|>=|≤|≥|≦|≧|<|>|=|≈)")
 _BOUND_RELATION = re.compile(r"(<=|>=|≤|≥|≦|≧|<|>|=|≈)")
 _POWER_RESULT = re.compile(r"\s*(\d+(?:\.\d*)?|\.\d+)([eE][+-]?\d+)?\s*(mW|uW|µW|μW|W)\s*$")
 _BOUND_DIRECTIONS = {"upper_bound": {"≤", "<=", "≦", "<"}, "lower_bound": {"≥", ">=", "≧", ">"}}
 _NAMED_POWER_BOUND = re.compile(r"\bP_(upper|lower)\s*[=≈]\s*")
+_POWER_SCALE = {"W": 1, "mW": 1e-3, "uW": 1e-6, "µW": 1e-6, "μW": 1e-6}
+# Dimensions use (voltage, current): resistance=V/A, power=V*A.
+_CALC_UNITS = {"V": (1, (1, 0)), "mV": (1e-3, (1, 0)),
+               "A": (1, (0, 1)), "mA": (1e-3, (0, 1)),
+               "Ω": (1, (1, -1)), "kΩ": (1e3, (1, -1)), "MΩ": (1e6, (1, -1)),
+               **{unit: (scale, (1, 1)) for unit, scale in _POWER_SCALE.items()}}
+_NUMBER = r"(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
+_CALC_QUANTITY = re.compile(r"(?<![\w.])(" + _NUMBER + r")\s*(" + "|".join(sorted(_CALC_UNITS, key=len, reverse=True)) + r")(?!\w)")
 
 
-def _numeric_power_bound(expr: str, power: float | None, stress_kind: Any) -> bool:
-    """Check a numeric substitution, not the proof of its symbolic inequality.
-
-    Only the explicit arithmetic segment and its result/unit are checked here;
-    source, scope and reachability remain the responsibility of other contracts.
-    """
-    marker = _POWER_BOUND.search(expr)
-    if not marker or power is None or not math.isfinite(power) or power < 0 or len(expr) > 2000 or not isinstance(stress_kind, str):
-        return False
-    direction = _BOUND_DIRECTIONS.get(stress_kind)
-    if not direction or marker[1] not in direction:
-        return False
-    segments = _BOUND_RELATION.split(expr[marker.end():])
-    if any(op not in direction | {"=", "≈"} for op in segments[1::2]):
-        return False
+def _calculated_power(expression: str, *, require_operation=True) -> tuple[float, bool]:
+    """Check dimensions; delegate numeric arithmetic to the existing safe tool."""
     from agent_review.llm_tools import MaterialTools
+    if len(expression) > 300 or "_" in expression:
+        raise ValueError("Unsupported power expression")
     superscripts = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺", "0123456789-+")
-    for index in range(1, len(segments) - 1, 2):
-        if segments[index] not in {"=", "≈"}:
-            continue
-        # Units must be explicit. Do not silently infer a W/mW conversion.
-        result = _POWER_RESULT.fullmatch(segments[index + 1])
-        if result is None:
-            continue
-        expression = re.sub(r"[⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺]+", lambda m: "**(" + m[0].translate(superscripts) + ")", segments[index - 1])
-        expression = expression.translate(str.maketrans({"×": "*", "÷": "/", "−": "-", "^": "**", "（": "(", "）": ")"})).strip()
-        if len(expression) > 300 or not re.fullmatch(r"[0-9.eE+*/()\s-]+", expression):
-            continue
-        try:
-            # A repeated number is not evidence of numeric substitution.
-            if not any(isinstance(node, ast.BinOp) for node in ast.walk(ast.parse(expression, mode="eval"))):
-                continue
-            calculated = MaterialTools.calculate(expression)["value"]
-            shown = float(result[1] + (result[2] or ""))
-            watts = shown * {"W": 1, "mW": 1e-3, "uW": 1e-6, "µW": 1e-6, "μW": 1e-6}[result[3]]
-            if all(math.isfinite(v) and v >= 0 for v in (calculated, shown, watts)) and math.isclose(calculated, shown, rel_tol=1e-5, abs_tol=1e-12) and math.isclose(watts, power, rel_tol=1e-5, abs_tol=1e-12):
-                return True
-        except (ArithmeticError, ValueError, TypeError, SyntaxError, RecursionError):
-            continue
-    return False
+    expression = re.sub(r"[⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺]+", lambda m: "**(" + m[0].translate(superscripts) + ")", expression)
+    expression = expression.translate(str.maketrans({"×": "*", "÷": "/", "−": "-", "^": "**", "（": "(", "）": ")"})).strip()
+    quantities = {}
+    def quantity(match):
+        name = f"q{len(quantities)}"
+        scale, dimension = _CALC_UNITS[match[2]]
+        quantities[name] = (f"({match[1]}*{scale!r})", dimension)
+        return name
+    # User names are never admitted; only these generated quantity placeholders.
+    if re.search(r"\bq\d+\b", expression):
+        raise ValueError("Unsupported variable")
+    normalized = _CALC_QUANTITY.sub(quantity, expression)
+    tree = ast.parse(normalized, mode="eval")
+    nodes = list(ast.walk(tree))
+    if len(nodes) > 100 or (require_operation and not any(isinstance(n, ast.BinOp) for n in nodes)):
+        raise ValueError("Numeric substitution required")
+    def dimension(node, depth=0):
+        if depth > 30:
+            raise ValueError("Expression too deep")
+        if isinstance(node, ast.Constant) and type(node.value) in (int, float) and math.isfinite(node.value):
+            return (0, 0)
+        if isinstance(node, ast.Name) and node.id in quantities:
+            return quantities[node.id][1]
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+            return dimension(node.operand, depth + 1)
+        if isinstance(node, ast.BinOp):
+            left, right = dimension(node.left, depth + 1), dimension(node.right, depth + 1)
+            if isinstance(node.op, (ast.Add, ast.Sub)) and left == right:
+                return left
+            if isinstance(node.op, ast.Mult):
+                return tuple(a + b for a, b in zip(left, right))
+            if isinstance(node.op, ast.Div):
+                return tuple(a - b for a, b in zip(left, right))
+            if isinstance(node.op, ast.Pow) and right == (0, 0):
+                exponent = MaterialTools.calculate(ast.unparse(node.right))["value"]
+                if math.isfinite(exponent) and exponent.is_integer() and abs(exponent) <= 100:
+                    return tuple(a * int(exponent) for a in left)
+        raise ValueError("Unsupported arithmetic or inconsistent dimensions")
+    if dimension(tree.body) != ((1, 1) if quantities else (0, 0)):
+        raise ValueError("Power expression must have W dimensions")
+    numeric = re.sub(r"\bq\d+\b", lambda m: quantities[m[0]][0], normalized)
+    value = MaterialTools.calculate(numeric)["value"]
+    if not math.isfinite(value) or value < 0:
+        raise ValueError("Power must be finite and nonnegative")
+    return value, bool(quantities)
+
+
+def _numeric_power_prefix(expression):
+    """Return None only for a genuinely symbolic prefix, never broken arithmetic."""
+    stripped = _CALC_QUANTITY.sub("0", expression)
+    for number in re.finditer(r"(?<![\w.])" + _NUMBER, stripped):
+        rest = stripped[number.end():].lstrip()
+        if rest and rest[0].isalpha():
+            raise ValueError("Unsupported numeric unit")
+    stripped = re.sub(_NUMBER, "0", stripped)
+    if any(char.isalpha() or char == "_" for char in stripped):
+        return None
+    return _calculated_power(expression, require_operation=False)
+
+
+def _power_quantity(text: str):
+    match = _POWER_RESULT.fullmatch(text)
+    if match is None:
+        return None
+    value = float(match[1] + (match[2] or "")) * _POWER_SCALE[match[3]]
+    if not math.isfinite(value) or value < 0:
+        raise ValueError("Power quantity must be finite and nonnegative")
+    return value, _POWER_SCALE[match[3]]
+
+
+def _power_comparison(left, relation, right, *, arithmetic_result=False):
+    if relation in {"=", "≈"}:
+        return math.isclose(left, right, rel_tol=1e-5 if arithmetic_result else 1e-12, abs_tol=1e-12 if arithmetic_result else 0)
+    if relation in {"≤", "<=", "≦"}:
+        return left <= right or math.isclose(left, right, rel_tol=1e-12, abs_tol=0)
+    if relation in {"≥", ">=", "≧"}:
+        return _power_comparison(right, "≤", left)
+    if math.isclose(left, right, rel_tol=1e-12, abs_tol=0):
+        return False  # Unit scaling must not turn equality into strict order.
+    return left < right if relation == "<" else left > right if relation == ">" else False
+
+
+def _checked_power_formula(line, power, stress_kind):
+    """Return 1 for a numeric proof, 0 for a checked annotation, None otherwise."""
+    if len(line) > 2000:
+        raise ValueError("Power formula too long")
+    if re.search(r"(?<!\w)(?:nan|inf|infinity)(?!\w)|∞", line, re.IGNORECASE):
+        raise ValueError("Power formula contains a non-finite quantity")
+    markers = list(_POWER_FORMULA.finditer(line))
+    if not markers:
+        parts = _BOUND_RELATION.split(line)
+        if len(parts) > 1 and _power_quantity(parts[0]) is not None:
+            values = [_power_quantity(part) for part in parts[::2]]
+            if any(value is None for value in values) or any(not _power_comparison(values[i][0], relation, values[i + 1][0]) for i, relation in enumerate(parts[1::2])):
+                raise ValueError("Incorrect auxiliary power comparison or conversion")
+            return 0  # A conversion without a P label is still not a derivation.
+        return None
+    if len(markers) != 1:
+        raise ValueError("Use one power proof per formula row")
+    marker = markers[0]
+    named = _NAMED_POWER_BOUND.search(line)
+    if named and named[1] + "_bound" != stress_kind:
+        raise ValueError("Wrong bound kind")
+    direction = _BOUND_DIRECTIONS[stress_kind]
+    parts = _BOUND_RELATION.split(line[marker.end():])
+    if marker[1] not in direction | {"=", "≈"} or any(op not in direction | {"=", "≈"} for op in parts[1::2]):
+        raise ValueError("Wrong bound direction")
+    quantities = [_power_quantity(part) for part in parts[::2]]
+    operators = parts[1::2]
+    proof, calculated, first = False, None, 0
+    for index, operator in enumerate(operators):
+        if operator in {"=", "≈"} and quantities[index + 1] is not None and quantities[index] is None:
+            value, has_units = _calculated_power(parts[index * 2])
+            calculated = value if has_units else value * quantities[index + 1][1]
+            if not _power_comparison(calculated, operator, quantities[index + 1][0], arithmetic_result=True) or any(q is not None for q in quantities[:index + 1]):
+                raise ValueError("Incorrect numeric substitution")
+            # Symbolic prefixes are not proved here, but every decidable numeric
+            # prefix must be valid and consistent with the later substitution.
+            known = []
+            for prefix_index in range(index):
+                prefix = _numeric_power_prefix(parts[prefix_index * 2])
+                if prefix is not None:
+                    number, unitful = prefix
+                    known.append((prefix_index, number if unitful else number * quantities[index + 1][1]))
+            known.append((index, calculated))
+            for (left_index, left), (right_index, right) in zip(known, known[1:]):
+                relations = operators[left_index:right_index]
+                relation = next((op for op in relations if op in {"<", ">"}), None)
+                relation = relation or next((op for op in relations if op not in {"=", "≈"}), "=")
+                if not _power_comparison(left, relation, right):
+                    raise ValueError("Incorrect numeric prefix relation")
+            proof, first = True, index + 1
+            break
+    if not proof and not any(q is not None for q in quantities):
+        if re.search(r"(?<![\w.])" + _NUMBER, line[marker.end():]):
+            raise ValueError("Numeric power needs an explicit W result")
+        return 0  # Symbolic relations alone never establish the numeric bound.
+    if any(q is None for q in quantities[first:]):
+        raise ValueError("Unsupported power quantity chain")
+    bound = quantities[first][0]
+    relaxed = False
+    for index in range(first, len(operators)):
+        left, right = quantities[index][0], quantities[index + 1][0]
+        relation = operators[index]
+        if not _power_comparison(left, relation, right):
+            raise ValueError("Incorrect power comparison or unit conversion")
+        # Select the first explicit conservative relaxation. Later limits and
+        # unit conversions are comparisons, not the formal state.P bound.
+        if proof and not relaxed and relation in {"≤", "<=", "≦", "≥", ">=", "≧"}:
+            bound, relaxed = right, True
+    if not math.isclose(bound, power, rel_tol=1e-5, abs_tol=1e-12):
+        raise ValueError("Power bound differs from state.P")
+    if proof and not _power_comparison(calculated, "≤" if stress_kind == "upper_bound" else "≥", power):
+        raise ValueError("Power rounding must be conservative")
+    return int(proof)
 
 
 def _power_bound_formulas(lines: list[str], power: float | None, stress_kind: Any) -> bool:
-    """Never let unrelated limit equations conceal an invalid numeric bound."""
+    """Verify all numeric claims and require an independent arithmetic proof."""
     direction = _BOUND_DIRECTIONS.get(stress_kind) if isinstance(stress_kind, str) else None
-    if not direction:
+    if not direction or power is None or not math.isfinite(power) or power < 0:
         return False
-    numeric_proofs = []
-    for line in lines:
-        markers = list(_POWER_BOUND.finditer(line))
-        names = list(_NAMED_POWER_BOUND.finditer(line))
-        # Keep each proof in its own formula row, so a second expression cannot
-        # hide a failed numeric substitution earlier on the same line.
-        if len(markers) + len(names) > 1:
-            return False
-        marker = markers[0] if markers else None
-        named = names[0] if names else None
-        if marker:
-            tail = line[marker.end():]
-            if marker[1] not in direction or any(op not in direction | {"=", "≈"} for op in _BOUND_RELATION.split(tail)[1::2]):
-                return False
-            if re.search(r"[0-9]", tail):
-                numeric_proofs.append(_numeric_power_bound(line, power, stress_kind))
-            # A symbolic relation is not numeric evidence. A separate explicitly
-            # named upper/lower bound may provide the numeric substitution below.
-        elif named:
-            if named[1] + "_bound" != stress_kind:
-                return False
-            relation = "≤" if stress_kind == "upper_bound" else "≥"
-            numeric_proofs.append(_numeric_power_bound("P" + relation + line[named.end():], power, stress_kind))
-    return bool(numeric_proofs) and all(numeric_proofs)
+    try:
+        checked = [_checked_power_formula(line, power, stress_kind) for line in lines]
+        return any(value == 1 for value in checked)
+    except (ArithmeticError, ValueError, TypeError, SyntaxError, RecursionError):
+        return False
+
+
+def _numeric_power_bound(expr: str, power: float | None, stress_kind: Any) -> bool:
+    return _power_bound_formulas([expr], power, stress_kind)
 
 
 def validate_power_decision(card: dict[str, Any]) -> list[str]:
@@ -372,7 +485,7 @@ def validate_judge_card(
                         # P≈0 态允许「可忽略/≈0」，不强制再写 P= 行
                         near_zero = p_val is not None and abs(p_val) < 1e-9
                         expressions = [str(x.get("expr") or "") for x in fl]
-                        has_bound = any(_POWER_BOUND.search(line) or _NAMED_POWER_BOUND.search(line) for line in expressions)
+                        has_bound = s.get("stress_kind") in ("upper_bound", "lower_bound") or any(_POWER_BOUND.search(line) or _NAMED_POWER_BOUND.search(line) for line in expressions)
                         has_p = _power_bound_formulas(expressions, p_val, s.get("stress_kind")) if has_bound else re.search(
                             r"(P\s*[=≈]|P_[A-Za-z0-9]+\s*[=≈]|P\s*[\(（]|(?:功耗|耗散功率|耗散)\s*[=≈]"
                             r"|耗散\s*可忽略|功耗\s*可忽略|≈\s*0\s*W"
