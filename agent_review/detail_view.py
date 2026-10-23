@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from decimal import Decimal
 from pathlib import Path
 
 VERSION='detail.v2'
@@ -35,7 +36,14 @@ def text(value):
 def value_text(value,unit=''):
     if value is None:return '尚未确定'
     if isinstance(value,(float,int)) and not isinstance(value,bool):
-        return ((f'{value*1000:.2f}' if abs(value*1000)>=0.01 or value==0 else f'{value*1000:.6g}')+' mW') if unit=='W' else f'{value:g} {unit}'.strip()
+        if unit=='W':
+            # Unit conversion must not round an upper bound down or a lower
+            # bound up. Preserve the recorded decimal value in the display.
+            shown=format(Decimal(str(value))*1000,'f')
+            if '.' in shown:shown=shown.rstrip('0').rstrip('.')
+            if shown=='-0':shown='0'
+            return shown+' mW'
+        return f'{value:g} {unit}'.strip()
     return text(value)+((' '+unit) if unit else '')
 
 def native(card):return card.get('review_v1') or (card if card.get('schema_version')=='review.v1' else None)

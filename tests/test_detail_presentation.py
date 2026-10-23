@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from agent_review.detail_view import build, explicit_primary, QUANTITY
+from agent_review.detail_view import build, explicit_primary, value_text, QUANTITY
 from agent_review.detail_prose import context, validate
 import re
 
@@ -47,6 +47,36 @@ class DetailPresentationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:v=build(c,Path(d))
         self.assertEqual(len(v['materials']),1)
         self.assertIn('尚未确定',[r['text'] for r in v['assessment_rows']])
+
+    def test_power_display_preserves_bound_precision_zero_and_tiny_values(self):
+        for value, expected in ((0.012543, '12.543 mW'), (0.012547, '12.547 mW'),
+                                (0, '0 mW'), (-0.0, '0 mW'), (0.05, '50 mW'),
+                                (1e-10, '0.0000001 mW'), (1.23456789e-8, '0.0000123456789 mW')):
+            with self.subTest(value=value):
+                self.assertEqual(value_text(value, 'W'), expected)
+
+    def test_power_precision_keeps_other_units_and_unknown_values(self):
+        for value, unit, expected in ((12.3456789, 'V', '12.3457 V'), (47000, 'Ω', '47000 Ω'),
+                                      (2.5, '', '2.5'), (None, 'W', '尚未确定'),
+                                      (True, 'W', '是 W'), ('原始值', 'W', '原始值 W')):
+            with self.subTest(value=value, unit=unit):
+                self.assertEqual(value_text(value, unit), expected)
+
+    def test_bound_display_does_not_rewrite_machine_card(self):
+        c=self.card(states=[{'name':'正式上界','role':'primary','P':0.012543},
+                            {'name':'独立下界','role':'comparison','P':0.012547}],
+                    decision_basis={'kind':'envelope_upper_bound','value_w':0.012543})
+        c['electrical']={'P_limit':0.05,'P_max':None}
+        before=copy.deepcopy(c)
+        with tempfile.TemporaryDirectory() as d:v=build(c,Path(d))
+        upper=next(row for row in v['assessment_rows'] if row['key']=='P_upper_bound')
+        self.assertEqual(upper['text'], '12.543 mW')
+        self.assertEqual(v['primary']['value_text'], '12.543 mW')
+        self.assertEqual(v['comparisons'][0]['value_text'], '12.547 mW')
+        self.assertIn('精确最大功耗尚未确定', v['assessment_text'])
+        # The existing adapter may attach presentation-only cause metadata;
+        # every original machine field and number must remain untouched.
+        self.assertEqual({key:c[key] for key in before}, before)
 
     def test_prose_must_cite_supplied_source(self):
         c=self.card()
