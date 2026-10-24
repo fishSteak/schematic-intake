@@ -37,8 +37,60 @@ def _normalize_power_formula_text(text: str) -> str:
                                         "／": "/", "＜": "<", "＞": ">", "＾": "^"})).rstrip().removesuffix("。").rstrip()
 
 
-def _calculated_power(expression: str, *, require_operation=True, allow_negative=False) -> tuple[float, bool]:
-    """Check dimensions; delegate numeric arithmetic to the existing safe tool."""
+def _independent_power_derivation(tree, quantities, output_scale):
+    """Distinguish deriving power from merely rescaling an existing power value.
+
+    Unitful arithmetic must construct W from electrical quantities, not a W
+    operand decorated with cancelling units. For historical unit-free formulae,
+    retain the recognizable squared-voltage/resistance or squared-current times
+    resistance forms, including scalar output conversions. Bare products have
+    no physical identity; callers must supply V/A units instead of guessing.
+    """
+    if quantities:
+        return all(dimension != (1, 1) for _, dimension in quantities.values())
+
+    from agent_review.llm_tools import MaterialTools
+
+    def value(node):
+        return MaterialTools.calculate(ast.unparse(node))["value"]
+
+    def squared(node):
+        return (isinstance(node, ast.BinOp) and isinstance(node.op, ast.Pow)
+                and isinstance(node.right, ast.Constant) and type(node.right.value) in (int, float)
+                and node.right.value == 2)
+
+    def derived(node):
+        if isinstance(node, ast.UnaryOp):
+            return derived(node.operand)
+        if not isinstance(node, ast.BinOp):
+            return False
+        if isinstance(node.op, ast.Div):
+            if squared(node.left):
+                return True  # Preserve the direct historical 1**2 / R form.
+            return (derived(node.left)
+                    and (value(node.left) != 1 or value(node.right) == 1 / output_scale))
+        if isinstance(node.op, ast.Mult):
+            for factor, other in ((node.left, node.right), (node.right, node.left)):
+                if value(factor) != 1:
+                    if squared(factor) or derived(factor):
+                        return True
+                elif derived(factor) and value(other) == output_scale:
+                    # A genuine 1 W resistor calculation may be converted to
+                    # mW. An unrelated adopted value times (1**2 / 1) cannot
+                    # borrow that neutral factor's electrical identity.
+                    return True
+            return False
+        if isinstance(node.op, (ast.Add, ast.Sub)):
+            # An unrelated constant cannot borrow the identity of an appended
+            # electrical expression, e.g. adopted_power + 0 * V**2 / R.
+            return derived(node.left) and derived(node.right)
+        return False
+
+    return derived(tree.body)
+
+
+def _calculated_power(expression: str, *, require_operation=True, allow_negative=False, output_scale=1) -> tuple[float, bool, bool]:
+    """Return value, unit presence and derivation identity after safe arithmetic."""
     from agent_review.llm_tools import MaterialTools
     if len(expression) > 300 or "_" in expression:
         raise ValueError("Unsupported power expression")
@@ -90,10 +142,10 @@ def _calculated_power(expression: str, *, require_operation=True, allow_negative
     value = MaterialTools.calculate(numeric)["value"]
     if not math.isfinite(value) or (value < 0 and not allow_negative):
         raise ValueError("Power must be finite and nonnegative")
-    return value, bool(quantities)
+    return value, bool(quantities), _independent_power_derivation(tree, quantities, output_scale)
 
 
-def _numeric_power_prefix(expression):
+def _numeric_power_prefix(expression, *, output_scale=1):
     """Return None only for a genuinely symbolic prefix, never broken arithmetic."""
     stripped = _CALC_QUANTITY.sub("0", expression)
     for number in re.finditer(r"(?<![\w.])" + _NUMBER, stripped):
@@ -103,7 +155,7 @@ def _numeric_power_prefix(expression):
     stripped = re.sub(_NUMBER, "0", stripped)
     if any(char.isalpha() or char == "_" for char in stripped):
         return None
-    return _calculated_power(expression, require_operation=False)
+    return _calculated_power(expression, require_operation=False, output_scale=output_scale)
 
 
 def _power_quantity(text: str, *, allow_negative=False):
@@ -158,7 +210,7 @@ def _checked_auxiliary_power(line):
         if quantity is not None:
             values.append((quantity[0], False))
         else:
-            value, unitful = _calculated_power(part, require_operation=False, allow_negative=margin)
+            value, unitful, _ = _calculated_power(part, require_operation=False, allow_negative=margin)
             values.append((value if unitful else value * reference[1], True))
     for index, relation in enumerate(parts[1::2]):
         left, left_calculated = values[index]
@@ -202,10 +254,11 @@ def _checked_power_formula(line, power, stress_kind):
         raise ValueError("Wrong bound direction")
     quantities = [_power_quantity(part) for part in parts[::2]]
     operators = parts[1::2]
-    proof, calculated, first = False, None, 0
+    substituted, independent, calculated, first = False, False, None, 0
     for index, operator in enumerate(operators):
         if operator in {"=", "≈"} and quantities[index + 1] is not None and quantities[index] is None:
-            value, has_units = _calculated_power(parts[index * 2])
+            output_scale = 1 / quantities[index + 1][1]
+            value, has_units, independent = _calculated_power(parts[index * 2], output_scale=output_scale)
             calculated = value if has_units else value * quantities[index + 1][1]
             if not _power_comparison(calculated, operator, quantities[index + 1][0], arithmetic_result=True) or any(q is not None for q in quantities[:index + 1]):
                 raise ValueError("Incorrect numeric substitution")
@@ -213,9 +266,10 @@ def _checked_power_formula(line, power, stress_kind):
             # prefix must be valid and consistent with the later substitution.
             known = []
             for prefix_index in range(index):
-                prefix = _numeric_power_prefix(parts[prefix_index * 2])
+                prefix = _numeric_power_prefix(parts[prefix_index * 2], output_scale=output_scale)
                 if prefix is not None:
-                    number, unitful = prefix
+                    number, unitful, prefix_derivation = prefix
+                    independent = independent or prefix_derivation
                     known.append((prefix_index, number if unitful else number * quantities[index + 1][1]))
             known.append((index, calculated))
             for (left_index, left), (right_index, right) in zip(known, known[1:]):
@@ -224,9 +278,9 @@ def _checked_power_formula(line, power, stress_kind):
                 relation = relation or next((op for op in relations if op not in {"=", "≈"}), "=")
                 if not _power_comparison(left, relation, right):
                     raise ValueError("Incorrect numeric prefix relation")
-            proof, first = True, index + 1
+            substituted, first = True, index + 1
             break
-    if not proof and not any(q is not None for q in quantities):
+    if not substituted and not any(q is not None for q in quantities):
         if re.search(r"(?<![\w.])" + _NUMBER, line[marker.end():]):
             raise ValueError("Numeric power needs an explicit W result")
         return 0  # Symbolic relations alone never establish the numeric bound.
@@ -241,9 +295,9 @@ def _checked_power_formula(line, power, stress_kind):
             raise ValueError("Incorrect power comparison or unit conversion")
         # Select the first explicit conservative relaxation. Later limits and
         # unit conversions are comparisons, not the formal state.P bound.
-        if proof and not relaxed and relation in {"≤", "<=", "≦", "≥", ">=", "≧"}:
+        if substituted and not relaxed and relation in {"≤", "<=", "≦", "≥", ">=", "≧"}:
             bound, relaxed = right, True
-    if not proof and not named and marker[1] == "=" and all(op == "=" for op in operators):
+    if not substituted and not named and marker[1] == "=" and all(op == "=" for op in operators):
         # An actual constant operating point is not the envelope value. It may
         # annotate an independently proved bound only when it lies inside it.
         if not _power_comparison(bound, "≤" if stress_kind == "upper_bound" else "≥", power):
@@ -251,9 +305,9 @@ def _checked_power_formula(line, power, stress_kind):
         return 0
     if not math.isclose(bound, power, rel_tol=1e-5, abs_tol=1e-12):
         raise ValueError("Power bound differs from state.P")
-    if proof and not _power_comparison(calculated, "≤" if stress_kind == "upper_bound" else "≥", power):
+    if substituted and not _power_comparison(calculated, "≤" if stress_kind == "upper_bound" else "≥", power):
         raise ValueError("Power rounding must be conservative")
-    return int(proof)
+    return int(independent)
 
 
 def _power_bound_formulas(lines: list[str], power: float | None, stress_kind: Any, *, reasons=None) -> bool:
@@ -452,8 +506,16 @@ def validate_judge_card(
         from agent_review.review_contract import validate_review
         return validate_review(card, board=board, rule_id=rule_id, obj=obj)
     errs: list[str] = []
-    from agent_review.main_analysis import validate as validate_main, pilot_enabled
-    errs.extend(validate_main(card,required=bool(board and pilot_enabled(board,rule_id,obj))))
+    from agent_review.main_analysis import VERSION as MAIN_VERSION, validate as validate_main, pilot_enabled
+    workbench_context = {}
+    if board:
+        from kernel.util import read_json
+        from agent_review.batching import safe_object_name
+        workbench = Path(board)/'review_out/agent_jobs'/rule_id/(safe_object_name(obj)+'.context.json')
+        if workbench.is_file():
+            workbench_context = read_json(workbench)
+    main_required = workbench_context.get('main_analysis_contract') == MAIN_VERSION
+    errs.extend(validate_main(card, required=main_required or bool(board and pilot_enabled(board,rule_id,obj))))
     if card.get("rule_id") != rule_id:
         errs.append(f"rule_id mismatch: {card.get('rule_id')!r} != {rule_id!r}")
     if str(card.get("object") or "") != str(obj):
@@ -465,12 +527,8 @@ def validate_judge_card(
         if not str(card.get(k) or "").strip():
             errs.append(f"empty four-grid field: {k}")
     current_analysis = card.get('analysis_contract') == ANALYSIS_VERSION
-    if board:
-        from kernel.util import read_json
-        from agent_review.batching import safe_object_name
-        workbench = Path(board)/'review_out/agent_jobs'/rule_id/(safe_object_name(obj)+'.context.json')
-        if not (card.get('meta') or {}).get('dry_run') and workbench.exists() and read_json(workbench).get('analysis_contract') == ANALYSIS_VERSION and not current_analysis:
-            errs.append('analysis_contract required by current workbench')
+    if not (card.get('meta') or {}).get('dry_run') and workbench_context.get('analysis_contract') == ANALYSIS_VERSION and not current_analysis:
+        errs.append('analysis_contract required by current workbench')
     if current_analysis:
         from jsonschema import Draft202012Validator
         analysis = card.get('analysis_steps')

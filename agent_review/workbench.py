@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from agent_review.batching import safe_object_name
-from kernel.util import out_dir
+from kernel.util import out_dir, read_json
 from agent_review.criteria import criteria_for_rule
 from agent_review.design_pin_labels import design_pin_labels
 from agent_review.page_evidence import for_object as page_evidence_for_object
@@ -118,6 +118,13 @@ def build_judge_workbench(
 ) -> dict[str, Any]:
     """为 Judge 生成可读工作台（一对象一份）。"""
     o = out_dir(board)
+    # These workbenches feed the direct LLM dispatcher. New legacy P11-A01
+    # reviews always bind their primary analysis to the decision basis; the
+    # opt-in review.v1 route keeps its own schema and proof contract.
+    registry_path = o / "review_contracts.json"
+    registry = read_json(registry_path) if registry_path.is_file() else {}
+    native_review = registry.get(rule_id, {}).get(obj) == "review.v1"
+    required_main = rule_id == "P11-A01" and not native_review
     comps = kg.get("components") or {}
     nets = kg.get("nets") or {}
     c = comps.get(obj) or {}
@@ -167,7 +174,7 @@ def build_judge_workbench(
         "source_page_evidence": page_evidence_for_object(board,rule_id,obj),
         "available_main_analysis_contract": MAIN_VERSION if rule_id=='P11-A01' else None,
         "delivery_policy": __import__("agent_review.delivery", fromlist=["policy"]).policy(board,rule_id,obj),
-        "main_analysis_contract": (MAIN_VERSION if pilot_enabled(board,rule_id,obj) else None),
+        "main_analysis_contract": (MAIN_VERSION if required_main or pilot_enabled(board,rule_id,obj) else None),
         "analysis_contract": "analysis.v1",
         "read_first": [
             "check_criteria 原始完整条款；design_pin_labels 原设计脚名；source_page_evidence 原始页面图与来源记录",
