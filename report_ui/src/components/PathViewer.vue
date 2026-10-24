@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 const props = defineProps({
   pages: { type: Array, required: true },
@@ -7,15 +7,6 @@ const props = defineProps({
   who: { type: String, default: "" },
 });
 const emit = defineEmits(["close"]);
-
-const viewerRoot = ref(null);
-const closeButton = ref(null);
-const fullRoot = ref(null);
-const fullCloseButton = ref(null);
-const maxSideW = ref(900);
-let opener = null;
-let fullOpener = null;
-let previousBodyOverflow = '';
 
 const index = ref(0);
 const split = ref(false);
@@ -148,7 +139,7 @@ function makePane(page, i, host) {
   });
   canvas.addEventListener("pointerup", () => { drag = null; });
   host.appendChild(el);
-  return { el, st, zoomAt, redraw: sharp.redraw, reset() { st.z = 1; st.x = 0; st.y = 0; sharp.apply(); paintZoom(); } };
+  return { el, st, zoomAt, reset() { st.z = 1; st.x = 0; st.y = 0; sharp.apply(); paintZoom(); } };
 }
 function renderView() {
   const host = viewEl.value;
@@ -208,9 +199,7 @@ function openFull(i) {
   if (!page) return;
   full = { z: 1, x: 0, y: 0 };
   fullTitle.value = page.label || "全图";
-  fullOpener = document.activeElement;
   fullOpen.value = true;
-  nextTick(() => fullCloseButton.value?.focus());
   requestAnimationFrame(() => {
     const stage = fullStage.value;
     if (!stage) return;
@@ -221,7 +210,6 @@ function openFull(i) {
 }
 function closeFull() {
   fullOpen.value = false;
-  nextTick(() => { if (fullOpener?.isConnected) fullOpener.focus({ preventScroll: true }); });
 }
 function onFullWheel(ev) {
   zoomFull(ev.clientX, ev.clientY, full.z * (ev.deltaY < 0 ? 1.12 : 1 / 1.12));
@@ -268,80 +256,35 @@ function onBarDown(ev) {
 function onBarMove(ev) {
   if (!barDrag || !mainEl.value) return;
   const rect = mainEl.value.getBoundingClientRect();
-  resizeSide(rect.right - ev.clientX);
+  sideW.value = Math.min(rect.width - 280, Math.max(240, rect.right - ev.clientX));
 }
 function onBarUp() {
   barDrag = false;
 }
-function resizeSide(width) {
-  if (!mainEl.value) return;
-  maxSideW.value = Math.max(240, Math.floor(mainEl.value.getBoundingClientRect().width - 280));
-  sideW.value = Math.min(maxSideW.value, Math.max(240, width));
-  requestAnimationFrame(() => panes.forEach(p => p.redraw()));
-}
-function onBarKey(ev) {
-  if (ev.key === 'ArrowLeft') resizeSide(sideW.value + 24);
-  else if (ev.key === 'ArrowRight') resizeSide(sideW.value - 24);
-  else if (ev.key === 'Home') resizeSide(240);
-  else if (ev.key === 'End') resizeSide(maxSideW.value);
-  else return;
-  ev.preventDefault();
-}
-function onResize() {
-  resizeSide(sideW.value);
-  fullSharp?.redraw();
-}
 function onKey(ev) {
-  if (ev.key === 'Escape') {
-    ev.preventDefault();
-    ev.stopPropagation();
-    if (fullOpen.value) closeFull();
-    else emit('close');
-    return;
-  }
-  if (ev.key !== 'Tab') return;
-  const root = fullOpen.value ? fullRoot.value : viewerRoot.value;
-  if (!root) return;
-  const controls = [...root.querySelectorAll('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')]
-    .filter(el => el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
-  if (!controls.length) { ev.preventDefault(); root.focus(); return; }
-  const first = controls[0], last = controls[controls.length - 1];
-  if (!root.contains(document.activeElement) || (ev.shiftKey && document.activeElement === first) || (!ev.shiftKey && document.activeElement === last)) {
-    ev.preventDefault();
-    (ev.shiftKey ? last : first).focus();
-  }
+  if (!fullOpen.value) return;
+  if (ev.key === "Escape") closeFull();
 }
 onMounted(() => {
-  opener = document.activeElement;
-  previousBodyOverflow = document.body.style.overflow;
-  document.body.style.overflow = 'hidden';
   if (pageCount.value < 2) split.value = false;
   renderView();
-  resizeSide(sideW.value);
-  closeButton.value?.focus({ preventScroll: true });
-  window.addEventListener('keydown', onKey);
-  window.addEventListener('resize', onResize);
+  window.addEventListener("keydown", onKey);
 });
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKey);
-  window.removeEventListener('resize', onResize);
-  document.body.style.overflow = previousBodyOverflow;
-  if (opener?.isConnected) opener.focus({ preventScroll: true });
-});
+onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
 </script>
 
 <template>
-  <div ref="viewerRoot" class="viewer" role="dialog" aria-modal="true" :aria-label="`${who} 分析图查看器`" tabindex="-1">
-    <div class="top" :inert="fullOpen ? true : undefined">
-      <button type="button" ref="closeButton" class="icon-btn" @click="emit('close')">← 回到明细</button>
+  <div class="viewer">
+    <div class="top">
+      <button type="button" class="icon-btn" @click="emit('close')">← 回到明细</button>
       <div class="who">{{ who }}</div>
     </div>
-    <div ref="mainEl" class="mainv" :inert="fullOpen ? true : undefined" :style="{ '--side-w': sideW + 'px' }">
+    <div ref="mainEl" class="mainv" :style="{ '--side-w': sideW + 'px' }">
       <div class="stage">
         <div class="rail">
           <template v-for="(page, i) in pages" :key="page.src + i">
             <span v-if="i > 0" class="join">关联</span>
-            <button type="button" class="step" :class="{ on: shown.has(i) }" :aria-pressed="shown.has(i)" @click="selectPage(i)">
+            <button type="button" class="step" :class="{ on: shown.has(i) }" @click="selectPage(i)">
               <i>{{ i + 1 }}</i>
               <span><strong>{{ page.label || "本页" }}</strong></span>
             </button>
@@ -353,15 +296,15 @@ onBeforeUnmount(() => {
         </div>
         <div ref="viewEl" class="view"></div>
         <div class="zoom">
-          <button type="button" aria-label="缩小图纸" @click="zoomAll(1 / 1.25)">−</button>
+          <button type="button" @click="zoomAll(1 / 1.25)">−</button>
           <span>{{ zoomLabel }}</span>
-          <button type="button" aria-label="放大图纸" @click="zoomAll(1.25)">+</button>
+          <button type="button" @click="zoomAll(1.25)">+</button>
           <button type="button" @click="fitAll">适应</button>
           <span class="hint">滚轮缩放 · 拖动平移</span>
         </div>
       </div>
-      <div class="split-bar" role="separator" tabindex="0" aria-label="调整图纸与说明宽度" aria-orientation="vertical" aria-controls="path-viewer-side" :aria-valuemin="240" :aria-valuemax="maxSideW" :aria-valuenow="sideW" :aria-valuetext="`${sideW} 像素说明栏`" title="左右拖动，或使用左右方向键调整" @keydown="onBarKey" @pointerdown="onBarDown" @pointermove="onBarMove" @pointerup="onBarUp" @pointercancel="onBarUp"></div>
-      <aside id="path-viewer-side" class="side" aria-label="图幅说明与计算">
+      <div class="split-bar" title="左右拖动" @pointerdown="onBarDown" @pointermove="onBarMove" @pointerup="onBarUp" @pointercancel="onBarUp"></div>
+      <aside class="side">
         <h2>这一段</h2>
         <p>{{ activePage.label || "本页" }}</p>
         <template v-if="lines.length">
@@ -377,15 +320,15 @@ onBeforeUnmount(() => {
         <div class="hint foot">图上只留结论和端压。算式和出处在这一侧，不画在铜线上。</div>
       </aside>
     </div>
-    <div v-if="fullOpen" ref="fullRoot" class="fullprev" role="dialog" aria-modal="true" aria-labelledby="full-image-title" tabindex="-1">
+    <div v-if="fullOpen" class="fullprev">
       <div class="bar">
-        <b id="full-image-title">{{ fullTitle }}</b>
+        <b>{{ fullTitle }}</b>
         <span>{{ fullZoom }}</span>
         <span class="spacer"></span>
-        <button type="button" aria-label="缩小全图" @click="fullBy(1 / 1.25)">−</button>
-        <button type="button" aria-label="放大全图" @click="fullBy(1.25)">+</button>
+        <button type="button" @click="fullBy(1 / 1.25)">−</button>
+        <button type="button" @click="fullBy(1.25)">+</button>
         <button type="button" @click="fitFull">适应全图</button>
-        <button ref="fullCloseButton" type="button" @click="closeFull">关闭</button>
+        <button type="button" @click="closeFull">关闭</button>
       </div>
       <div
         ref="fullStage"
@@ -428,7 +371,7 @@ onBeforeUnmount(() => {
 .hint { color: #5d6c67; font-size: 12px; }
 .split-bar { cursor: col-resize; position: relative; }
 .split-bar::before { content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 2px; background: #dde8e3; }
-.side { min-width: 0; min-height: 0; overflow-wrap: anywhere; background: #fff; border-left: 1px solid #dde8e3; padding: 16px; overflow: auto; }
+.side { background: #fff; border-left: 1px solid #dde8e3; padding: 16px; overflow: auto; }
 .side h2 { margin: 0 0 8px; font-size: 15px; }
 .chain-h { margin-top: 18px; }
 .side p { margin: 0 0 12px; font-size: 15px; line-height: 1.55; }
@@ -445,40 +388,4 @@ onBeforeUnmount(() => {
 .spacer { flex: 1; }
 .bar button { border-color: rgba(255,255,255,.35); background: transparent; color: #fff; padding: 6px 12px; font-size: 13px; }
 .full-stage { flex: 1; min-height: 0; position: relative; cursor: grab; touch-action: none; }
-
-/* Narrow screens keep the image controls above, and the complete evidence below. */
-@media (max-width: 760px) {
-  .viewer { height: 100dvh; padding-bottom: env(safe-area-inset-bottom); }
-  .top { flex-shrink: 0; min-height: 60px; padding: 8px 12px; }
-  .top .icon-btn { min-height: 44px; flex-shrink: 0; }
-  .who { min-width: 0; overflow-wrap: anywhere; }
-  .mainv { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(260px, 1.5fr) minmax(100px, 1fr); }
-  .split-bar { display: none; }
-  .stage { min-height: 0; }
-  .rail { gap: 6px; padding: 8px 12px; max-height: 112px; }
-  .step { min-width: 160px; max-width: 260px; min-height: 44px; flex-shrink: 0; padding: 7px 9px; }
-  .step strong { font-size: 13px; line-height: 1.5; }
-  .tools { flex-shrink: 0; }
-  .tools button { min-height: 44px; }
-  .view { padding: 0 12px; gap: 6px; }
-  .view.split { grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(2, minmax(0, 1fr)); }
-  .view :deep(.pane) { min-width: 0; border-radius: 8px; }
-  .view :deep(.full-btn) { min-height: 44px; min-width: 54px; right: 6px; top: 6px; border: 1px solid #dce4ed; border-radius: 6px; background: #fff; color: #172b43; }
-  .zoom { width: auto; max-width: calc(100% - 24px); flex-wrap: wrap; margin: 8px 12px; padding: 5px; gap: 6px; border-radius: 8px; }
-  .zoom button { width: auto; min-width: 44px; height: 44px; padding: 0 8px; border-radius: 6px; }
-  .zoom>span:not(.hint) { min-width: 42px; font-size: 13px; text-align: center; }
-  .zoom .hint { display: none; }
-  .side { border-left: 0; border-top: 1px solid #dce4ed; padding: 12px; overscroll-behavior: contain; }
-  .side p,.chain .expr { font-size: 14px; }
-  .chain article { padding: 10px; border-radius: 8px; }
-  .bar { flex-wrap: wrap; flex-shrink: 0; gap: 6px; padding: 8px 12px; }
-  .bar b { flex: 1 1 calc(100% - 65px); min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
-  .bar .spacer { display: none; }
-  .bar button { min-height: 44px; min-width: 44px; padding: 8px 12px; }
-}
-@media (max-width: 760px) and (max-height: 520px) {
-  .mainv { grid-template-rows: minmax(0, 2fr) minmax(0, 1fr); }
-  .rail { max-height: 62px; padding-top: 6px; padding-bottom: 6px; }
-  .zoom { margin-top: 6px; margin-bottom: 6px; }
-}
 </style>
