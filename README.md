@@ -32,6 +32,8 @@ npm --prefix report_ui run build
 
 `report_ui/dist` 不进入 Git，新 clone 后需要构建。开发前端可运行 `npm --prefix report_ui run dev`，Vite 的 `/api` 和 `/reports` 代理指向本机 8765 端口。
 
+前端按工程评审工作台组织项目、材料、运行、证据复核与模型配置。统一布局、颜色、响应式和交互规则见 [工作台设计规范](design-system/schematic-review-workbench/MASTER.md)，优化依据为 `ui-ux-pro-max` 的高密度仪表盘与 Vue 指南。
+
 ## fishsteak.xyz 子目录部署
 
 工作台入口为 `https://fishsteak.xyz/schematic/`，当前按用户要求免登录访问，不依赖 Hermes 主站会话。这是公开共享工作台：知道地址的人可以访问同一批项目、材料和报告，修改设置或启动使用已配置模型额度的评审，不提供多租户隔离。

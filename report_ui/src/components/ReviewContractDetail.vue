@@ -14,7 +14,7 @@ const emit = defineEmits(["open-path"]);
 </script>
 <template>
   <div class="review-detail review-body">
-  <section class="rv-summary" data-review-module="summary" :style="{order:moduleOrder('summary')}"><h3 class="rv-section-title">{{ titles.summary }}</h3><p>{{ view.headline }}</p></section>
+  <section class="rv-summary" data-review-module="summary" :style="{order:moduleOrder('summary')}"><h3 class="rv-section-title">{{ titles.summary }}</h3><p>{{ view.headline }}</p><div v-if="view.assessment_rows?.length" class="rv-metrics"><div v-for="r in view.assessment_rows" :key="r.label"><small>{{ r.label }}</small><strong>{{ r.text }}</strong></div></div></section>
   <section class="contract-card rv-premise" data-review-module="premises" :style="{order:moduleOrder('premises')}">
     <h3 class="rv-section-title">{{ titles.premises }}</h3>
     <div class="inputs rv-materials-only">
@@ -25,7 +25,6 @@ const emit = defineEmits(["open-path"]);
   <div class="rv1">
     <section class="rv-panel rv-decision" data-review-module="assessment" :style="{order:moduleOrder('assessment')}">
       <h3 class="rv-section-title">{{ view.assessment_title || '判定要点' }}</h3>
-      <div v-if="view.assessment_rows?.length" class="rv-metrics"><div v-for="r in view.assessment_rows" :key="r.label"><small>{{ r.label }}</small><strong>{{ r.text }}</strong></div></div>
       <p v-if="view.assessment_text">{{ view.assessment_text }}</p>
       <p v-if="view.criterion_text && view.criterion_text !== view.assessment_text">{{ view.criterion_text }}</p>
       <div v-if="view.assessment_checks?.length" class="rv-audit-list"><article v-for="c in view.assessment_checks" :key="c.name"><b>{{ c.name }}</b><p>{{ c.detail }}</p></article></div>
@@ -34,9 +33,9 @@ const emit = defineEmits(["open-path"]);
       <h3 class="rv-kicker rv-section-title">{{ view.primary_module_title || titles.primary }}</h3>
       <div class="rv-heading"><h4 v-if="!view.primary.route_summary" class="rv-case-title">{{ view.primary.title }}</h4><span class="rv-tag">{{ view.primary_label }}</span><span v-if="view.primary.comparison" class="rv-tag rv-tag-neutral">{{ view.primary.comparison }}</span></div>
       <p class="rv-route">{{ view.primary.route_summary }}</p>
-      <div v-if="view.main_analysis" class="rv-basis-scope"><b>分析范围</b><p>{{ view.main_analysis.scope.included }}</p><small>范围外：{{ view.main_analysis.scope.excluded }}</small></div>
-      <div v-if="view.primary.conditions.length" class="rv-condition"><b>成立条件</b><span>{{ view.primary.conditions.join('；') }}</span></div>
-      <button v-if="view.primary.figure" class="figure" @click="emit('open-path', view.primary)"><img :src="asset(view.primary.figure)" :alt="diagramLabel()" /><span>打开{{ diagramLabel() }}</span></button>
+      <details v-if="view.main_analysis" class="rv-basis-scope"><summary>分析范围与适用边界</summary><p>{{ view.main_analysis.scope.included }}</p><p class="rv-scope-excluded">范围外：{{ view.main_analysis.scope.excluded }}</p></details>
+      <details v-if="view.primary.conditions.length" class="rv-conditions"><summary>成立条件 <span>{{ view.primary.conditions.length }} 项</span></summary><div class="rv-condition">{{ view.primary.conditions.join('；') }}</div></details>
+      <button v-if="view.primary.figure" type="button" class="figure" @click="emit('open-path', view.primary)"><img :src="asset(view.primary.figure)" :alt="diagramLabel()" /><span>打开{{ diagramLabel() }}</span></button>
       <p v-else-if="view.primary.route_expected">通路图尚未通过连线校验</p>
       <h4 v-if="view.primary.calculations.length" class="rv-subtitle rv-calc-title">计算过程</h4>
       <ol v-if="view.primary.calculations.length" class="rv-calcs"><li v-for="c in view.primary.calculations" :key="c.id">{{ c.expression }}</li></ol>
@@ -59,8 +58,8 @@ const emit = defineEmits(["open-path"]);
       </div>
     </details>
   </div>
-  <section class="rv-extract" data-review-module="datasheets" :style="{order:moduleOrder('datasheets')}"><h3 class="rv-section-title">{{ titles.datasheets }}</h3><p>资料摘录仅作来源参考，评审采用值见材料与分析思路。</p><p v-for="r in view.resources?.extract_rows || []" :key="r.key">{{ r.label || r.key }}：{{ r.value }} {{ r.unit }}</p><a v-if="view.resources?.datasheet_pdf" :href="asset(view.resources.datasheet_pdf)" target="_blank" rel="noopener">打开规格书 PDF</a><p v-else>未关联规格书 PDF</p></section>
-  <section class="rv-sheets" data-review-module="schematics" :style="{order:moduleOrder('schematics')}"><h3 class="rv-section-title">{{ titles.schematics }}</h3><p v-if="!view.resources?.pages?.length">未关联具体图幅</p><div v-for="p in view.resources?.pages || []" :key="p.page"><a :href="pdfLink(p)" target="_blank" rel="noopener">第 {{ p.page }} 页 · PDF 缩放 / 搜索 / 划选</a><img v-if="p.img" :src="asset(p.img)" :alt="`原理图第 ${p.page} 页`" style="width:100%" /></div></section>
+  <details class="rv-extract" data-review-module="datasheets" :style="{order:moduleOrder('datasheets')}"><summary><h3 class="rv-section-title">{{ titles.datasheets }}</h3></summary><p>资料摘录仅作来源参考，评审采用值见材料与分析思路。</p><p v-for="r in view.resources?.extract_rows || []" :key="r.key">{{ r.label || r.key }}：{{ r.value }} {{ r.unit }}</p><a v-if="view.resources?.datasheet_pdf" :href="asset(view.resources.datasheet_pdf)" target="_blank" rel="noopener">打开规格书 PDF</a><p v-else>未关联规格书 PDF</p></details>
+  <details class="rv-sheets" data-review-module="schematics" :style="{order:moduleOrder('schematics')}"><summary><h3 class="rv-section-title">{{ titles.schematics }}</h3><span>{{ view.resources?.pages?.length || 0 }} 页</span></summary><p v-if="!view.resources?.pages?.length">未关联具体图幅</p><div v-for="p in view.resources?.pages || []" :key="p.page"><a :href="pdfLink(p)" target="_blank" rel="noopener">第 {{ p.page }} 页 · PDF 缩放 / 搜索 / 划选</a><img v-if="p.img" :src="asset(p.img)" :alt="`原理图第 ${p.page} 页`" loading="lazy" style="width:100%" /></div></details>
   </div>
 </template>
 <style src="../review-detail.css"></style>
