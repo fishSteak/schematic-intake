@@ -34,7 +34,7 @@ npm --prefix report_ui run build
 
 ## fishsteak.xyz 子目录部署
 
-工作台入口为 `https://fishsteak.xyz/schematic/`，使用主站已有登录。页面、API、报告、材料与下载均检查主站会话；会话刷新产生的 Cookie 会传回浏览器。主站登录服务不可用时返回 503，不开放匿名访问。本部署是单人共享工作台，登录用户可访问同一批项目与模型配置，不提供多租户隔离。
+工作台入口为 `https://fishsteak.xyz/schematic/`，当前按用户要求免登录访问，不依赖 Hermes 主站会话。这是公开共享工作台：知道地址的人可以访问同一批项目、材料和报告，修改设置或启动使用已配置模型额度的评审，不提供多租户隔离。
 
 前端构建与后端路径须一致；公开构建独立保存，本机默认构建仍可使用：
 
@@ -42,11 +42,10 @@ npm --prefix report_ui run build
 VITE_BASE_PATH=/schematic/ npm --prefix report_ui run build -- --outDir dist-public
 .venv/bin/python -m web_workbench --port 8767 \
   --root-path /schematic --allowed-hosts fishsteak.xyz,127.0.0.1,localhost \
-  --auth-check-url http://127.0.0.1:9119/api/auth/me --login-url /login \
   --ui-dir report_ui/dist-public
 ```
 
-这些选项也可通过 `SCHEMATIC_ROOT_PATH`、`SCHEMATIC_ALLOWED_HOSTS`、`SCHEMATIC_AUTH_CHECK_URL`、`SCHEMATIC_LOGIN_URL`、`SCHEMATIC_UI_DIR` 配置。鉴权检查地址必须是固定回环 HTTP(S) 服务，2xx 放行，401/403 要求重新登录；默认本机模式不启用外部鉴权。仅允许明确的 Host，修改请求校验完整同源 Origin，反向代理头仅信任回环代理。
+这些选项也可通过 `SCHEMATIC_ROOT_PATH`、`SCHEMATIC_ALLOWED_HOSTS`、`SCHEMATIC_AUTH_CHECK_URL`、`SCHEMATIC_LOGIN_URL`、`SCHEMATIC_UI_DIR` 配置。不设置 `--auth-check-url` 和 `SCHEMATIC_AUTH_CHECK_URL` 时免登录。若要恢复主站认证，可添加 `--auth-check-url http://127.0.0.1:9119/api/auth/me --login-url /login`；鉴权检查地址必须是固定回环 HTTP(S) 服务，2xx 放行，401/403 要求登录。仅允许明确的 Host，修改请求校验完整同源 Origin，反向代理头仅信任回环代理。
 
 服务器使用 [systemd 服务配置](deploy/schematic-workbench.service) 保持运行、开机启动，Caddy 的 [子目录路由](deploy/schematic.caddy) 放在主站兜底路由之前。迁移服务器时调整服务文件的用户名、仓库与 Node 路径；服务仍只监听 `127.0.0.1:8767`。安装前备份现有 Caddyfile，合并路由后运行 `caddy validate --config /etc/caddy/Caddyfile`，再 reload。服务更新使用 `sudo systemctl restart schematic-workbench`，日志使用 `journalctl -u schematic-workbench`。回退时移除子目录路由并 reload Caddy，再停止服务；`.workbench/` 保留。
 
