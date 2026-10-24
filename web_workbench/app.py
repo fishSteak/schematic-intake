@@ -98,6 +98,10 @@ def rules_list():
     return [{"id": rid, "title": meta.get(rid, {}).get("name") or TITLES.get(rid, rid), "mode": "review" if rid in agent else "program"} for rid in load_program_rules()["rule_ids"]]
 
 
+# Published report snapshots and hashed UI bundles never change in place.
+IMMUTABLE_CACHE = {"Cache-Control": "private, max-age=604800, immutable"}
+
+
 def safe_asset(base, asset):
     root = Path(base).resolve()
     relative = Path(asset)
@@ -184,7 +188,9 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
 
         def finish(response):
             response.raw_headers.extend((b"set-cookie", value) for value in cookies)
-            response.headers["Cache-Control"] = "no-store"
+            # A rotated session must never be cached; only routes that opt in may be.
+            if cookies or "cache-control" not in response.headers:
+                response.headers["Cache-Control"] = "no-store"
             response.headers["X-Content-Type-Options"] = "nosniff"
             return response
 
@@ -525,7 +531,7 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
     def report_asset(run_id: str, asset: str):
         if not asset:
             asset = "expert_review.html"
-        return FileResponse(safe_asset(report_path(store, run_id), asset))
+        return FileResponse(safe_asset(report_path(store, run_id), asset), headers=IMMUTABLE_CACHE)
 
     @app.get("/{path:path}")
     def frontend(path: str):
@@ -533,7 +539,7 @@ def create_app(home=None, *, repository=ROOT, launch_workers=True, discover=True
             raise HTTPException(404, "接口不存在")
         root = deployment.ui_dir
         if path and "." in Path(path).name:
-            return FileResponse(safe_asset(root, path))
+            return FileResponse(safe_asset(root, path), headers=IMMUTABLE_CACHE if path.startswith("assets/") else None)
         index = root / "index.html"
         if not index.is_file():
             raise HTTPException(503, "前端尚未构建，请执行 npm --prefix report_ui run build")

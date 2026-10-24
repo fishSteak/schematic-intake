@@ -164,10 +164,21 @@ class DeploymentTests(unittest.TestCase):
             self.assertEqual(payload["run"]["report_url"], "/schematic" + stored_url)
             source = payload["source_assets"]["review_out/program_candidate.json"]
             self.assertTrue(source["url"].startswith("/schematic/reports/"))
-            self.assertEqual(client.get(source["url"]).status_code, 200)
+            asset = client.get(source["url"])
+            self.assertEqual(asset.status_code, 200)
+            self.assertEqual(asset.headers["cache-control"], "private, max-age=604800, immutable")
+            self.assertEqual(client.get(f"/schematic/api/reports/{run['id']}/data").headers["cache-control"], "no-store")
             self.assertEqual(client.get(f"/schematic/api/reports/{run['id']}/download").status_code, 200)
             self.assertIn("event: completed", client.get(f"/schematic/api/runs/{run['id']}/events").text)
         self.assertEqual(store.run(run["id"])["report_url"], stored_url)
+
+    def test_only_immutable_static_files_are_cacheable(self):
+        app = self.app(None, auth_check_url=None, login_url=None)
+        with TestClient(app, base_url="https://fishsteak.xyz") as client:
+            self.assertEqual(client.get("/schematic/assets/app.js").headers["cache-control"], "private, max-age=604800, immutable")
+            for path in ("/schematic/", "/schematic/reports", "/schematic/api/runtime"):
+                self.assertEqual(client.get(path).headers["cache-control"], "no-store", path)
+            self.assertEqual(client.get("/schematic/reports/run-missing/sch/schematic.pdf").headers["cache-control"], "no-store")
 
     def test_configuration_rejects_remote_auth_and_external_login(self):
         for url in ("https://auth.example/check", "http://127.0.0.1.evil.example/check", "http://user:secret@127.0.0.1/check", "file:///tmp/auth"):
