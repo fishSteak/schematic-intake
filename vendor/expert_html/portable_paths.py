@@ -81,8 +81,28 @@ def make_pack_portable(pack: dict, out_dir: Path) -> dict:
         "pdf",
     }
 
-    def walk(node: object) -> None:
+    def is_json_reference(value: str, field: str | None, parents: tuple) -> bool:
+        # JSON Pointers and Unix filenames share the leading slash. Resolve the
+        # first pointer token against the enclosing document/card, not the host
+        # filesystem; escaped property names retain their RFC 6901 spelling.
+        if not value.startswith("/") or value.startswith("//"):
+            return False
+        first = value[1:].split("/", 1)[0].replace("~1", "/").replace("~0", "~")
+        if any(first in parent for parent in parents):
+            return True
+        if field and (field == "$ref" or field.endswith(("_ref", "_refs"))):
+            # Keep unresolved semantic references too: portability must not
+            # repair or destroy them. Existing files in legacy reference lists
+            # remain file paths, as do all explicit path/file/pdf fields below.
+            try:
+                return not Path(value).exists()
+            except OSError:
+                return True
+        return False
+
+    def walk(node: object, parents: tuple = (), field: str | None = None) -> None:
         if isinstance(node, dict):
+            parents = (node, *parents)
             for k, v in list(node.items()):
                 if k == "input_dir" and isinstance(v, str):
                     node[k] = portable_input_dir(out_dir, v)
@@ -93,15 +113,15 @@ def make_pack_portable(pack: dict, out_dir: Path) -> dict:
                         else:
                             node[k] = str(v).replace("\\", "/")
                 elif isinstance(v, (dict, list)):
-                    walk(v)
-                elif isinstance(v, str) and is_abs_path_str(v):
+                    walk(v, parents, k)
+                elif isinstance(v, str) and is_abs_path_str(v) and not is_json_reference(v, k, parents):
                     node[k] = portable_path(out_dir, v)
         elif isinstance(node, list):
             for i, v in enumerate(node):
-                if isinstance(v, str) and is_abs_path_str(v):
+                if isinstance(v, str) and is_abs_path_str(v) and not is_json_reference(v, field, parents):
                     node[i] = portable_path(out_dir, v)
                 else:
-                    walk(v)
+                    walk(v, parents, field)
 
     walk(obj)
     return obj
